@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1778941081708,
+      "tag": "0000_thick_black_cat",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1778941359029,
+      "tag": "0001_nappy_may_parker",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1783589467770,
+      "tag": "0002_closed_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1783776695605,
+      "tag": "0003_classy_bloodstorm",
+      "breakpoints": true
+    }
+  ]
+}
