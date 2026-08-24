@@ -1,12 +1,14 @@
 import { callLLM, type LLMMessage } from "./llm";
 import { generateSpellCardImageWithRetry } from "./image-generation";
 import { getRedisService } from "./redis-service";
+import { getDb } from "./db";
 import {
   createSpell,
   createSummonProfile,
   addSpellToDeck,
   incrementWeeklySpellCount,
   updateSpellResearchStatus,
+  updateSpellImageUrl,
 } from "./spell-db";
 import {
   LLMSpellOutputSchema,
@@ -99,34 +101,72 @@ Return a complete spell object as JSON.`;
     spell.name
   );
 
-  const savedSpell = await createSpell(userId, {
-    name: spell.name,
-    element: spell.element,
-    tier: spell.tier,
-    primaryCategory: spell.primary_category,
-    secondaryCategory: spell.secondary_category,
-    castType: spell.cast_type,
-    castTimeMs: spell.cast_time_ms,
-    damageMin: spell.damage_min,
-    damageMax: spell.damage_max,
-    mpCost: spell.mp_cost,
-    mpMaintenancePerTurn: spell.mp_maintenance_per_turn,
-    willCostMin: spell.will_cost_min,
-    willCostMax: spell.will_cost_max,
-    willDrainPerTurn: spell.will_drain_per_turn,
-    interruptionThreshold: spell.interruption_threshold,
-    scalingFactor: spell.scaling_factor,
-    mpModifier: spell.mp_modifier,
-    isPhysical: spell.is_physical,
-    physicalDelivery: spell.physical_delivery,
-    trapCondition: spell.trap_condition,
-    trapVisibility: spell.trap_visibility,
-    flavorText: spell.flavor_text,
-    loreLine: spell.lore_line,
-    imageUrl: "",
-    researchStatus: "researching",
-    researchStartedAt: new Date(),
-  });
+  const db = await getDb();
+  if (!db) {
+    return {
+      success: false,
+      error: "Database not available",
+    };
+  }
+
+  let savedSpell: Spell | null = null;
+  try {
+    savedSpell = await db.transaction(async (tx) => {
+      const newSpell = await createSpell(userId, {
+        name: spell.name,
+        element: spell.element,
+        tier: spell.tier,
+        primaryCategory: spell.primary_category,
+        secondaryCategory: spell.secondary_category,
+        castType: spell.cast_type,
+        castTimeMs: spell.cast_time_ms,
+        damageMin: spell.damage_min,
+        damageMax: spell.damage_max,
+        mpCost: spell.mp_cost,
+        mpMaintenancePerTurn: spell.mp_maintenance_per_turn,
+        willCostMin: spell.will_cost_min,
+        willCostMax: spell.will_cost_max,
+        willDrainPerTurn: spell.will_drain_per_turn,
+        interruptionThreshold: spell.interruption_threshold,
+        scalingFactor: spell.scaling_factor,
+        mpModifier: spell.mp_modifier,
+        isPhysical: spell.is_physical,
+        physicalDelivery: spell.physical_delivery,
+        trapCondition: spell.trap_condition,
+        trapVisibility: spell.trap_visibility,
+        flavorText: spell.flavor_text,
+        loreLine: spell.lore_line,
+        imageUrl: "",
+        researchStatus: "researching",
+        researchStartedAt: new Date(),
+      }, tx);
+
+      if (!newSpell) {
+        throw new Error("Failed to save spell to database");
+      }
+
+      if (spell.primary_category === "Summon" && spell.summon_profile) {
+        await createSummonProfile(newSpell.id, {
+          summonName: spell.summon_profile.summon_name,
+          summonHp: spell.summon_profile.summon_hp,
+          attackRating: spell.summon_profile.attack_rating,
+          element: spell.summon_profile.element,
+          mode: spell.summon_profile.mode,
+          behaviors: spell.summon_profile.behaviors,
+        }, tx);
+      }
+
+      await addSpellToDeck(userId, newSpell.id, tx);
+
+      return newSpell;
+    });
+  } catch (error) {
+    console.error("[Spell Creation] Transaction failed:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to save spell to database",
+    };
+  }
 
   if (!savedSpell) {
     return {
@@ -135,32 +175,27 @@ Return a complete spell object as JSON.`;
     };
   }
 
-  if (spell.primary_category === "Summon" && spell.summon_profile) {
-    await createSummonProfile(savedSpell.id, {
-      summonName: spell.summon_profile.summon_name,
-      summonHp: spell.summon_profile.summon_hp,
-      attackRating: spell.summon_profile.attack_rating,
-      element: spell.summon_profile.element,
-      mode: spell.summon_profile.mode,
-      behaviors: spell.summon_profile.behaviors,
-    });
-  }
-
-  await addSpellToDeck(userId, savedSpell.id);
   await redis.incrementWeeklySpellCount(userId);
+  await incrementWeeklySpellCount(userId);
 
   const researchTimeMs = 5000;
   await redis.setResearchStatus(savedSpell.id, "researching", Date.now());
 
   setTimeout(async () => {
-    await updateSpellResearchStatus(savedSpell.id, "ready");
-    await redis.setResearchStatus(savedSpell.id, "ready");
+    try {
+      await updateSpellResearchStatus(savedSpell.id, "ready");
+      await redis.setResearchStatus(savedSpell.id, "ready");
+    } catch (error) {
+      console.error("[Spell Creation] Failed to update research status:", error);
+    }
   }, researchTimeMs);
 
   try {
     const imageResult = await imagePromise;
     if (imageResult.success && imageResult.url) {
       console.log(`[Spell Creation] Image generated for spell ${savedSpell.id}`);
+      await updateSpellImageUrl(savedSpell.id, imageResult.url);
+      savedSpell.imageUrl = imageResult.url;
     } else {
       console.warn(
         `[Spell Creation] Image generation failed: ${imageResult.error}`

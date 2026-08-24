@@ -28,6 +28,9 @@ class RedisService {
     }
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10_000);
+
       const response = await fetch(this.url, {
         method: "POST",
         headers: {
@@ -35,7 +38,10 @@ class RedisService {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(command),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         console.error(
@@ -47,7 +53,11 @@ class RedisService {
       const data = (await response.json()) as RedisResponse<T>;
       return data.result;
     } catch (error) {
-      console.error(`[Redis] Request error:`, error);
+      if (error instanceof Error && error.name === "AbortError") {
+        console.error(`[Redis] Request timed out (10s)`);
+      } else {
+        console.error(`[Redis] Request error:`, error);
+      }
       return null;
     }
   }
@@ -68,6 +78,14 @@ class RedisService {
 
   async getRateLimitCounter(key: string): Promise<number> {
     return (await this.request<number>(["GET", key])) || 0;
+  }
+
+  async incrementLLMCallCount(provider: string, key: string): Promise<number> {
+    const count = (await this.request<number>(["INCR", key])) || 1;
+    if (count === 1) {
+      await this.request(["EXPIRE", key, "60"]);
+    }
+    return count;
   }
 
   async getWeeklySpellSlots(userId: number): Promise<number> {

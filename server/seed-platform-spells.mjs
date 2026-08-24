@@ -1,8 +1,11 @@
+import "dotenv/config";
 import { drizzle } from "drizzle-orm/mysql2";
-import { spells, summonProfiles } from "../drizzle/schema.js";
+import mysql from "mysql2/promise";
+import { spells } from "../drizzle/schema.ts";
 import { nanoid } from "nanoid";
 
-const db = drizzle(process.env.DATABASE_URL);
+const connection = mysql.createPool(process.env.DATABASE_URL);
+const db = drizzle(connection);
 
 const platformSpells = [
   {
@@ -423,6 +426,164 @@ const platformSpells = [
     flavorText: "Unleash pure chaos.",
     loreLine: "Order crumbles.",
   },
+  {
+    name: "Gale Force",
+    element: "Wind",
+    tier: "Basic",
+    primaryCategory: "Attack",
+    castType: "Instant",
+    castTimeMs: 400,
+    damageMin: 14,
+    damageMax: 24,
+    mpCost: 11,
+    willCostMin: 9,
+    willCostMax: 19,
+    flavorText: "A gust of wind that knocks back enemies.",
+    loreLine: "Swift as the northern breeze.",
+  },
+  {
+    name: "Water Shield",
+    element: "Water",
+    tier: "Basic",
+    primaryCategory: "Defense",
+    castType: "Instant",
+    castTimeMs: 500,
+    damageMin: 0,
+    damageMax: 0,
+    mpCost: 15,
+    willCostMin: 10,
+    willCostMax: 20,
+    flavorText: "Surrounds the caster in protective water.",
+    loreLine: "Water flows around all obstacles.",
+  },
+  {
+    name: "Arcane Missile",
+    element: "Arcane",
+    tier: "Basic",
+    primaryCategory: "Attack",
+    castType: "Instant",
+    castTimeMs: 450,
+    damageMin: 16,
+    damageMax: 26,
+    mpCost: 13,
+    willCostMin: 11,
+    willCostMax: 21,
+    flavorText: "Hurls a bolt of pure magical force.",
+    loreLine: "Raw aether given form.",
+  },
+  {
+    name: "Shadow Strike",
+    element: "Shadow",
+    tier: "Basic",
+    primaryCategory: "Attack",
+    castType: "Instant",
+    castTimeMs: 500,
+    damageMin: 17,
+    damageMax: 27,
+    mpCost: 14,
+    willCostMin: 12,
+    willCostMax: 22,
+    flavorText: "Attacks from the dark realm.",
+    loreLine: "Shadows obey their master.",
+  },
+  {
+    name: "Void Rift",
+    element: "Void",
+    tier: "Advanced",
+    primaryCategory: "Environmental",
+    castType: "Continuous",
+    castTimeMs: 1200,
+    mpMaintenancePerTurn: 4,
+    damageMin: 35,
+    damageMax: 55,
+    mpCost: 32,
+    willCostMin: 38,
+    willCostMax: 58,
+    willDrainPerTurn: 3,
+    flavorText: "Tears open a void in the battlefield.",
+    loreLine: "Nothing escapes the abyss.",
+  },
+  {
+    name: "Solar Flare",
+    element: "Light",
+    tier: "Advanced",
+    primaryCategory: "Attack",
+    castType: "Instant",
+    castTimeMs: 1000,
+    damageMin: 45,
+    damageMax: 65,
+    mpCost: 34,
+    willCostMin: 40,
+    willCostMax: 60,
+    flavorText: "Blinds and burns the opponent with light.",
+    loreLine: "The sun's wrath unleashed.",
+  },
+  {
+    name: "Tempest Aura",
+    element: "Lightning",
+    tier: "Advanced",
+    primaryCategory: "Buff",
+    castType: "Continuous",
+    castTimeMs: 1100,
+    mpMaintenancePerTurn: 5,
+    damageMin: 0,
+    damageMax: 0,
+    mpCost: 30,
+    willCostMin: 35,
+    willCostMax: 55,
+    willDrainPerTurn: 2,
+    flavorText: "Electrifies your body with static charge.",
+    loreLine: "Ride the storm.",
+  },
+  {
+    name: "Earth Elemental",
+    element: "Earth",
+    tier: "Advanced",
+    primaryCategory: "Summon",
+    castType: "Continuous",
+    castTimeMs: 1400,
+    mpMaintenancePerTurn: 6,
+    damageMin: 25,
+    damageMax: 45,
+    mpCost: 36,
+    willCostMin: 42,
+    willCostMax: 62,
+    willDrainPerTurn: 4,
+    flavorText: "Summons a hulking sentinel of stone.",
+    loreLine: "Stones take form at command.",
+  },
+  {
+    name: "Tidal Wave",
+    element: "Water",
+    tier: "Mega",
+    primaryCategory: "Attack",
+    castType: "Instant",
+    castTimeMs: 2200,
+    damageMin: 90,
+    damageMax: 140,
+    mpCost: 65,
+    willCostMin: 80,
+    willCostMax: 120,
+    flavorText: "A massive tsunami crushes the enemy.",
+    loreLine: "The ocean's fury made manifest.",
+  },
+  {
+    name: "Blizzard",
+    element: "Frost",
+    tier: "Mega",
+    primaryCategory: "Attack",
+    castType: "Continuous",
+    castTimeMs: 2500,
+    mpMaintenancePerTurn: 10,
+    damageMin: 85,
+    damageMax: 135,
+    mpCost: 70,
+    willCostMin: 88,
+    willCostMax: 128,
+    willDrainPerTurn: 6,
+    flavorText: "Freezes the battlefield in an endless storm.",
+    loreLine: "Eternal winter falls.",
+  },
 ];
 
 async function seedSpells() {
@@ -468,6 +629,10 @@ async function seedSpells() {
   }
 
   console.log("✅ All 36 platform spells seeded successfully!");
+  process.exit(0);
 }
 
-seedSpells().catch(console.error);
+seedSpells().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

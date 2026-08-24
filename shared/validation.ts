@@ -143,11 +143,10 @@ export function validateSpellStats(spell: LLMSpellOutput): {
   }
 
   if (spell.primary_category === "Hybrid") {
-    const baseWillCost = spell.will_cost_max;
-    const expectedMax = Math.floor(baseWillCost * 1.2);
-    if (spell.will_cost_max > expectedMax) {
+    const maxAllowedWill = Math.floor(caps.will[1] * 1.2);
+    if (spell.will_cost_max > maxAllowedWill) {
       errors.push(
-        `Hybrid spell will cost exceeds 20% penalty (max ${expectedMax}, got ${spell.will_cost_max})`
+        `Hybrid spell will cost exceeds 20% tier cap (max ${maxAllowedWill}, got ${spell.will_cost_max})`
       );
     }
   }
@@ -162,13 +161,21 @@ export function clampSpellStats(spell: LLMSpellOutput): LLMSpellOutput {
   const caps = SPELL_CAPS[spell.tier];
   const summonCaps = SUMMON_CAPS[spell.tier];
 
+  let clampedDamageMin = Math.max(caps.damage[0], Math.min(caps.damage[1], spell.damage_min));
+  let clampedDamageMax = Math.max(caps.damage[0], Math.min(caps.damage[1], spell.damage_max));
+  let clampedWillCostMin = Math.max(caps.will[0], Math.min(caps.will[1], spell.will_cost_min));
+  let clampedWillCostMax = Math.max(caps.will[0], Math.min(caps.will[1], spell.will_cost_max));
+
+  if (clampedDamageMin > clampedDamageMax) clampedDamageMin = clampedDamageMax;
+  if (clampedWillCostMin > clampedWillCostMax) clampedWillCostMin = clampedWillCostMax;
+
   return {
     ...spell,
-    damage_min: Math.max(caps.damage[0], Math.min(caps.damage[1], spell.damage_min)),
-    damage_max: Math.max(caps.damage[0], Math.min(caps.damage[1], spell.damage_max)),
+    damage_min: clampedDamageMin,
+    damage_max: clampedDamageMax,
     mp_cost: Math.max(caps.mp[0], Math.min(caps.mp[1], spell.mp_cost)),
-    will_cost_min: Math.max(caps.will[0], Math.min(caps.will[1], spell.will_cost_min)),
-    will_cost_max: Math.max(caps.will[0], Math.min(caps.will[1], spell.will_cost_max)),
+    will_cost_min: clampedWillCostMin,
+    will_cost_max: clampedWillCostMax,
     interruption_threshold:
       spell.cast_type === "Instant"
         ? null

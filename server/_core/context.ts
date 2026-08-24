@@ -1,12 +1,13 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
+import type { Server as SocketIOServer } from "socket.io";
 import { verifyTokenAndGetUser } from "../auth-service";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: User | null;
-  io: any;
+  io: SocketIOServer | null;
 };
 
 export async function createContext(
@@ -25,7 +26,7 @@ export async function createContext(
     user = null;
   }
 
-  const io = opts.req.app.get("io");
+  const io: SocketIOServer | null = opts.req.app.get("io") ?? null;
 
   return {
     req: opts.req,

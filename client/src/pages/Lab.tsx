@@ -2,19 +2,20 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Progress } from "@/components/ui/progress";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles, FlaskConical } from "lucide-react";
 import { ALL_ELEMENTS } from "@shared/constants";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { Panel } from "@/components/game/panel";
+import { XpBar } from "@/components/game/bars";
 import { SpellCard } from "@/components/SpellCard";
 import { ResearchQueue } from "@/components/ResearchQueue";
 import { mapSpellToCardProps } from "@/lib/adapters";
+
 export default function Lab() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +41,7 @@ export default function Lab() {
 
   const createSpellMutation = trpc.lab.createSpell.useMutation({
     onSuccess: () => {
-      toast.success("Spell created! Research started...");
+      toast.success("Spell forged! Research initiated...");
       setSpellName("");
       setDescription("");
       setIsCreating(false);
@@ -62,7 +63,7 @@ export default function Lab() {
   if (authLoading || !user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="animate-spin" />
+        <Loader2 className="animate-spin text-primary h-8 w-8" />
       </div>
     );
   }
@@ -80,8 +81,19 @@ export default function Lab() {
     });
   };
 
-  const researchingSpells = userSpells.filter((s: any) => s.researchStatus === "researching");
-  const completedSpells = userSpells.filter((s: any) => s.researchStatus === "ready");
+  const now = Date.now();
+  const researchingSpells = userSpells.filter((s: any) => {
+    if (s.researchStatus !== "researching") return false;
+    const startTime = s.researchStartedAt
+      ? new Date(s.researchStartedAt).getTime()
+      : s.createdAt
+      ? new Date(s.createdAt).getTime()
+      : now;
+    return now - startTime < 5000;
+  });
+  const completedSpells = userSpells.filter(
+    (s: any) => !researchingSpells.some((r: any) => r.id === s.id)
+  );
 
   const researchItems = researchingSpells.map((s: any) => ({
     spellId: s.id,
@@ -95,36 +107,43 @@ export default function Lab() {
 
   return (
     <div className="min-h-full bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-4xl font-bold mb-8">The Lab</h1>
+      <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
+        <header className="flex flex-col gap-1">
+          <h1 className="font-serif text-3xl font-semibold tracking-wide flex items-center gap-3">
+            <FlaskConical className="text-primary" size={28} />
+            The Lab
+          </h1>
+          <p className="text-sm text-muted-foreground">Forge AI-crafted spells tailored to your magical affinity.</p>
+        </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Spell Creation Form */}
-          <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle>Create Spell</CardTitle>
-              <CardDescription>Design your next spell</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="spell-name">Spell Name</Label>
+          <Panel gold title="Forge Spell" className="lg:col-span-1">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="spell-name" className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Spell Name
+                </Label>
                 <Input
                   id="spell-name"
                   value={spellName}
                   onChange={(e) => setSpellName(e.target.value)}
-                  placeholder="e.g., Inferno Blast"
+                  placeholder="e.g., Inferno Lash"
+                  className="bg-background/80 border-border text-foreground focus:ring-primary"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="element">Element</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="element" className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Elemental Affinity
+                </Label>
                 <Select value={element} onValueChange={setElement}>
-                  <SelectTrigger id="element">
+                  <SelectTrigger id="element" className="bg-background/80 border-border text-foreground">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-card border-border text-foreground">
                     {ALL_ELEMENTS.map((el) => (
-                      <SelectItem key={el} value={el}>
+                      <SelectItem key={el} value={el} className="capitalize">
                         {el}
                       </SelectItem>
                     ))}
@@ -132,88 +151,81 @@ export default function Lab() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="description" className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Spell Concept
+                </Label>
                 <Textarea
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe your spell concept..."
+                  placeholder="Describe the incantation, effect, and visual manifestation..."
                   rows={4}
+                  className="bg-background/80 border-border text-foreground focus:ring-primary resize-none"
                 />
               </div>
 
               <Button
                 onClick={handleCreateSpell}
                 disabled={isCreating}
-                className="w-full"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/90 gap-2 font-medium"
               >
                 {isCreating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Channelling LLM...
                   </>
                 ) : (
-                  "Create Spell"
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Forge Spell
+                  </>
                 )}
               </Button>
 
-              <div className="pt-4 border-t">
-                <p className="text-xs text-muted-foreground mb-2">Weekly Slots</p>
-                <Progress value={usedSlots} max={limitSlots} />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {usedSlots} / {limitSlots} used
+              <div className="pt-3 border-t border-border">
+                <XpBar label="Weekly Spell Capacity" current={usedSlots} next={limitSlots} />
+                <p className="text-[11px] text-muted-foreground mt-1.5 text-right">
+                  {usedSlots} / {limitSlots} slots utilized
                 </p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </Panel>
 
-          {/* Research Queue & Stats */}
+          {/* Research Queue & Library */}
           <div className="lg:col-span-2 space-y-6">
             <ResearchQueue items={researchItems} />
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Spell Library</CardTitle>
-                <CardDescription>{completedSpells.length} custom spell(s) owned</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {completedSpells.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {completedSpells.map((spell: any) => (
-                      <SpellCard key={spell.id} spell={mapSpellToCardProps(spell)} />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    Your completed spells will appear here. Build one to begin.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+            <Panel title="Personal Spellbook" action={<span className="text-xs text-muted-foreground">{completedSpells.length} Spells</span>}>
+              {completedSpells.length > 0 ? (
+                <div className="flex gap-4 overflow-x-auto pb-2">
+                  {completedSpells.map((spell: any) => (
+                    <SpellCard key={spell.id} spell={mapSpellToCardProps(spell)} size="sm" />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Your forged spells will appear here once ready. Channel a spell to begin.
+                </p>
+              )}
+            </Panel>
           </div>
         </div>
 
         {/* Platform Spells Grid */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Platform Spells</CardTitle>
-            <CardDescription>36 base spells available to all players</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {platformSpells && platformSpells.length > 0 ? (
-                platformSpells.map((spell: any) => (
-                  <SpellCard key={spell.id} spell={mapSpellToCardProps(spell)} />
-                ))
-              ) : (
-                <p className="text-muted-foreground col-span-full text-center py-8">
-                  Loading platform spells...
-                </p>
-              )}
+        <Panel title="Tower Archives" action={<span className="text-xs text-muted-foreground">36 Base Spells</span>}>
+          {platformSpells && platformSpells.length > 0 ? (
+            <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+              {platformSpells.map((spell: any) => (
+                <SpellCard key={spell.id} spell={mapSpellToCardProps(spell)} size="sm" />
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="animate-spin text-primary h-6 w-6" />
+            </div>
+          )}
+        </Panel>
       </div>
     </div>
   );

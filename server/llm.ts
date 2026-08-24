@@ -1,4 +1,6 @@
 import { ENV } from "./_core/env";
+import { getRedisService } from "./redis-service";
+import { LLM_RATE_LIMITS } from "../shared/constants";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant";
@@ -95,6 +97,9 @@ class LLMProvider {
     ];
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
       const response = await fetch(provider.endpoint, {
         method: "POST",
         headers: {
@@ -107,7 +112,10 @@ class LLMProvider {
           temperature: 0.7,
           max_tokens: 2000,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -127,7 +135,11 @@ class LLMProvider {
 
       return { text, provider: provider.name };
     } catch (error) {
-      console.error(`[LLM] ${provider.name} request failed:`, error);
+      if (error instanceof Error && error.name === "AbortError") {
+        console.error(`[LLM] ${provider.name} request timed out (30s)`);
+      } else {
+        console.error(`[LLM] ${provider.name} request failed:`, error);
+      }
       return null;
     }
   }
@@ -136,18 +148,23 @@ class LLMProvider {
     messages: LLMMessage[],
     systemPrompt: string
   ): Promise<LLMResponse> {
-    if (this.primaryProvider) {
-      const result = await this.callProvider(
-        this.primaryProvider,
-        messages,
-        systemPrompt
-      );
-      if (result) return result;
-    }
+    const providers = [
+      ...(this.primaryProvider ? [this.primaryProvider] : []),
+      ...this.fallbackProviders,
+    ];
 
-    for (const fallback of this.fallbackProviders) {
-      const result = await this.callProvider(fallback, messages, systemPrompt);
-      if (result) return result;
+    for (const provider of providers) {
+      const rateCheck = await checkLLMRateLimit(provider.name);
+      if (!rateCheck.allowed) {
+        console.warn(`[LLM] Rate limit hit for ${provider.name}: ${rateCheck.reason}`);
+        continue;
+      }
+
+      const result = await this.callProvider(provider, messages, systemPrompt);
+      if (result) {
+        await recordLLMCall(provider.name);
+        return result;
+      }
     }
 
     throw new Error("All LLM providers failed");
@@ -175,6 +192,21 @@ export async function checkLLMRateLimit(
   provider: string,
   tokensEstimate: number = 0
 ): Promise<{ allowed: boolean; reason?: string }> {
+  const redis = getRedisService();
+  const limits = LLM_RATE_LIMITS[provider as keyof typeof LLM_RATE_LIMITS];
+  if (!limits) return { allowed: true };
+
+  const key = `llm:ratelimit:${provider}:${Math.floor(Date.now() / 60000)}`;
+  const count = await redis.getRateLimitCounter(key);
+  const rpmLimit = Math.floor(limits.requestsPerMinute * limits.softLimitPercentage);
+
+  if (count >= rpmLimit) {
+    return {
+      allowed: false,
+      reason: `LLM rate limit reached for ${provider} (${count}/${rpmLimit} RPM)`,
+    };
+  }
+
   return { allowed: true };
 }
 
@@ -182,5 +214,7 @@ export async function recordLLMCall(
   provider: string,
   tokensUsed: number = 0
 ): Promise<void> {
-  // Placeholder for rate limit tracking
+  const redis = getRedisService();
+  const key = `llm:ratelimit:${provider}:${Math.floor(Date.now() / 60000)}`;
+  await redis.incrementLLMCallCount(provider, key);
 }

@@ -3,10 +3,29 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { getLoginUrl } from "@/const";
-import { Wand2, Zap, Users, Trophy } from "lucide-react";
-import { AnimatedBackground } from "@/components/AnimatedBackground";
-import { InteractiveCard } from "@/components/InteractiveCard";
-import { motion } from "framer-motion";
+import { Zap, Users, Trophy, FlaskConical, Swords } from "lucide-react";
+import { motion, type Variants } from "framer-motion";
+import { Panel } from "@/components/game/panel";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.15,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5, ease: "easeOut" },
+  },
+};
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
@@ -18,69 +37,36 @@ export default function Home() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6 },
-    },
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white overflow-hidden">
-      <AnimatedBackground />
-
+    <div className="min-h-screen bg-background text-foreground overflow-hidden flex flex-col">
       {/* Navigation */}
       <motion.nav
-        initial={{ y: -100, opacity: 0 }}
+        initial={{ y: -60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-50 flex items-center justify-between px-8 py-6 border-b border-purple-500/20 backdrop-blur-md bg-slate-900/30"
+        transition={{ duration: 0.5 }}
+        className="relative z-50 flex items-center justify-between px-8 py-5 border-b border-border bg-card/80 backdrop-blur-md"
       >
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="flex items-center gap-3 cursor-pointer"
-        >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+        <div onClick={() => navigate("/")} className="flex items-center gap-3 cursor-pointer">
+          <span className="flex h-8 w-8 items-center justify-center rounded-sm border border-primary/40 font-serif text-base font-bold text-primary bg-background">
+            A
+          </span>
+          <span className="font-serif text-xl font-semibold tracking-[0.2em] text-foreground">ARCANIS</span>
+        </div>
+
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/auth")}
+            className="border-primary/40 text-foreground hover:bg-secondary"
           >
-            <Wand2 className="h-8 w-8 text-purple-400" />
-          </motion.div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            ARCANIS
-          </h1>
-        </motion.div>
-        <div className="flex gap-4">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/auth")}
-              className="border-purple-400 text-purple-400 hover:bg-purple-400/10 backdrop-blur-sm"
-            >
-              Sign In
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={() => (window.location.href = getLoginUrl())}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/50"
-            >
-              Get Started
-            </Button>
-          </motion.div>
+            Sign In
+          </Button>
+          <Button
+            onClick={() => (window.location.href = getLoginUrl())}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 font-medium"
+          >
+            Enter Realm
+          </Button>
         </div>
       </motion.nav>
 
@@ -89,45 +75,44 @@ export default function Home() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="relative z-10 px-8 py-24 text-center max-w-4xl mx-auto"
+        className="relative z-10 px-8 py-20 text-center max-w-4xl mx-auto my-auto flex flex-col items-center justify-center"
       >
         <motion.div variants={itemVariants}>
-          <h2 className="text-7xl md:text-8xl font-bold mb-6 leading-tight">
+          <h1 className="font-serif text-5xl md:text-7xl font-semibold mb-6 leading-tight text-balance">
             Craft Spells.{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 animate-pulse">
+            <span className="text-primary italic">
               Master Magic.
             </span>{" "}
-            Dominate Battles
-          </h2>
+            Dominate Battles.
+          </h1>
         </motion.div>
 
-        <motion.p variants={itemVariants} className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-          Enter The Lab to create AI-generated spells with unique abilities. Duel opponents in real-time turn-based battles with interactive minigames that determine your spell's power.
+        <motion.div variants={itemVariants} className="arc-rule w-48 my-4" />
+
+        <motion.p variants={itemVariants} className="text-base text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
+          Enter The Lab to forge AI-generated spells with unique elemental abilities. Duel opponents in real-time turn-based combat with interactive minigames determining your spell's power.
         </motion.p>
 
         <motion.div
           variants={itemVariants}
           className="flex gap-4 justify-center flex-wrap"
         >
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              size="lg"
-              onClick={() => (window.location.href = getLoginUrl())}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-lg px-8 shadow-lg shadow-purple-500/50"
-            >
-              Play Now
-            </Button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => navigate("/auth")}
-              className="border-purple-400 text-purple-400 hover:bg-purple-400/10 text-lg px-8 backdrop-blur-sm"
-            >
-              Learn More
-            </Button>
-          </motion.div>
+          <Button
+            size="lg"
+            onClick={() => (window.location.href = getLoginUrl())}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8 font-medium shadow-md gap-2"
+          >
+            <Swords size={18} />
+            Begin Journey
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={() => navigate("/auth")}
+            className="border-border text-foreground hover:bg-secondary text-base px-8"
+          >
+            Sign In
+          </Button>
         </motion.div>
       </motion.section>
 
@@ -135,137 +120,49 @@ export default function Home() {
       <motion.section
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="relative z-10 px-8 py-20 max-w-6xl mx-auto"
+        transition={{ duration: 0.6 }}
+        className="relative z-10 px-8 py-16 max-w-6xl mx-auto w-full"
       >
-        <motion.h3
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-5xl font-bold text-center mb-16"
-        >
-          Core Features
-        </motion.h3>
-
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8"
-        >
-          <InteractiveCard
-            icon={<Wand2 />}
-            title="The Lab"
-            description="Create unique spells powered by AI. Each spell is generated with custom stats, abilities, and stunning card art."
-            color="purple"
-          />
-          <InteractiveCard
-            icon={<Zap />}
-            title="Spell Library"
-            description="Build your collection from 36 platform spells or create your own. Organize decks for different battle strategies."
-            color="blue"
-          />
-          <InteractiveCard
-            icon={<Users />}
-            title="Real-Time Battles"
-            description="Duel opponents in turn-based combat. Each spell cast triggers an interactive minigame to determine damage."
-            color="pink"
-          />
-          <InteractiveCard
-            icon={<Trophy />}
-            title="Competitive"
-            description="Climb the rankings, unlock achievements, and prove your mastery of magic in the arena."
-            color="amber"
-          />
-        </motion.div>
-      </motion.section>
-
-      {/* Minigames Section */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="relative z-10 px-8 py-20 bg-gradient-to-r from-purple-500/5 to-pink-500/5 border-y border-purple-500/20"
-      >
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.h3
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-5xl font-bold mb-8"
-          >
-            Master 6 Minigame Types
-          </motion.h3>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-xl text-gray-300 mb-12"
-          >
-            Every spell cast is an interactive challenge. Your skill determines the damage dealt.
-          </motion.p>
-
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            className="grid grid-cols-2 md:grid-cols-3 gap-4"
-          >
-            {["Timing Strike", "Pattern Match", "Rapid Tap", "Hold & Release", "Quick Reaction", "Sequence Input"].map((game, idx) => (
-              <motion.div
-                key={game}
-                variants={itemVariants}
-                whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)" }}
-                className="bg-gradient-to-br from-purple-500/20 to-purple-500/5 border border-purple-500/30 rounded-lg p-4 backdrop-blur-sm hover:border-purple-400/50 transition-all cursor-pointer"
-              >
-                <p className="font-semibold">{game}</p>
-              </motion.div>
-            ))}
-          </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <Panel title="The Lab">
+            <div className="flex flex-col gap-2 pt-1">
+              <FlaskConical className="text-primary" size={28} />
+              <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                Create unique spells powered by AI. Each spell is generated with custom stats, abilities, and card art.
+              </p>
+            </div>
+          </Panel>
+          <Panel title="Spell Library">
+            <div className="flex flex-col gap-2 pt-1">
+              <Zap className="text-primary" size={28} />
+              <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                Build your collection from 36 platform spells or channel your own custom deck strategies.
+              </p>
+            </div>
+          </Panel>
+          <Panel title="Real-Time Battles">
+            <div className="flex flex-col gap-2 pt-1">
+              <Users className="text-primary" size={28} />
+              <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                Duel opponents in turn-based combat. Each spell cast triggers an interactive minigame determining damage.
+              </p>
+            </div>
+          </Panel>
+          <Panel title="Competitive">
+            <div className="flex flex-col gap-2 pt-1">
+              <Trophy className="text-primary" size={28} />
+              <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                Climb the circles, unlock achievements, and prove your mastery of magic in the open brawl arena.
+              </p>
+            </div>
+          </Panel>
         </div>
       </motion.section>
 
-      {/* CTA Section */}
-      <motion.section
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.8 }}
-        className="relative z-10 px-8 py-24 text-center max-w-4xl mx-auto"
-      >
-        <motion.h3
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-5xl font-bold mb-6"
-        >
-          Ready to Enter ARCANIS?
-        </motion.h3>
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          className="text-xl text-gray-300 mb-8"
-        >
-          Create your first spell in The Lab and challenge opponents to epic magical duels.
-        </motion.p>
-        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-          <Button
-            size="lg"
-            onClick={() => (window.location.href = getLoginUrl())}
-            className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-lg px-8 shadow-lg shadow-purple-500/50"
-          >
-            Start Playing Now
-          </Button>
-        </motion.div>
-      </motion.section>
-
       {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.6 }}
-        className="relative z-10 border-t border-purple-500/20 px-8 py-8 text-center text-gray-400 backdrop-blur-md bg-slate-900/30"
-      >
+      <footer className="relative z-10 border-t border-border px-8 py-6 text-center text-xs text-muted-foreground font-serif">
         <p>ARCANIS © 2026 — Competitive Magic RPG</p>
-      </motion.footer>
+      </footer>
     </div>
   );
 }

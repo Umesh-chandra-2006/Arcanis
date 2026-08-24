@@ -41,28 +41,28 @@ export function useSocketBattle(battleId: string, userId: number | undefined) {
     newSocket.on("battle_state", (state) => {
       console.log("[Socket] Received battle state:", state);
       setBattleState(state);
-      setBattleEvents((prev) => [...prev, { type: "state_update", data: state }]);
+      setBattleEvents((prev) => [...prev, { type: "state_update" as const, data: state }].slice(-50));
     });
 
     newSocket.on("spell_cast", (data) => {
-      setBattleEvents((prev) => [...prev, { type: "spell_cast", data }]);
+      setBattleEvents((prev) => [...prev, { type: "spell_cast" as const, data }].slice(-50));
     });
 
     newSocket.on("turn_changed", (data) => {
-      setBattleEvents((prev) => [...prev, { type: "turn_changed", data }]);
+      setBattleEvents((prev) => [...prev, { type: "turn_changed" as const, data }].slice(-50));
     });
 
     newSocket.on("opponent_disconnected", (data) => {
-      setBattleEvents((prev) => [...prev, { type: "opponent_disconnected", data }]);
+      setBattleEvents((prev) => [...prev, { type: "opponent_disconnected" as const, data }].slice(-50));
     });
 
     newSocket.on("battle_finished", (data) => {
-      setBattleEvents((prev) => [...prev, { type: "battle_finished", data }]);
+      setBattleEvents((prev) => [...prev, { type: "battle_finished" as const, data }].slice(-50));
     });
 
     newSocket.on("error", (error) => {
       console.error("[Socket] Error:", error);
-      setBattleEvents((prev) => [...prev, { type: "error", data: error }]);
+      setBattleEvents((prev) => [...prev, { type: "error" as const, data: error }].slice(-50));
     });
 
     newSocket.on("disconnect", () => {

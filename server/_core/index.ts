@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
+import fs from "fs";
+import path from "path";
 import { initializeSocketIO } from "../socket-server";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -72,10 +74,11 @@ async function startServer() {
     })
   );
   // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV !== "production") {
-    await setupVite(app, server);
-  } else {
+  const hasBuild = fs.existsSync(path.resolve(import.meta.dirname, "public")) || fs.existsSync(path.resolve(import.meta.dirname, "../dist/public"));
+  if (process.env.NODE_ENV === "production" || (hasBuild && process.env.NODE_ENV !== "development")) {
     serveStatic(app);
+  } else {
+    await setupVite(app, server);
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");

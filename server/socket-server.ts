@@ -1,7 +1,7 @@
 import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer, Socket } from "socket.io";
-import { getDb } from "./db";
 import { getRedisService } from "./redis-service";
+import { persistBattleToDb } from "./routers/game";
 
 interface BattleRoom {
   battleId: string;
@@ -12,9 +12,26 @@ interface BattleRoom {
   disconnectTimeouts: Record<string, NodeJS.Timeout>;
 }
 
+interface SocketUser {
+  id: number;
+  username: string;
+  avatar: string;
+  email: string;
+}
+
+interface BattleStateSnapshot {
+  status: string;
+  player1Id: number;
+  player2Id: number;
+  activePlayer: 1 | 2;
+  winner?: number;
+  [key: string]: unknown;
+}
+
 const battleRooms = new Map<string, BattleRoom>();
 
 import { verifyTokenAndGetUser } from "./auth-service";
+import { persistBattleToDb } from "./routers/game";
 
 export function initializeSocketIO(httpServer: HTTPServer) {
   const redis = getRedisService();
@@ -36,7 +53,7 @@ export function initializeSocketIO(httpServer: HTTPServer) {
       if (!user) {
         return next(new Error("Authentication error: Invalid token"));
       }
-      (socket as any).user = user;
+      (socket as Socket & { user: SocketUser }).user = user as SocketUser;
       next();
     } catch (err) {
       return next(new Error("Authentication error"));
@@ -44,7 +61,7 @@ export function initializeSocketIO(httpServer: HTTPServer) {
   });
 
   io.on("connection", (socket: Socket) => {
-    const socketUser = (socket as any).user;
+    const socketUser = (socket as Socket & { user: SocketUser }).user;
     console.log(`[Socket.io] Authenticated user connected: ${socketUser?.username} (${socket.id})`);
 
     socket.on("join_battle", async (data: { battleId: string; userId: number }) => {
@@ -55,7 +72,7 @@ export function initializeSocketIO(httpServer: HTTPServer) {
         socket.join(room);
         console.log(`[Socket.io] User ${userId} joined battle ${battleId}`);
 
-        const battleState = await redis.getBattleState(battleId);
+        const battleState = (await redis.getBattleState(battleId)) as BattleStateSnapshot | null;
         if (battleState) {
           socket.emit("battle_state", battleState);
         }
@@ -74,7 +91,7 @@ export function initializeSocketIO(httpServer: HTTPServer) {
         }
 
         const battleRoom = battleRooms.get(battleId)!;
-        if ((battleState as any)?.player1Id === userId) {
+        if (battleState?.player1Id === userId) {
           battleRoom.player1Socket = socket.id;
         } else {
           battleRoom.player2Socket = socket.id;
@@ -91,89 +108,15 @@ export function initializeSocketIO(httpServer: HTTPServer) {
     });
 
     socket.on("cast_spell", async (data: { battleId: string; spellId: string; accuracy: number }) => {
-      try {
-        const { battleId, spellId, accuracy } = data;
-        const room = `battle:${battleId}`;
-
-        const battleState = await redis.getBattleState(battleId);
-        if (!battleState) {
-          socket.emit("error", { message: "Battle not found" });
-          return;
-        }
-
-        io.to(room).emit("spell_cast", {
-          playerId: (battleState as any).currentTurnPlayerId,
-          spellId,
-          accuracy,
-        });
-      } catch (error) {
-        console.error("[Socket.io] Error casting spell:", error);
-        socket.emit("error", { message: "Failed to cast spell" });
-      }
+      socket.emit("error", { message: "Use the tRPC castSpell mutation instead of socket events" });
     });
 
     socket.on("end_turn", async (data: { battleId: string }) => {
-      try {
-        const { battleId } = data;
-        const room = `battle:${battleId}`;
-
-        const battleState = await redis.getBattleState(battleId);
-        if (!battleState) {
-          socket.emit("error", { message: "Battle not found" });
-          return;
-        }
-
-        const updatedState = {
-          ...battleState,
-          currentTurnPlayerId: (battleState as any).currentTurnPlayerId === (battleState as any).player1Id ? (battleState as any).player2Id : (battleState as any).player1Id,
-          turnCount: ((battleState as any).turnCount || 0) + 1,
-        };
-
-        await redis.setBattleState(battleId, updatedState);
-
-        io.to(room).emit("battle_state", updatedState);
-        io.to(room).emit("turn_changed", {
-          currentPlayerId: (updatedState as any).currentTurnPlayerId,
-          turnCount: (updatedState as any).turnCount,
-        });
-      } catch (error) {
-        console.error("[Socket.io] Error ending turn:", error);
-        socket.emit("error", { message: "Failed to end turn" });
-      }
+      socket.emit("error", { message: "Use the tRPC endTurn mutation instead of socket events" });
     });
 
-    socket.on("forfeit", async (data: { battleId: string; userId: number }) => {
-      try {
-        const { battleId, userId } = data;
-        const room = `battle:${battleId}`;
-
-        const battleState = await redis.getBattleState(battleId);
-        if (!battleState) {
-          socket.emit("error", { message: "Battle not found" });
-          return;
-        }
-
-        const winnerId = (battleState as any).player1Id === userId ? (battleState as any).player2Id : (battleState as any).player1Id;
-
-        const updatedState = {
-          ...battleState,
-          status: "finished",
-          winnerId,
-          endedAt: new Date(),
-        };
-
-        await redis.deleteBattleState(battleId);
-
-        io.to(room).emit("battle_finished", {
-          winnerId,
-          status: "finished",
-        });
-
-        io.to(room).disconnectSockets();
-      } catch (error) {
-        console.error("[Socket.io] Error forfeiting:", error);
-        socket.emit("error", { message: "Failed to forfeit" });
-      }
+    socket.on("forfeit", async (data: { battleId: string }) => {
+      socket.emit("error", { message: "Use the tRPC forfeit mutation instead of socket events" });
     });
 
     socket.on("disconnect", async () => {
@@ -188,10 +131,10 @@ export function initializeSocketIO(httpServer: HTTPServer) {
           const room = `battle:${battleId}`;
 
           const timeoutId = setTimeout(async () => {
-            const battleState = await redis.getBattleState(battleId);
-            if (battleState && (battleState as any).status === "active") {
-              const disconnectedPlayerId = battleRoom.player1Socket === socket.id ? (battleState as any).player1Id : (battleState as any).player2Id;
-              const winnerId = (battleState as any).player1Id === disconnectedPlayerId ? (battleState as any).player2Id : (battleState as any).player1Id;
+            const battleState = (await redis.getBattleState(battleId)) as BattleStateSnapshot | null;
+            if (battleState && battleState.status === "active") {
+              const disconnectedPlayerId = battleRoom.player1Socket === socket.id ? battleState.player1Id : battleState.player2Id;
+              const winnerId = battleState.player1Id === disconnectedPlayerId ? battleState.player2Id : battleState.player1Id;
 
               await redis.deleteBattleState(battleId);
               io.to(room).emit("battle_finished", {

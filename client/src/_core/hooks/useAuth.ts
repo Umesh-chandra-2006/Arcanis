@@ -13,7 +13,7 @@ export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } =
     options ?? {};
   const utils = trpc.useUtils();
-  const { logout: contextLogout } = useAuthContext();
+  const { logout: contextLogout, setUser: contextSetUser } = useAuthContext();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -44,11 +44,16 @@ export function useAuth(options?: UseAuthOptions) {
     }
   }, [logoutMutation, utils, contextLogout]);
 
+  useEffect(() => {
+    if (meQuery.data) {
+      localStorage.setItem("auth_user", JSON.stringify(meQuery.data));
+      contextSetUser(meQuery.data as any);
+    } else if (!meQuery.isLoading && !meQuery.data) {
+      localStorage.removeItem("auth_user");
+    }
+  }, [meQuery.data, meQuery.isLoading, contextSetUser]);
+
   const state = useMemo(() => {
-    localStorage.setItem(
-      "app-user-info",
-      JSON.stringify(meQuery.data)
-    );
     return {
       user: meQuery.data ?? null,
       loading: meQuery.isLoading || logoutMutation.isPending,

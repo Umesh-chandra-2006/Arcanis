@@ -829,6 +829,23 @@ Same-element spells only throughout all battle chapters. Minimum 3 same-element 
 
 - Add by username. Recent Animus results on Dashboard feed strip. Direct challenge available.
 
+## 17.4 The Hearth — Phase 1 Communication Feed
+
+The Hearth is distinct from the Community system in 17.1-17.3, which remains correctly deferred to a later phase because it depends on progression data (circles, affinity, proficiency) that doesn't exist in Phase 1. The Hearth is a separate, minimal feature shipping in Phase 1, built entirely from data Phase 1 already has: users, spells, battles.
+
+It's a single global, chronological, open text feed. Any logged-in player can post a short message and optionally attach one of their own spell cards. No rankings, no threading, no algorithmic ordering, no progression gating.
+
+### Key Specifications
+- **Stream:** Single global chronological stream. Reverse chronological order.
+- **Attachments:** Optional spell card attachment from the user's personal spellbook.
+- **Exclusions (v1):** No reply threads, no likes/reactions, no DMs, no per-battle chat, no personalized feed ordering or follows.
+- **Moderation:**
+  - Profanity/slur blocklist checked server-side before insert (`shared/profanity.ts`).
+  - Rate limiting via Redis (`hearth:ratelimit:{userId}` for 30s cooldown, `hearth:dailycount:{userId}` for ~50 posts/day soft cap).
+  - Duplicate-content rejection (same user, near-identical content in short window).
+  - Hard length cap (500 characters).
+- **Data Model:** `hearthPosts` table. Author-deletable only, not editable.
+
 ---
 
 # 18. Onboarding Flow
@@ -986,7 +1003,7 @@ Four services. Single responsibility each. Lab and Progression deliberately kept
 
 | Phase | Features | State |
 |---|---|---|
-| 1: Core loop | Game Service + WebSocket battles, 36 base spells with full classification, HP/MP/Will mechanics, Continuous/Channeled/Trap/Charged resolution, summon state tracking, terrain modifiers, interruption system, win/loss | Playable and demoable |
+| 1: Core loop & Communication | Game Service + WebSocket battles, 36 base spells with full classification, HP/MP/Will mechanics, Continuous/Channeled/Trap/Charged resolution, summon state tracking, terrain modifiers, interruption system, win/loss, and The Hearth global communication feed | Playable and demoable |
 | 2: Progression | Spell XP, proficiency tiers, Circle XP, elemental affinity tracking, Progression Service live | Players have reason to return |
 | 3: Lab and creation | Spell creation with LLM + classification + image generation, research timers, validation layer including classification validation, Tower assessment batch cron | Game becomes a platform |
 | 4: Social layer | Halls, friends, community boards with classification filters, matchmaking, Animus ranked, Freestyle Mode | Game becomes a community |
@@ -1097,6 +1114,12 @@ The project was originally named "Magic Spar." It has been renamed to **Arcanis*
 - Battle state tracks: active Continuous/Channeled spells, Trap slots, summon state, interruption thresholds.
 - Freestyle Mode: pure imagination. No stats. No classification constraints. LLM judges everything. 10 turn limit. 4 skill levels. Terrain applies. Win/loss recorded only.
 - Disconnect: auto-cast random Instant spell if timer expires (Continuous/Channeled collapse safely). Forfeit at 60s.
+
+### Social and Communication
+- **The Hearth:** Phase 1 minimal global communication feed. Reverse chronological text posts with optional attached spell cards from the user's personal spellbook.
+- No replies, no likes/reactions, no DMs, no per-battle chat, no algorithmic ordering, no progression gating.
+- Server-side profanity blocklist (`shared/profanity.ts`), Redis rate limiting (`hearth:ratelimit:{userId}` for 30s cooldown, `hearth:dailycount:{userId}` for ~50 posts/day soft cap), duplicate rejection, 500-char cap.
+- Author-deletable only, not editable.
 
 ### Visuals
 - Spell card image generated for ALL spells and fusions at creation (Hugging Face FLUX, zero cost).

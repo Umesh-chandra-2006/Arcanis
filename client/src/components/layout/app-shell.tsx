@@ -1,49 +1,38 @@
 import { useState } from "react"
-import { NavLink, Outlet, useLocation } from "react-router-dom"
+import { NavLink, Outlet, useLocation, Link } from "react-router-dom"
 import { AnimatePresence, motion } from "framer-motion"
 import {
-  Castle,
   LayoutDashboard,
   Swords,
   FlaskConical,
-  Landmark,
-  ScrollText,
-  Feather,
-  Users,
-  UserRound,
-  Sparkles,
-  Shield,
+  BookOpen,
+  Flame,
   Settings,
   Menu,
   X,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/_core/hooks/useAuth"
 
 const NAV_ITEMS = [
-  { to: "/", label: "Home", icon: Castle },
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/battle-select", label: "Arena", icon: Swords },
   { to: "/lab", label: "Lab", icon: FlaskConical },
-  { to: "/tower", label: "Magic Tower", icon: Landmark },
-  { to: "/quests", label: "Quests", icon: ScrollText },
-  { to: "/freestyle", label: "Freestyle", icon: Feather },
-  { to: "/community", label: "Community", icon: Users },
-  { to: "/profile", label: "Profile", icon: UserRound },
-  { to: "/avatar", label: "Avatar", icon: Sparkles },
-  { to: "/hall", label: "Hall", icon: Shield },
+  { to: "/spells", label: "My Spells", icon: BookOpen },
+  { to: "/hearth", label: "The Hearth", icon: Flame },
   { to: "/settings", label: "Settings", icon: Settings },
 ]
 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-card lg:flex">
-        <SidebarContent user={user} onNavigate={() => setMobileOpen(false)} />
+        <SidebarContent user={user} logout={logout} onNavigate={() => setMobileOpen(false)} />
       </aside>
 
       <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card px-4 lg:hidden">
@@ -75,7 +64,7 @@ export function AppShell() {
               className="flex h-full w-56 flex-col border-r border-border bg-card pt-14"
               onClick={(e) => e.stopPropagation()}
             >
-              <SidebarContent user={user} onNavigate={() => setMobileOpen(false)} />
+              <SidebarContent user={user} logout={logout} onNavigate={() => setMobileOpen(false)} />
             </motion.aside>
           </motion.div>
         )}
@@ -100,16 +89,24 @@ export function AppShell() {
 
 function Wordmark() {
   return (
-    <div className="flex items-center gap-2">
+    <Link to="/dashboard" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
       <span className="flex h-7 w-7 items-center justify-center rounded-sm border border-primary/40 font-serif text-sm font-bold text-primary">
         A
       </span>
       <span className="font-serif text-lg font-semibold tracking-[0.2em] text-foreground">ARCANIS</span>
-    </div>
+    </Link>
   )
 }
 
-function SidebarContent({ user, onNavigate }: { user: { username?: string; avatar?: string; circle?: number } | null; onNavigate?: () => void }) {
+function SidebarContent({
+  user,
+  logout,
+  onNavigate,
+}: {
+  user: { username?: string; avatar?: string } | null;
+  logout: () => void;
+  onNavigate?: () => void;
+}) {
   return (
     <>
       <div className="hidden px-5 pb-4 pt-6 lg:block">
@@ -123,13 +120,12 @@ function SidebarContent({ user, onNavigate }: { user: { username?: string; avata
             <li key={to}>
               <NavLink
                 to={to}
-                end={to === "/"}
                 onClick={onNavigate}
                 className={({ isActive }) =>
                   cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-300",
                     isActive
-                      ? "bg-secondary text-primary"
+                      ? "bg-secondary text-primary font-medium"
                       : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground",
                   )
                 }
@@ -144,16 +140,25 @@ function SidebarContent({ user, onNavigate }: { user: { username?: string; avata
 
       {user && (
         <div className="border-t border-border p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-full border border-primary/30 bg-secondary text-sm font-medium text-primary">
-              {user.username?.[0]?.toUpperCase() || "?"}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-secondary text-sm font-medium text-primary">
+                {user.username?.[0]?.toUpperCase() || "?"}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{user.username || "Mage"}</p>
+                <p className="truncate text-[11px] text-muted-foreground">Practitioner</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{user.username || "Mage"}</p>
-              {user.circle && (
-                <p className="truncate text-[11px] text-muted-foreground">Circle {user.circle}</p>
-              )}
-            </div>
+            <button
+              type="button"
+              onClick={logout}
+              title="Sign Out"
+              aria-label="Sign Out"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive transition-colors"
+            >
+              <LogOut size={15} />
+            </button>
           </div>
         </div>
       )}

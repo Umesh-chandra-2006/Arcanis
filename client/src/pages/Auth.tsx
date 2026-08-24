@@ -3,24 +3,26 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Wand2, Loader2, Mail, Lock, User, AlertCircle, Check } from "lucide-react";
-import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { Loader2, Mail, Lock, User, AlertCircle } from "lucide-react";
+import { Panel } from "@/components/game/panel";
+
+import { ElementIcon } from "@/components/game/element-icon";
 
 const AVATARS = [
-  { id: "ashen", emoji: "🩶", name: "Ashen" },
-  { id: "emberveil", emoji: "🔥", name: "Emberveil" },
-  { id: "tidecaller", emoji: "💧", name: "Tidecaller" },
-  { id: "galeborn", emoji: "💨", name: "Galeborn" },
-  { id: "stonewarden", emoji: "🪨", name: "Stonewarden" },
-  { id: "voidwalker", emoji: "🌑", name: "Voidwalker" },
-  { id: "dawnbringer", emoji: "✨", name: "Dawnbringer" },
-  { id: "chaosborn", emoji: "⚡", name: "Chaosborn" },
+  { id: "ashen", element: "Arcane", name: "Ashen" },
+  { id: "emberveil", element: "Fire", name: "Emberveil" },
+  { id: "tidecaller", element: "Water", name: "Tidecaller" },
+  { id: "galeborn", element: "Wind", name: "Galeborn" },
+  { id: "stonewarden", element: "Earth", name: "Stonewarden" },
+  { id: "voidwalker", element: "Void", name: "Voidwalker" },
+  { id: "dawnbringer", element: "Light", name: "Dawnbringer" },
+  { id: "chaosborn", element: "Chaos", name: "Chaosborn" },
 ];
 
 export default function Auth() {
@@ -59,7 +61,6 @@ export default function Auth() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Client-side validations
   const validateLogin = () => {
     const errors: typeof loginErrors = {};
     if (!loginEmail) {
@@ -116,10 +117,10 @@ export default function Auth() {
       });
 
       login(result.token, result.user);
-      toast.success("Welcome back, Mage!");
+      toast.success("Welcome back, Practitioner!");
       navigate("/dashboard");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Login failed";
+    } catch (error: any) {
+      const message = error?.message || "Login failed";
       toast.error(message);
     } finally {
       setLoginLoading(false);
@@ -140,103 +141,100 @@ export default function Auth() {
       });
 
       login(result.token, result.user);
-      toast.success("Account created! Welcome to Arcanis.");
+      toast.success("Mage profile forged! Welcome to Arcanis.");
       navigate("/dashboard");
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Registration failed";
+    } catch (error: any) {
+      const message = error?.message || "Registration failed";
       toast.error(message);
+      if (message.toLowerCase().includes("email")) {
+        setRegisterErrors((prev) => ({ ...prev, email: message }));
+      } else if (message.toLowerCase().includes("username")) {
+        setRegisterErrors((prev) => ({ ...prev, username: message }));
+      }
     } finally {
       setRegisterLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 text-white flex items-center justify-center p-4 relative overflow-hidden">
-      <AnimatedBackground />
-
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4 relative overflow-hidden">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-md z-10"
       >
         {/* Header */}
-        <div className="text-center mb-6">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="inline-block mb-3"
-          >
-            <div className="p-3 bg-purple-500/10 rounded-full border border-purple-500/30 shadow-lg shadow-purple-500/10">
-              <Wand2 className="h-10 w-10 text-purple-400" />
-            </div>
-          </motion.div>
-          <h1 className="text-5xl font-extrabold tracking-wider bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 bg-clip-text text-transparent drop-shadow-sm">
+        <div className="text-center mb-6 space-y-2">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-md border border-primary/40 font-serif text-2xl font-bold text-primary bg-card shadow-md mb-1">
+            A
+          </div>
+          <h1 className="font-serif text-3xl font-semibold tracking-[0.2em] text-foreground">
             ARCANIS
           </h1>
-          <p className="text-gray-400 mt-2 text-sm font-medium tracking-wide">Enter the realm of competitive magic</p>
+          <p className="text-muted-foreground text-xs font-serif italic">Enter the realm of competitive magic</p>
         </div>
 
-        {/* Auth Card */}
-        <Card className="bg-slate-900/60 border-purple-500/20 backdrop-blur-md shadow-2xl shadow-purple-950/20">
+        {/* Auth Panel */}
+        <Panel gold className="shadow-2xl">
           <Tabs value={activeTab} onValueChange={(val) => {
             setActiveTab(val);
             setLoginErrors({});
             setRegisterErrors({});
           }} className="w-full">
-            <TabsList className="grid w-[calc(100%-2rem)] grid-cols-2 bg-slate-950/50 m-4 p-1 rounded-lg border border-purple-500/10">
+            <TabsList className="grid w-full grid-cols-2 bg-secondary p-1 rounded-md border border-border mb-4">
               <TabsTrigger
                 value="login"
-                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300 rounded-md transition-all py-2"
+                className="data-[state=active]:bg-card data-[state=active]:text-primary rounded-sm transition-all py-1.5 text-xs uppercase tracking-wider font-semibold"
               >
-                Login
+                Sign In
               </TabsTrigger>
               <TabsTrigger
                 value="register"
-                className="data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-300 rounded-md transition-all py-2"
+                className="data-[state=active]:bg-card data-[state=active]:text-primary rounded-sm transition-all py-1.5 text-xs uppercase tracking-wider font-semibold"
               >
-                Register
+                Forge Account
               </TabsTrigger>
             </TabsList>
 
             {/* Login Tab */}
             <TabsContent value="login">
-              <CardContent className="space-y-4 pt-2">
+              <CardContent className="space-y-4 p-0">
                 <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email" className="text-gray-300 text-sm font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-email" className="text-xs uppercase tracking-wider text-muted-foreground">
                       Email Address
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="login-email"
                         type="email"
-                        placeholder="you@example.com"
+                        placeholder="mage@arcanis.com"
                         value={loginEmail}
                         onChange={(e) => {
                           setLoginEmail(e.target.value);
                           if (loginErrors.email) setLoginErrors((prev) => ({ ...prev, email: undefined }));
                         }}
-                        className={`bg-slate-950/50 border-purple-500/20 text-white placeholder:text-gray-600 pl-10 focus-visible:ring-purple-500 ${
-                          loginErrors.email ? "border-red-500/50 focus-visible:ring-red-500" : ""
+                        className={`bg-background border-border text-foreground pl-10 focus:ring-primary ${
+                          loginErrors.email ? "border-destructive focus:ring-destructive" : ""
                         }`}
                         required
                       />
                     </div>
                     {loginErrors.email && (
-                      <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
+                      <p className="text-destructive text-xs flex items-center gap-1 mt-1">
                         <AlertCircle className="h-3 w-3" /> {loginErrors.email}
                       </p>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password" className="text-gray-300 text-sm font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="login-password" className="text-xs uppercase tracking-wider text-muted-foreground">
                       Password
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="login-password"
                         type="password"
@@ -246,14 +244,14 @@ export default function Auth() {
                           setLoginPassword(e.target.value);
                           if (loginErrors.password) setLoginErrors((prev) => ({ ...prev, password: undefined }));
                         }}
-                        className={`bg-slate-950/50 border-purple-500/20 text-white placeholder:text-gray-600 pl-10 focus-visible:ring-purple-500 ${
-                          loginErrors.password ? "border-red-500/50 focus-visible:ring-red-500" : ""
+                        className={`bg-background border-border text-foreground pl-10 focus:ring-primary ${
+                          loginErrors.password ? "border-destructive focus:ring-destructive" : ""
                         }`}
                         required
                       />
                     </div>
                     {loginErrors.password && (
-                      <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
+                      <p className="text-destructive text-xs flex items-center gap-1 mt-1">
                         <AlertCircle className="h-3 w-3" /> {loginErrors.password}
                       </p>
                     )}
@@ -262,12 +260,12 @@ export default function Auth() {
                   <Button
                     type="submit"
                     disabled={loginLoading}
-                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold py-2.5 transition-all shadow-lg shadow-purple-500/10"
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 transition-all shadow-md"
                   >
                     {loginLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Channeling login...
+                        Unsealing...
                       </>
                     ) : (
                       "Sign In"
@@ -279,14 +277,14 @@ export default function Auth() {
 
             {/* Register Tab */}
             <TabsContent value="register">
-              <CardContent className="space-y-4 pt-2 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <CardContent className="space-y-4 p-0 max-h-[60vh] overflow-y-auto custom-scrollbar">
                 <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email" className="text-gray-300 text-sm font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="register-email" className="text-xs uppercase tracking-wider text-muted-foreground">
                       Email Address
                     </Label>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                      <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="register-email"
                         type="email"
@@ -296,53 +294,53 @@ export default function Auth() {
                           setRegisterEmail(e.target.value);
                           if (registerErrors.email) setRegisterErrors((prev) => ({ ...prev, email: undefined }));
                         }}
-                        className={`bg-slate-950/50 border-purple-500/20 text-white placeholder:text-gray-600 pl-10 focus-visible:ring-purple-500 ${
-                          registerErrors.email ? "border-red-500/50 focus-visible:ring-red-500" : ""
+                        className={`bg-background border-border text-foreground pl-10 focus:ring-primary ${
+                          registerErrors.email ? "border-destructive focus:ring-destructive" : ""
                         }`}
                         required
                       />
                     </div>
                     {registerErrors.email && (
-                      <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
+                      <p className="text-destructive text-xs flex items-center gap-1 mt-1">
                         <AlertCircle className="h-3 w-3" /> {registerErrors.email}
                       </p>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="register-username" className="text-gray-300 text-sm font-semibold">
-                      Mage Nickname
+                  <div className="space-y-1.5">
+                    <Label htmlFor="register-username" className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Mage Title / Nickname
                     </Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                      <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="register-username"
                         type="text"
-                        placeholder="Albus_13"
+                        placeholder="Veyra_Solmire"
                         value={registerUsername}
                         onChange={(e) => {
                           setRegisterUsername(e.target.value);
                           if (registerErrors.username) setRegisterErrors((prev) => ({ ...prev, username: undefined }));
                         }}
-                        className={`bg-slate-950/50 border-purple-500/20 text-white placeholder:text-gray-600 pl-10 focus-visible:ring-purple-500 ${
-                          registerErrors.username ? "border-red-500/50 focus-visible:ring-red-500" : ""
+                        className={`bg-background border-border text-foreground pl-10 focus:ring-primary ${
+                          registerErrors.username ? "border-destructive focus:ring-destructive" : ""
                         }`}
                         required
                       />
                     </div>
                     {registerErrors.username && (
-                      <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
+                      <p className="text-destructive text-xs flex items-center gap-1 mt-1">
                         <AlertCircle className="h-3 w-3" /> {registerErrors.username}
                       </p>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password" className="text-gray-300 text-sm font-semibold">
-                      Password (min 8 chars)
+                  <div className="space-y-1.5">
+                    <Label htmlFor="register-password" className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Password (min 8 characters)
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="register-password"
                         type="password"
@@ -352,25 +350,25 @@ export default function Auth() {
                           setRegisterPassword(e.target.value);
                           if (registerErrors.password) setRegisterErrors((prev) => ({ ...prev, password: undefined }));
                         }}
-                        className={`bg-slate-950/50 border-purple-500/20 text-white placeholder:text-gray-600 pl-10 focus-visible:ring-purple-500 ${
-                          registerErrors.password ? "border-red-500/50 focus-visible:ring-red-500" : ""
+                        className={`bg-background border-border text-foreground pl-10 focus:ring-primary ${
+                          registerErrors.password ? "border-destructive focus:ring-destructive" : ""
                         }`}
                         required
                       />
                     </div>
                     {registerErrors.password && (
-                      <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
+                      <p className="text-destructive text-xs flex items-center gap-1 mt-1">
                         <AlertCircle className="h-3 w-3" /> {registerErrors.password}
                       </p>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="register-confirm" className="text-gray-300 text-sm font-semibold">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="register-confirm" className="text-xs uppercase tracking-wider text-muted-foreground">
                       Confirm Password
                     </Label>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
+                      <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="register-confirm"
                         type="password"
@@ -380,41 +378,39 @@ export default function Auth() {
                           setRegisterConfirmPassword(e.target.value);
                           if (registerErrors.confirmPassword) setRegisterErrors((prev) => ({ ...prev, confirmPassword: undefined }));
                         }}
-                        className={`bg-slate-950/50 border-purple-500/20 text-white placeholder:text-gray-600 pl-10 focus-visible:ring-purple-500 ${
-                          registerErrors.confirmPassword ? "border-red-500/50 focus-visible:ring-red-500" : ""
+                        className={`bg-background border-border text-foreground pl-10 focus:ring-primary ${
+                          registerErrors.confirmPassword ? "border-destructive focus:ring-destructive" : ""
                         }`}
                         required
                       />
                     </div>
                     {registerErrors.confirmPassword && (
-                      <p className="text-red-400 text-xs flex items-center gap-1 mt-1">
+                      <p className="text-destructive text-xs flex items-center gap-1 mt-1">
                         <AlertCircle className="h-3 w-3" /> {registerErrors.confirmPassword}
                       </p>
                     )}
                   </div>
 
-                  {/* Avatar Selection */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-300 text-sm font-semibold block mb-2">Choose Avatar Affinity</Label>
+                  {/* Avatar Affinity Selection */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground block mb-1.5">Elemental Affinity</Label>
                     <div className="grid grid-cols-4 gap-2">
                       {AVATARS.map((avatar) => (
-                        <motion.button
+                        <button
                           key={avatar.id}
                           type="button"
                           onClick={() => setSelectedAvatar(avatar.id)}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`p-2 rounded-lg border flex flex-col items-center justify-center transition-all ${
+                          className={`p-2 rounded-md border flex flex-col items-center justify-center transition-all ${
                             selectedAvatar === avatar.id
-                              ? "border-purple-400 bg-purple-500/20 shadow-lg shadow-purple-500/5"
-                              : "border-purple-500/10 bg-slate-950/40 hover:border-purple-500/30"
+                              ? "border-primary bg-primary/20 text-primary shadow-sm"
+                              : "border-border bg-background hover:border-border/80 text-muted-foreground"
                           }`}
                         >
-                          <span className="text-2xl mb-1">{avatar.emoji}</span>
-                          <span className="text-[10px] text-gray-400 font-medium truncate w-full text-center">
+                          <ElementIcon element={avatar.element} size={20} className="mb-1" />
+                          <span className="text-[10px] truncate w-full text-center font-medium">
                             {avatar.name}
                           </span>
-                        </motion.button>
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -422,12 +418,12 @@ export default function Auth() {
                   <Button
                     type="submit"
                     disabled={registerLoading}
-                    className="w-full bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold py-2.5 transition-all shadow-lg shadow-purple-500/10 mt-4"
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-2.5 transition-all shadow-md mt-2"
                   >
                     {registerLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating spellbook...
+                        Forging Profile...
                       </>
                     ) : (
                       "Create Account"
@@ -437,11 +433,10 @@ export default function Auth() {
               </CardContent>
             </TabsContent>
           </Tabs>
-        </Card>
+        </Panel>
 
-        {/* Footer */}
-        <p className="text-center text-gray-500 text-xs mt-4 tracking-wide font-medium">
-          By joining ARCANIS, you agree to our terms of service and rules of the Tower.
+        <p className="text-center text-muted-foreground text-xs mt-4 font-serif italic">
+          By entering ARCANIS, you agree to the Codex of the Tower.
         </p>
       </motion.div>
     </div>

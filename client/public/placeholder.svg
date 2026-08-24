@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 400 560">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#1e1b2e" />
+      <stop offset="60%" stop-color="#0f0d18" />
+      <stop offset="100%" stop-color="#08070d" />
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="45%" r="35%">
+      <stop offset="0%" stop-color="#c9a24b" stop-opacity="0.4" />
+      <stop offset="70%" stop-color="#6d5aa8" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e8c87b" />
+      <stop offset="50%" stop-color="#c9a24b" />
+      <stop offset="100%" stop-color="#8a6b25" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="560" fill="url(#bg)" />
+  <circle cx="200" cy="240" r="180" fill="url(#glow)" />
+
+  <!-- Magic Circle Outer -->
+  <circle cx="200" cy="230" r="110" fill="none" stroke="url(#gold)" stroke-width="1.5" stroke-dasharray="4 2" opacity="0.6" />
+  <circle cx="200" cy="230" r="95" fill="none" stroke="url(#gold)" stroke-width="1" opacity="0.8" />
+  <circle cx="200" cy="230" r="75" fill="none" stroke="#6d5aa8" stroke-width="1" opacity="0.5" />
+
+  <!-- Octagram Star -->
+  <g stroke="url(#gold)" stroke-width="1" opacity="0.7" fill="none">
+    <polygon points="200,140 220,210 290,230 220,250 200,320 180,250 110,230 180,210" />
+    <polygon points="200,140 220,210 290,230 220,250 200,320 180,250 110,230 180,210" transform="rotate(45 200 230)" opacity="0.5" />
+  </g>
+
+  <!-- Center Aether Core -->
+  <circle cx="200" cy="230" r="24" fill="url(#gold)" opacity="0.85" />
+  <circle cx="200" cy="230" r="12" fill="#ffffff" opacity="0.9" />
+
+  <!-- Sigil Accents -->
+  <path d="M 160 170 Q 200 130 240 170" fill="none" stroke="url(#gold)" stroke-width="1.5" opacity="0.7" />
+  <path d="M 160 290 Q 200 330 240 290" fill="none" stroke="url(#gold)" stroke-width="1.5" opacity="0.7" />
+
+  <!-- Bottom Vignette -->
+  <rect y="380" width="400" height="180" fill="url(#bg)" opacity="0.8" />
+</svg>

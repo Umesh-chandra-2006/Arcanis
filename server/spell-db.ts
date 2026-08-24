@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, and, lt } from "drizzle-orm";
 import { getDb } from "./db";
 import {
   spells,
@@ -12,11 +12,14 @@ import {
 } from "../drizzle/schema";
 import { nanoid } from "nanoid";
 
+type DbClient = NonNullable<Awaited<ReturnType<typeof getDb>>>;
+
 export async function createSpell(
   ownerId: number | undefined,
-  spellData: Omit<InsertSpell, "id" | "createdAt">
+  spellData: Omit<InsertSpell, "id" | "createdAt">,
+  tx?: DbClient
 ): Promise<Spell | null> {
-  const db = await getDb();
+  const db = tx || await getDb();
   if (!db) return null;
 
   try {
@@ -37,9 +40,10 @@ export async function createSpell(
 
 export async function createSummonProfile(
   spellId: string,
-  profileData: Omit<InsertSummonProfile, "id" | "spellId" | "createdAt">
+  profileData: Omit<InsertSummonProfile, "id" | "spellId" | "createdAt">,
+  tx?: DbClient
 ): Promise<SummonProfile | null> {
-  const db = await getDb();
+  const db = tx || await getDb();
   if (!db) return null;
 
   try {
@@ -66,10 +70,25 @@ export async function getUserSpells(userId: number): Promise<Spell[]> {
   if (!db) return [];
 
   try {
-    return await db
+    const fiveSecondsAgo = new Date(Date.now() - 5000);
+
+    await db
+      .update(spells)
+      .set({ researchStatus: "ready", researchStartedAt: null })
+      .where(
+        and(
+          eq(spells.ownerId, userId),
+          eq(spells.researchStatus, "researching"),
+          lt(spells.researchStartedAt, fiveSecondsAgo)
+        )
+      );
+
+    const userSpells = await db
       .select()
       .from(spells)
       .where(eq(spells.ownerId, userId));
+
+    return userSpells;
   } catch (error) {
     console.error("[Database] Failed to get user spells:", error);
     return [];
@@ -161,6 +180,23 @@ export async function updateSpellResearchStatus(
   }
 }
 
+export async function updateSpellImageUrl(
+  spellId: string,
+  imageUrl: string
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  try {
+    await db
+      .update(spells)
+      .set({ imageUrl })
+      .where(eq(spells.id, spellId));
+  } catch (error) {
+    console.error("[Database] Failed to update spell image URL:", error);
+  }
+}
+
 export async function getOrCreateDeck(userId: number): Promise<string[]> {
   const db = await getDb();
   if (!db) return [];
@@ -191,13 +227,30 @@ export async function getOrCreateDeck(userId: number): Promise<string[]> {
 
 export async function addSpellToDeck(
   userId: number,
-  spellId: string
+  spellId: string,
+  tx?: DbClient
 ): Promise<boolean> {
-  const db = await getDb();
+  const db = tx || await getDb();
   if (!db) return false;
 
   try {
-    const currentDeck = await getOrCreateDeck(userId);
+    const result = await db
+      .select()
+      .from(decks)
+      .where(eq(decks.userId, userId));
+
+    let currentDeck: string[] = [];
+    if (result.length > 0) {
+      currentDeck = result[0].spellIds;
+    } else {
+      const deckId = nanoid(36);
+      await db.insert(decks).values({
+        id: deckId,
+        userId,
+        spellIds: [],
+      });
+    }
+
     if (currentDeck.includes(spellId)) {
       return true;
     }
@@ -269,9 +322,21 @@ export async function incrementWeeklySpellCount(userId: number): Promise<number>
   if (!db) return 0;
 
   try {
-    const current = await getOrCreateLabSlots(userId);
-    const newCount = current + 1;
+    const existing = await db
+      .select()
+      .from(labSlots)
+      .where(eq(labSlots.userId, userId));
 
+    if (existing.length === 0) {
+      await db.insert(labSlots).values({
+        userId,
+        weeklySpellsUsed: 1,
+        weeklyResetAt: new Date(),
+      });
+      return 1;
+    }
+
+    const newCount = existing[0].weeklySpellsUsed + 1;
     await db
       .update(labSlots)
       .set({ weeklySpellsUsed: newCount })

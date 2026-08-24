@@ -330,7 +330,7 @@ export const AVATAR_STATS: Record<
       Frost: 0.92,
       Chaos: 1.3,
     },
-    description: "Chaos affinity specialist (paid unlock)",
+    description: "Chaos affinity specialist",
   },
 };
 

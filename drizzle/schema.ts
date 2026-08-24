@@ -59,7 +59,7 @@ export type UserWithoutPassword = Omit<User, 'passwordHash'>;
 
 export const authSessions = mysqlTable("authSessions", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().references(() => users.id),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   token: varchar("token", { length: 500 }).notNull().unique(),
   expiresAt: timestamp("expiresAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -74,7 +74,7 @@ export type InsertAuthSession = typeof authSessions.$inferInsert;
 
 export const spells = mysqlTable("spells", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  ownerId: int("ownerId").references(() => users.id),
+  ownerId: int("ownerId").references(() => users.id, { onDelete: "set null" }),
   name: varchar("name", { length: 256 }).notNull(),
   element: varchar("element", { length: 32 }).notNull(),
   tier: mysqlEnum("tier", ["Basic", "Advanced", "Mega"]).notNull(),
@@ -109,6 +109,8 @@ export const spells = mysqlTable("spells", {
 }, (table) => {
   return {
     ownerIdx: index("owner_idx").on(table.ownerId),
+    platformSpellIdx: index("platform_spell_idx").on(table.isPlatformSpell),
+    elementIdx: index("element_idx").on(table.element),
   };
 });
 
@@ -130,7 +132,7 @@ export const summonProfiles = mysqlTable("summonProfiles", {
   spellId: varchar("spellId", { length: 36 })
     .notNull()
     .unique()
-    .references(() => spells.id),
+    .references(() => spells.id, { onDelete: "cascade" }),
   summonName: varchar("summonName", { length: 256 }).notNull(),
   summonHp: int("summonHp").notNull(),
   attackRating: int("attackRating").notNull(),
@@ -149,7 +151,7 @@ export type InsertSummonProfile = typeof summonProfiles.$inferInsert;
 
 export const decks = mysqlTable("decks", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  userId: int("userId").notNull().unique().references(() => users.id),
+  userId: int("userId").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
   spellIds: json("spellIds").$type<string[]>().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -163,9 +165,9 @@ export type InsertDeck = typeof decks.$inferInsert;
 
 export const battles = mysqlTable("battles", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  player1Id: int("player1Id").notNull().references(() => users.id),
-  player2Id: int("player2Id").notNull().references(() => users.id),
-  winnerId: int("winnerId").references(() => users.id),
+  player1Id: int("player1Id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  player2Id: int("player2Id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  winnerId: int("winnerId").references(() => users.id, { onDelete: "set null" }),
   terrain: varchar("terrain", { length: 32 }).notNull(),
   mode: varchar("mode", { length: 32 }).notNull().default("brawl"),
   turnsPlayed: int("turnsPlayed"),
@@ -187,7 +189,7 @@ export type InsertBattle = typeof battles.$inferInsert;
 // ============================================================================
 
 export const labSlots = mysqlTable("labSlots", {
-  userId: int("userId").notNull().unique().primaryKey().references(() => users.id),
+  userId: int("userId").notNull().unique().primaryKey().references(() => users.id, { onDelete: "cascade" }),
   weeklySpellsUsed: int("weeklySpellsUsed").default(0).notNull(),
   weeklyResetAt: timestamp("weeklyResetAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -195,6 +197,26 @@ export const labSlots = mysqlTable("labSlots", {
 
 export type LabSlot = typeof labSlots.$inferSelect;
 export type InsertLabSlot = typeof labSlots.$inferInsert;
+
+// ============================================================================
+// HEARTH POSTS TABLE (Phase 1 Communication Feed)
+// ============================================================================
+
+export const hearthPosts = mysqlTable("hearth_posts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  authorId: int("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  attachedSpellId: varchar("attached_spell_id", { length: 36 }).references(() => spells.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => {
+  return {
+    authorIdx: index("author_idx").on(table.authorId),
+    createdAtIdx: index("created_at_idx").on(table.createdAt),
+  };
+});
+
+export type HearthPost = typeof hearthPosts.$inferSelect;
+export type InsertHearthPost = typeof hearthPosts.$inferInsert;
 
 // ============================================================================
 // EXPORT TYPES

@@ -12,6 +12,8 @@ const Dashboard = lazy(() => import("./pages/Dashboard"))
 const Lab = lazy(() => import("./pages/Lab"))
 const BattleSelect = lazy(() => import("./pages/BattleSelect"))
 const Battle = lazy(() => import("./pages/Battle"))
+const Hearth = lazy(() => import("./pages/Hearth"))
+const Spells = lazy(() => import("./pages/Spells"))
 const NotFound = lazy(() => import("./pages/NotFound"))
 import { PlaceholderPage } from "./pages/Placeholder"
 
@@ -29,8 +31,10 @@ function App() {
                 <Route element={<AppShell />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/lab" element={<Lab />} />
+                  <Route path="/spells" element={<Spells />} />
                   <Route path="/battle-select" element={<BattleSelect />} />
                   <Route path="/battle/:battleId" element={<Battle />} />
+                  <Route path="/hearth" element={<Hearth />} />
                   <Route path="/tower" element={<PlaceholderPage title="Magic Tower" />} />
                   <Route path="/quests" element={<PlaceholderPage title="Quests" />} />
                   <Route path="/freestyle" element={<PlaceholderPage title="Freestyle" />} />

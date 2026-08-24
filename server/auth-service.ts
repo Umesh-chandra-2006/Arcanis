@@ -4,10 +4,16 @@ import { getDb } from "./db";
 import { users, authSessions } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 
-if (!process.env.JWT_SECRET && process.env.NODE_ENV !== "test") {
-  throw new Error("JWT_SECRET environment variable is missing");
+import { AVATAR_STATS } from "../shared/constants";
+
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === "test") {
+    console.warn("[Auth] JWT_SECRET not set — using insecure test fallback");
+  } else {
+    throw new Error("FATAL: JWT_SECRET environment variable is missing. Refusing to start with insecure default.");
+  }
 }
-const JWT_SECRET: string = process.env.JWT_SECRET || "test-secret";
+const JWT_SECRET: string = process.env.JWT_SECRET || "test-secret-only-for-unit-tests";
 const JWT_EXPIRY = "7d";
 const SALT_ROUNDS = 10;
 
@@ -98,6 +104,8 @@ export async function registerUser(
   // Hash password
   const passwordHash = await hashPassword(password);
 
+  const avatarStats = AVATAR_STATS[avatar as keyof typeof AVATAR_STATS] || { hp: 100, mp: 100, willCap: 100 };
+
   // Create user
   const result = await db.insert(users).values({
     email,
@@ -106,9 +114,9 @@ export async function registerUser(
     passwordHash,
     emailVerified: true, // Auto-verify for now
     name: username,
-    hp: 100,
-    mp: 100,
-    willCap: 250,
+    hp: avatarStats.hp,
+    mp: avatarStats.mp,
+    willCap: avatarStats.willCap,
     role: "user",
   });
 
