@@ -81,22 +81,34 @@ export async function requestMagicLink(
 
 async function sendMagicLinkEmail(email: string, link: string): Promise<void> {
   const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) return;
+  if (!resendKey) {
+    if (ENV.isProduction) {
+      throw new Error("RESEND_API_KEY is not configured. Magic-link emails cannot be sent.");
+    }
+    return;
+  }
+
+  const from = process.env.RESEND_FROM ?? "Arcanis <no-reply@arcanis.app>";
 
   try {
-    await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${resendKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Arcanis <no-reply@arcanis.app>",
+        from,
         to: [email],
         subject: "Your Arcanis sign-in link",
         html: `<p>Create your first spell:</p><p><a href="${link}">Sign in to Arcanis</a></p><p>This link expires in 15 minutes.</p>`,
       }),
     });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Resend API error ${res.status}: ${body.slice(0, 300)}`);
+    }
   } catch (error) {
     console.error("[Magic Link] Email send failed:", error);
     if (ENV.isProduction) throw error;
