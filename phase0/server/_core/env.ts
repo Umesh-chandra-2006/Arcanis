@@ -17,4 +17,5 @@ export const ENV = {
   openrouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
   imageGenApiKey: process.env.IMAGE_GEN_API_KEY ?? "",
   metricsKey: process.env.METRICS_KEY ?? "",
+  corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ?? "",
 };

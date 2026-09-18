@@ -10,10 +10,12 @@ import { AuthProvider, getStoredToken } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
+const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || "/api/trpc";
+
 const trpcClient = trpc.createClient({
   links: [
     httpBatchLink({
-      url: "/api/trpc",
+      url: apiUrl,
       transformer: superjson,
       headers() {
         const token = getStoredToken();

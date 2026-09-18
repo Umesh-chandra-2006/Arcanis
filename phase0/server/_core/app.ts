@@ -167,10 +167,15 @@ export async function startApp(app: Express) {
     crossOriginResourcePolicy: false,
     crossOriginOpenerPolicy: false,
   }));
+  const extraOrigins = ENV.corsAllowedOrigins
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
   const allowedOrigins = [
     ENV.frontendUrl,
     `http://localhost:${ENV.port}`,
     `http://127.0.0.1:${ENV.port}`,
+    ...extraOrigins,
   ].filter(Boolean);
   app.use(cors({ origin: allowedOrigins, credentials: true }));
 

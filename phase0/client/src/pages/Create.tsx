@@ -114,7 +114,10 @@ export default function Create() {
   };
 
   const shareUrl = useMemo(
-    () => created ? `${window.location.origin}/spell/${created.id}` : "",
+    () =>
+      created
+        ? `${(import.meta.env.VITE_PUBLIC_URL as string | undefined)?.trim() || window.location.origin}/spell/${created.id}`
+        : "",
     [created]
   );
 
