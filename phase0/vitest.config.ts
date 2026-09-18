@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@shared": path.resolve(import.meta.dirname, "shared"),
+      "@drizzle": path.resolve(import.meta.dirname, "drizzle"),
     },
   },
   test: {

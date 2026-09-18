@@ -20,15 +20,33 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 const TOKEN_KEY = "auth_token";
 const USER_KEY = "auth_user";
 
+function isAuthUser(value: unknown): value is AuthUser {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.id === "number" &&
+    typeof candidate.email === "string" &&
+    typeof candidate.username === "string" &&
+    (candidate.role === "user" || candidate.role === "admin") &&
+    typeof candidate.createdAt === "string"
+  );
+}
+
+function readStoredUser(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isAuthUser(parsed) ? parsed : null;
+  } catch {
+    localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(() => {
-    try {
-      const raw = localStorage.getItem(USER_KEY);
-      return raw ? (JSON.parse(raw) as AuthUser) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [user, setUser] = useState<AuthUser | null>(readStoredUser);
 
   const login = useCallback((token: string, nextUser: AuthUser) => {
     localStorage.setItem(TOKEN_KEY, token);

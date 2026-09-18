@@ -12,7 +12,7 @@ import {
 } from "../shared/validation";
 import { validateSpellIdentityText } from "../shared/profanity";
 import { computeStatProfile } from "./power-budget";
-import { getSparkBalance, spendSpark } from "./spark";
+import { getSparkBalance, refundSpark, spendSpark } from "./spark";
 import { SPARK_CREATION_COST, VALIDATION_MESSAGES } from "../shared/constants";
 
 export interface SpellCreationResult {
@@ -65,18 +65,14 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
 
   const identity = await generateSpellIdentity(data);
   if (!identity) {
-    await db.execute(
-      sql`UPDATE p0_spark_balances SET balance = balance + ${SPARK_CREATION_COST}, total_spent = total_spent - ${SPARK_CREATION_COST} WHERE user_id = ${userId}`
-    );
+    await refundSpark(userId, spellId);
     return { success: false, error: VALIDATION_MESSAGES.INVALID_LLM_OUTPUT, sparkBalance: spend.balance + SPARK_CREATION_COST };
   }
 
   for (const field of [identity.flavor_text, identity.lore_line, identity.assessment_question ?? ""]) {
     const check = validateSpellIdentityText(field);
     if (!check.valid) {
-      await db.execute(
-        sql`UPDATE p0_spark_balances SET balance = balance + ${SPARK_CREATION_COST}, total_spent = total_spent - ${SPARK_CREATION_COST} WHERE user_id = ${userId}`
-      );
+      await refundSpark(userId, spellId);
       return { success: false, error: VALIDATION_MESSAGES.CONTENT_MODERATED, sparkBalance: spend.balance + SPARK_CREATION_COST };
     }
   }

@@ -15,9 +15,16 @@ export default function AdminMetrics() {
   const daily = trpc.analytics.dailyMetrics.useQuery();
   const weekly = trpc.analytics.weeklyMetrics.useQuery();
 
-  const canView = daily.data !== null;
+  if (daily.isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
+        <Spinner className="size-8 text-primary" />
+        <p className="text-sm text-muted-foreground">Loading metrics…</p>
+      </div>
+    );
+  }
 
-  if (!canView) {
+  if (daily.data === null) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
         <h1 className="font-serif text-2xl font-semibold">Restricted</h1>

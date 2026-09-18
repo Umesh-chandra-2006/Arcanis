@@ -11,6 +11,37 @@ import {
 import { getSparkBalance, recentSparkTransactions } from "../spark";
 import { trackEvent } from "../analytics";
 
+const SHARE_DEDUP_WINDOW_MS = 60 * 60 * 1000;
+const recentShareOpens = new Map<string, number>();
+
+function isDuplicateShareOpen(ip: string, spellId: string): boolean {
+  const now = Date.now();
+  const key = `${ip}:${spellId}`;
+
+  if (recentShareOpens.size > 10_000) {
+    for (const [k, ts] of recentShareOpens) {
+      if (now - ts > SHARE_DEDUP_WINDOW_MS) recentShareOpens.delete(k);
+    }
+  }
+
+  const lastOpen = recentShareOpens.get(key);
+  if (lastOpen !== undefined && now - lastOpen < SHARE_DEDUP_WINDOW_MS) {
+    return true;
+  }
+
+  recentShareOpens.set(key, now);
+  return false;
+}
+
+function getClientIp(ctx: { req: { ip?: string; headers: Record<string, string | string[] | undefined> } }): string {
+  const forwarded = ctx.req.headers["x-forwarded-for"];
+  if (typeof forwarded === "string") {
+    const first = forwarded.split(",")[0]?.trim();
+    if (first) return first;
+  }
+  return ctx.req.ip ?? "unknown";
+}
+
 export const spellsRouter = router({
   create: protectedProcedure
     .input(SpellCreationInputSchema)
@@ -61,6 +92,10 @@ export const spellsRouter = router({
   recordShareOpen: publicProcedure
     .input(z.object({ spellId: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
+      const ip = getClientIp(ctx);
+      if (isDuplicateShareOpen(ip, input.spellId)) {
+        return { success: true, deduplicated: true };
+      }
       await incrementShareCount(input.spellId);
       await trackEvent({
         eventType: "share_page_viewed",
@@ -68,6 +103,6 @@ export const spellsRouter = router({
         sessionId: ctx.sessionId,
         metadata: { spellId: input.spellId },
       });
-      return { success: true };
+      return { success: true, deduplicated: false };
     }),
 });

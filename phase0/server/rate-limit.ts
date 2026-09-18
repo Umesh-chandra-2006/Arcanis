@@ -15,13 +15,15 @@ function cleanup(key: string, windowMs: number, now: number) {
   }
 }
 
-setInterval(() => {
+const sweepInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, bucket] of buckets) {
     bucket.timestamps = bucket.timestamps.filter((t) => now - t < MAX_WINDOW_MS);
     if (bucket.timestamps.length === 0) buckets.delete(key);
   }
 }, 60_000);
+
+sweepInterval.unref();
 
 export function checkRateLimit(
   key: string,

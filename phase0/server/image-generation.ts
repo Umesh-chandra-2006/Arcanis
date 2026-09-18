@@ -69,7 +69,18 @@ export async function generateSpellCardImage(
 
       if (imageUrl) {
         if (imageUrl.startsWith("http")) {
-          const imgResp = await fetch(imageUrl);
+          const downloadController = new AbortController();
+          const downloadTimeout = setTimeout(() => downloadController.abort(), 30_000);
+          let imgResp: Response;
+          try {
+            imgResp = await fetch(imageUrl, { signal: downloadController.signal });
+          } catch (error) {
+            lastError = error instanceof Error ? error.message : String(error);
+            console.warn(`[Image Generation] Download failed: ${lastError}`);
+            continue;
+          } finally {
+            clearTimeout(downloadTimeout);
+          }
           if (imgResp.ok) {
             const buffer = await imgResp.arrayBuffer();
             const base64 = Buffer.from(buffer).toString("base64");

@@ -167,7 +167,12 @@ export async function startApp(app: Express) {
     crossOriginResourcePolicy: false,
     crossOriginOpenerPolicy: false,
   }));
-  app.use(cors());
+  const allowedOrigins = [
+    ENV.frontendUrl,
+    `http://localhost:${ENV.port}`,
+    `http://127.0.0.1:${ENV.port}`,
+  ].filter(Boolean);
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
 
   app.get("/health", (_req, res) => res.send("OK"));
 

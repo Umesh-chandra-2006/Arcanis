@@ -127,6 +127,36 @@ export async function spendSpark(
   });
 }
 
+export async function refundSpark(userId: number, spellId: string): Promise<void> {
+  const db = requireDb();
+  await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(p0SparkBalances)
+      .where(eq(p0SparkBalances.userId, userId))
+      .limit(1);
+
+    if (!row) return;
+
+    await tx
+      .update(p0SparkBalances)
+      .set({
+        balance: row.balance + SPARK_CREATION_COST,
+        totalSpent: Math.max(0, row.totalSpent - SPARK_CREATION_COST),
+        updatedAt: new Date(),
+      })
+      .where(eq(p0SparkBalances.userId, userId));
+
+    await tx.insert(p0SparkTransactions).values({
+      id: nanoid(36),
+      userId,
+      amount: SPARK_CREATION_COST,
+      type: "creation_refund",
+      spellId,
+    });
+  });
+}
+
 export async function recentSparkTransactions(
   userId: number,
   limit = 25
