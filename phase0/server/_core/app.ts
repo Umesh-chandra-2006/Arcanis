@@ -7,9 +7,11 @@ import helmet from "helmet";
 import cors from "cors";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
+import { getDb } from "../db";
 import { serveStatic, setupVite } from "./vite";
 import { getSpellPublic } from "../spell-pipeline";
 import { ENV } from "./env";
+import { findProjectRoot } from "./paths";
 
 function renderOgTags(
   baseUrl: string,
@@ -50,7 +52,7 @@ async function getBaseUrl(req: express.Request): Promise<string> {
 }
 
 export async function registerOgRoutes(app: Express) {
-  const prodIndexPath = path.resolve(import.meta.dirname, "../dist/public/index.html");
+  const prodIndexPath = path.resolve(findProjectRoot(), "dist/public/index.html");
   let prodIndexHtml: string | null = null;
   try {
     prodIndexHtml = fs.readFileSync(prodIndexPath, "utf-8");
@@ -160,6 +162,11 @@ function placeholderSvg(element: string): string {
 
 export async function startApp(app: Express) {
   const server = createServer(app);
+
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Not initialized — DB-backed routes will fail. Check DATABASE_URL.");
+  }
 
   app.use(helmet({
     contentSecurityPolicy: ENV.isProduction ? undefined : false,

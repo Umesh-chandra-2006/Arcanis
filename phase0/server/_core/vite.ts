@@ -4,6 +4,7 @@ import { type Server } from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import viteConfig from "../../vite.config";
+import { findProjectRoot } from "./paths";
 
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
@@ -42,7 +43,7 @@ export async function setupVite(app: Express, server: Server) {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(import.meta.dirname, "../dist/public");
+  const distPath = path.resolve(findProjectRoot(), "dist/public");
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Build directory not found at ${distPath}. Run 'pnpm build' before starting in production.`
