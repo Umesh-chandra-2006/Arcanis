@@ -103,7 +103,7 @@ function ReviewsSection({ spellId }: { spellId: string }) {
             </form>
           ) : (
             <p className="text-center text-xs text-muted-foreground">
-              <Link to="/" className="text-primary underline">
+              <Link to="/signin" className="text-primary underline">
                 Sign in
               </Link>{" "}
               to leave a review.

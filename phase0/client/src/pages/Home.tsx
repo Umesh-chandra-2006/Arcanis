@@ -12,20 +12,17 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapSpellToCardProps } from "@/lib/adapters";
-import { Wand2, Sparkles, Share2, MailCheck, ArrowRight, Lock, MessageSquareMore } from "lucide-react";
+import { Wand2, Sparkles, Share2, MailCheck, ArrowRight, MessageSquareMore } from "lucide-react";
 
 export default function Home() {
-  const { user, isAuthenticated, login } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [passwordMode, setPasswordMode] = useState(false);
   const [devUrl, setDevUrl] = useState<string | null>(null);
 
   const featured = trpc.spells.featured.useQuery();
   const requestLink = trpc.auth.requestMagicLink.useMutation();
   const accountStatus = trpc.auth.accountStatus.useQuery({ email }, { enabled: false });
-  const signInPw = trpc.auth.signInWithPassword.useMutation();
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -35,27 +32,15 @@ export default function Home() {
 
   const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (passwordMode) {
-      if (!password.trim()) {
-        toast.error("Please enter your password");
-        return;
-      }
-      try {
-        const result = await signInPw.mutateAsync({ email, password });
-        login(result.token, result.user);
-        navigate("/create");
-      } catch (error: any) {
-        toast.error(error?.message ?? "Something went wrong");
-      }
-      return;
-    }
-
     if (!email.trim()) return;
+
+    const params = new URLSearchParams();
+    params.set("email", email);
+
     try {
       const res = await accountStatus.refetch();
       if (res.data?.hasPassword) {
-        setPasswordMode(true);
+        navigate(`/signin?${params.toString()}`);
         return;
       }
       const result = await requestLink.mutateAsync({ email });
@@ -69,12 +54,6 @@ export default function Home() {
     } catch (error: any) {
       toast.error(error?.message ?? "Something went wrong");
     }
-  };
-
-  const resetSignup = () => {
-    setPasswordMode(false);
-    setPassword("");
-    setDevUrl(null);
   };
 
   return (
@@ -97,9 +76,9 @@ export default function Home() {
                 Create Spell
               </Button>
             ) : (
-              <a href="#signup">
+              <Link to="/signin">
                 <Button size="sm" variant="outline">Sign in</Button>
-              </a>
+              </Link>
             )}
             {isAuthenticated && (
               <Button size="sm" variant="ghost" onClick={() => navigate("/library")}>
@@ -186,54 +165,22 @@ export default function Home() {
                     type="email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setPasswordMode(false);
-                    }}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={passwordMode}
                   />
-                  <Button
-                    type="submit"
-                    disabled={signInPw.isPending || requestLink.isPending}
-                  >
-                    {signInPw.isPending || requestLink.isPending ? (
-                      <Spinner />
-                    ) : passwordMode ? (
-                      <Lock />
-                    ) : (
-                      <ArrowRight />
-                    )}
-                    {passwordMode ? "Sign in" : "Continue"}
+                  <Button type="submit" disabled={requestLink.isPending}>
+                    {requestLink.isPending ? <Spinner /> : <ArrowRight />}
+                    Continue
                   </Button>
                 </div>
 
-                {passwordMode && (
-                  <div className="space-y-2">
-                    <Label htmlFor="home-password">Password</Label>
-                    <Input
-                      id="home-password"
-                      type="password"
-                      placeholder="Your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      autoFocus
-                    />
-                    <button
-                      type="button"
-                      onClick={resetSignup}
-                      className="text-[11px] text-muted-foreground underline hover:text-primary"
-                    >
-                      Not your account? Use a different email
-                    </button>
-                  </div>
-                )}
-
                 <p className="text-[11px] text-muted-foreground">
-                  {passwordMode
-                    ? "Welcome back — this account uses a password."
-                    : "New here? We'll email a sign-in link and you'll set a password on first login. 5 free Sparks — each spell costs 1."}
+                  New here? We'll email a sign-in link and you'll set a password on first login.
+                  Returning mage? Head to the{" "}
+                  <Link to="/signin" className="underline text-primary">
+                    sign-in page
+                  </Link>
+                  .
                 </p>
               </form>
             )}

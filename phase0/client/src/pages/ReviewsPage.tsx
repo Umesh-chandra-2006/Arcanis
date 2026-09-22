@@ -73,11 +73,11 @@ export default function ReviewsPage() {
                 </Button>
               </>
             ) : (
-              <a href="/#signup" className="inline-block">
+              <Link to="/signin">
                 <Button size="sm" variant="outline">
                   Sign in
                 </Button>
-              </a>
+              </Link>
             )}
           </nav>
         </div>

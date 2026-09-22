@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 const Home = lazy(() => import("./pages/Home"));
 const AuthVerify = lazy(() => import("./pages/AuthVerify"));
+const SignIn = lazy(() => import("./pages/SignIn"));
 const Create = lazy(() => import("./pages/Create"));
 const Library = lazy(() => import("./pages/Library"));
 const ShareSpell = lazy(() => import("./pages/ShareSpell"));
@@ -28,6 +29,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth/verify" element={<AuthVerify />} />
+          <Route path="/signin" element={<SignIn />} />
           <Route path="/create" element={<Create />} />
           <Route path="/library" element={<Library />} />
           <Route path="/spell/:spellId" element={<ShareSpell />} />
