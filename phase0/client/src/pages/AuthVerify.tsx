@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/contexts/AuthContext";
-import { ShieldCheck, XCircle, Loader2, Lock, PartyPopper, ArrowRight } from "lucide-react";
+import { ShieldCheck, XCircle, Loader2, Lock, PartyPopper } from "lucide-react";
 import { toast } from "sonner";
 
 type Stage = "verifying" | "set_password" | "error";
@@ -83,8 +83,8 @@ export default function AuthVerify() {
             </div>
             <h1 className="mt-4 font-serif text-xl font-semibold">Welcome, spellcaster</h1>
             <p className="mt-2 text-sm text-muted-foreground">
-              5 free Sparks are yours. Add a password to sign in without email links later —
-              or skip it for now.
+              5 free Sparks are yours. Set a password to complete your account — you'll use
+              it to sign in from now on.
             </p>
             <form onSubmit={handleSetPassword} className="mt-6 space-y-3">
               <div className="text-left space-y-2">
@@ -95,21 +95,21 @@ export default function AuthVerify() {
                   placeholder="At least 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  minLength={8}
                   autoFocus
                 />
               </div>
-              <Button type="submit" disabled={setPasswordMutation.isPending} className="w-full">
-                {setPasswordMutation.isPending ? <Spinner /> : <Lock />}
-                Save password
-              </Button>
               <Button
-                type="button"
-                variant="ghost"
-                onClick={() => navigate("/create", { replace: true })}
+                type="submit"
+                disabled={setPasswordMutation.isPending || password.trim().length < 8}
                 className="w-full"
               >
-                Skip for now <ArrowRight />
+                {setPasswordMutation.isPending ? <Spinner /> : <Lock />}
+                Set password
               </Button>
+              <p className="text-[11px] text-muted-foreground">
+                Your password unlocks first access to the Tower.
+              </p>
             </form>
           </>
         ) : (

@@ -233,7 +233,7 @@ export default function Home() {
                 <p className="text-[11px] text-muted-foreground">
                   {passwordMode
                     ? "Welcome back — this account uses a password."
-                    : "New here? No password needed. You'll get 5 free Sparks — each spell costs 1."}
+                    : "New here? We'll email a sign-in link and you'll set a password on first login. 5 free Sparks — each spell costs 1."}
                 </p>
               </form>
             )}
