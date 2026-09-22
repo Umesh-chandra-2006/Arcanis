@@ -24,6 +24,7 @@ import {
   Sparkles,
   Loader2,
   BookOpen,
+  LogOut,
 } from "lucide-react";
 import { PHASE0_ELEMENTS, PHASE0_CATEGORIES } from "@shared/constants";
 
@@ -38,7 +39,7 @@ const FORGE_STEPS = [
 ];
 
 export default function Create() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -170,6 +171,17 @@ export default function Create() {
             <Button size="sm" variant="ghost" onClick={() => navigate("/library")}>
               <BookOpen />
               Spellbook
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+            >
+              <LogOut />
+              Sign out
             </Button>
           </nav>
         </div>

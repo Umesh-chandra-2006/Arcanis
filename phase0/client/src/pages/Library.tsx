@@ -8,10 +8,10 @@ import { SparkDots } from "@/components/SparkDots";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { mapSpellToCardProps } from "@/lib/adapters";
-import { Wand2, BookOpen } from "lucide-react";
+import { Wand2, BookOpen, LogOut } from "lucide-react";
 
 export default function Library() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   const mySpells = trpc.spells.mySpells.useQuery(undefined, { enabled: isAuthenticated });
@@ -47,6 +47,16 @@ export default function Library() {
             <SparkDots balance={sparkBalance.data?.balance ?? 5} />
             <Button size="sm" onClick={() => navigate("/create")}>
               <Wand2 /> Create Spell
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+            >
+              <LogOut /> Sign out
             </Button>
           </nav>
         </div>

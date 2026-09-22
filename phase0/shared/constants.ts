@@ -110,6 +110,14 @@ export const VALIDATION_MESSAGES = {
   EMAIL_DISPOSABLE: "Disposable email addresses are not allowed",
   EMAIL_RATE_LIMITED: "Please wait a minute before requesting another link",
   SIGNUP_IP_LIMITED: "Too many signups from this network today. Please try again tomorrow.",
+  EMAIL_HAS_PASSWORD: "That account signs in with a password. Enter your password instead.",
+  PASSWORD_REQUIRED: "Please enter your password",
+  PASSWORD_TOO_SHORT: "Password must be at least 8 characters",
+  PASSWORD_TOO_LONG: "Password must be at most 72 characters",
+  PASSWORD_INVALID: "Incorrect email or password",
+  PASSWORD_LOGIN_LIMITED: "Too many attempts. Please try again in a few minutes.",
+  NO_PASSWORD_SET: "This account has no password yet. Request a magic link to sign in.",
+  SPELL_NOT_FOUND: "Spell not found",
   TOKEN_INVALID: "This link is invalid or has expired. Please request a new one.",
   TOKEN_USED: "This link has already been used.",
   SPELL_NAME_REQUIRED: "Give your spell a name",
@@ -129,6 +137,8 @@ export const ANALYTICS_EVENT_TYPES = [
   "share_page_cta_clicked",
   "magic_link_requested",
   "magic_link_verified",
+  "review_submitted",
+  "reviews_page_viewed",
 ] as const;
 
 export type AnalyticsEventType = (typeof ANALYTICS_EVENT_TYPES)[number];

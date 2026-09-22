@@ -11,8 +11,24 @@ import {
 } from "../shared/constants";
 import { grantSignupSparks } from "./spark";
 import jwt from "jsonwebtoken";
+import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 const JWT_EXPIRY = "7d";
+const SCRYPT_KEYLEN = 64;
+
+export function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, SCRYPT_KEYLEN).toString("hex");
+  return `${salt}:${hash}`;
+}
+
+export function verifyPassword(password: string, stored: string): boolean {
+  const [salt, hash] = stored.split(":");
+  if (!salt || !hash) return false;
+  const candidate = scryptSync(password, salt, SCRYPT_KEYLEN);
+  const expected = Buffer.from(hash, "hex");
+  return candidate.length === expected.length && timingSafeEqual(candidate, expected);
+}
 
 export function validateEmailFormat(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
@@ -42,6 +58,18 @@ export async function requestMagicLink(
     throw new Error(VALIDATION_MESSAGES.EMAIL_DISPOSABLE);
   }
 
+  const db = await getDb();
+  if (!db) throw new Error(VALIDATION_MESSAGES.GENERATION_FAILED);
+
+  const [existingUser] = await db
+    .select()
+    .from(p0Users)
+    .where(eq(p0Users.email, normalized))
+    .limit(1);
+  if (existingUser?.passwordHash) {
+    throw new Error(VALIDATION_MESSAGES.EMAIL_HAS_PASSWORD);
+  }
+
   const emailLimit = checkRateLimit(`p0:ml:email:${normalized}`, 1, 60);
   if (!emailLimit.allowed) {
     throw new Error(VALIDATION_MESSAGES.EMAIL_RATE_LIMITED);
@@ -53,9 +81,6 @@ export async function requestMagicLink(
       throw new Error(VALIDATION_MESSAGES.SIGNUP_IP_LIMITED);
     }
   }
-
-  const db = await getDb();
-  if (!db) throw new Error(VALIDATION_MESSAGES.GENERATION_FAILED);
 
   const token = nanoid(32);
   const expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MS);
@@ -77,6 +102,66 @@ export async function requestMagicLink(
 
   console.log(`[Magic Link] dev mode link for ${normalized}: ${devUrl}`);
   return { devUrl };
+}
+
+export async function getAccountStatus(
+  email: string
+): Promise<{ exists: boolean; hasPassword: boolean }> {
+  const normalized = email.trim().toLowerCase();
+  const db = await getDb();
+  if (!db) return { exists: false, hasPassword: false };
+  const [existing] = await db
+    .select({ passwordHash: p0Users.passwordHash })
+    .from(p0Users)
+    .where(eq(p0Users.email, normalized))
+    .limit(1);
+  return { exists: Boolean(existing), hasPassword: Boolean(existing?.passwordHash) };
+}
+
+export async function setPasswordForUser(userId: number, password: string): Promise<void> {
+  if (password.length < 8) throw new Error(VALIDATION_MESSAGES.PASSWORD_TOO_SHORT);
+  if (password.length > 72) throw new Error(VALIDATION_MESSAGES.PASSWORD_TOO_LONG);
+  const db = await getDb();
+  if (!db) throw new Error(VALIDATION_MESSAGES.GENERATION_FAILED);
+  await db.update(p0Users).set({ passwordHash: hashPassword(password) }).where(eq(p0Users.id, userId));
+}
+
+export async function signInWithPassword(
+  email: string,
+  password: string,
+  ip: string | undefined
+): Promise<{ token: string; user: Phase0User }> {
+  const normalized = email.trim().toLowerCase();
+  if (!validateEmailFormat(normalized)) {
+    throw new Error(VALIDATION_MESSAGES.EMAIL_INVALID);
+  }
+
+  const emailLimit = checkRateLimit(`p0:pw:email:${normalized}`, 5, 300);
+  if (!emailLimit.allowed) {
+    throw new Error(VALIDATION_MESSAGES.PASSWORD_LOGIN_LIMITED);
+  }
+  if (ip) {
+    const ipLimit = checkRateLimit(`p0:pw:ip:${ip}`, 10, 300);
+    if (!ipLimit.allowed) {
+      throw new Error(VALIDATION_MESSAGES.PASSWORD_LOGIN_LIMITED);
+    }
+  }
+
+  const db = await getDb();
+  if (!db) throw new Error(VALIDATION_MESSAGES.GENERATION_FAILED);
+
+  const [existing] = await db.select().from(p0Users).where(eq(p0Users.email, normalized)).limit(1);
+  if (!existing?.passwordHash) {
+    throw new Error(VALIDATION_MESSAGES.NO_PASSWORD_SET);
+  }
+  if (!verifyPassword(password, existing.passwordHash)) {
+    throw new Error(VALIDATION_MESSAGES.PASSWORD_INVALID);
+  }
+
+  await db.update(p0Users).set({ lastSignedInAt: new Date() }).where(eq(p0Users.id, existing.id));
+
+  const token = issueJwt(existing);
+  return { token, user: existing };
 }
 
 async function sendMagicLinkEmail(email: string, link: string): Promise<void> {

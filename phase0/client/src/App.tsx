@@ -8,6 +8,7 @@ const AuthVerify = lazy(() => import("./pages/AuthVerify"));
 const Create = lazy(() => import("./pages/Create"));
 const Library = lazy(() => import("./pages/Library"));
 const ShareSpell = lazy(() => import("./pages/ShareSpell"));
+const ReviewsPage = lazy(() => import("./pages/ReviewsPage"));
 const AdminMetrics = lazy(() => import("./pages/AdminMetrics"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -30,6 +31,7 @@ function App() {
           <Route path="/create" element={<Create />} />
           <Route path="/library" element={<Library />} />
           <Route path="/spell/:spellId" element={<ShareSpell />} />
+          <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/admin/metrics" element={<AdminMetrics />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -28,6 +28,25 @@ export const MagicLinkVerifySchema = z.object({
   token: z.string().min(8).max(128),
 });
 
+export const PasswordSetSchema = z.object({
+  password: z.string().min(8).max(72),
+});
+
+export const SignInWithPasswordSchema = z.object({
+  email: z.string().trim().email().min(1).max(320),
+  password: z.string().min(1).max(72),
+});
+
+export const ReviewSubmitSchema = z.object({
+  spellId: z.string().min(1).max(36),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().min(1).max(500),
+});
+
+export const AccountStatusQuerySchema = z.object({
+  email: z.string().trim().email().min(1).max(320),
+});
+
 export const TrackEventSchema = z.object({
   eventType: z.string().min(1).max(64),
   metadata: z.record(z.string(), z.unknown()).default({}),

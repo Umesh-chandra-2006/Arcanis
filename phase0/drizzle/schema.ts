@@ -18,6 +18,7 @@ export const p0Users = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     email: varchar("email", { length: 320 }).notNull(),
     username: varchar("username", { length: 64 }).notNull(),
+    passwordHash: varchar("password_hash", { length: 255 }),
     emailVerified: boolean("email_verified").notNull().default(true),
     role: mysqlEnum("role", ["user", "admin"]).notNull().default("user"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -106,6 +107,23 @@ export const p0SparkTransactions = mysqlTable(
   })
 );
 
+export const p0Reviews = mysqlTable(
+  "p0_reviews",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    spellId: varchar("spell_id", { length: 36 }).notNull(),
+    userId: int("user_id").notNull(),
+    rating: int("rating").notNull(),
+    comment: text("comment").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+  },
+  (table) => ({
+    spellIdx: index("p0_reviews_spell_idx").on(table.spellId),
+    userSpellIdx: uniqueIndex("p0_reviews_user_spell_idx").on(table.userId, table.spellId),
+  })
+);
+
 export const p0AnalyticsEvents = mysqlTable(
   "p0_analytics_events",
   {
@@ -127,3 +145,4 @@ export type Phase0Spell = typeof p0Spells.$inferSelect;
 export type Phase0SparkBalance = typeof p0SparkBalances.$inferSelect;
 export type Phase0SparkTransaction = typeof p0SparkTransactions.$inferSelect;
 export type Phase0AnalyticsEvent = typeof p0AnalyticsEvents.$inferSelect;
+export type Phase0Review = typeof p0Reviews.$inferSelect;

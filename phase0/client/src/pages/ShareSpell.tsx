@@ -1,14 +1,119 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 import { Panel } from "@/components/game/panel";
 import { SpellCard } from "@/components/game/spell-card";
+import { Stars } from "@/components/reviews/stars";
 import { mapSpellToCardProps, elementAccent } from "@/lib/adapters";
-import { Sparkles, Wand2 } from "lucide-react";
+import { Sparkles, Wand2, Star, LogOut } from "lucide-react";
+import { toast } from "sonner";
+
+function ReviewsSection({ spellId }: { spellId: string }) {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const reviewsQuery = trpc.reviews.forSpell.useQuery({ spellId });
+  const submit = trpc.reviews.submit.useMutation();
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rating) {
+      toast.error("Pick a star rating first");
+      return;
+    }
+    try {
+      await submit.mutateAsync({ spellId, rating, comment });
+      toast.success("Review posted");
+      setRating(0);
+      setComment("");
+      reviewsQuery.refetch();
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not post your review");
+    }
+  };
+
+  const data = reviewsQuery.data;
+
+  return (
+    <section className="w-full max-w-xl mt-10">
+      <Panel
+        title="Reviews"
+        gold
+        action={
+          data && data.summary.count > 0 ? (
+            <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Star className="size-3.5 text-primary" fill="currentColor" />
+              {data.summary.average?.toFixed(1)} · {data.summary.count}{" "}
+              {data.summary.count === 1 ? "review" : "reviews"}
+            </span>
+          ) : undefined
+        }
+      >
+        {reviewsQuery.isLoading ? (
+          <div className="flex h-32 items-center justify-center">
+            <Spinner className="size-5" />
+          </div>
+        ) : data && data.reviews.length > 0 ? (
+          <div className="space-y-4">
+            {data.reviews.map((review) => (
+              <div key={review.id} className="border-b border-border/40 last:border-0 pb-4 last:pb-0">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium">{review.authorUsername}</span>
+                  <Stars value={review.rating} size={13} />
+                </div>
+                <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{review.comment}</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {new Date(review.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No reviews yet — be the first to review this spell.
+          </p>
+        )}
+
+        <div className="mt-6 border-t border-border/40 pt-5">
+          {isAuthenticated ? (
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">Your rating</span>
+                <Stars value={rating} size={20} onChange={setRating} />
+              </div>
+              <Textarea
+                placeholder="What did you think of this spell?"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                maxLength={500}
+                rows={3}
+              />
+              <div className="flex justify-end">
+                <Button type="submit" size="sm" disabled={submit.isPending}>
+                  {submit.isPending ? <Spinner className="size-3.5" /> : <Star />}
+                  Post review
+                </Button>
+              </div>
+            </form>
+          ) : (
+            <p className="text-center text-xs text-muted-foreground">
+              <Link to="/" className="text-primary underline">
+                Sign in
+              </Link>{" "}
+              to leave a review.
+            </p>
+          )}
+        </div>
+      </Panel>
+    </section>
+  );
+}
 
 export default function ShareSpell() {
   const { spellId = "" } = useParams();
@@ -121,6 +226,8 @@ export default function ShareSpell() {
               Describe a spell. The Tower forges stats, lore, and artwork. 5 free Sparks on signup.
             </p>
           </div>
+
+          <ReviewsSection spellId={spell.id} />
         </div>
       </main>
     </div>

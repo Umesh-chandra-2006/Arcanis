@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { checkRateLimit } from "./rate-limit";
-import { validateEmailFormat, isDisposableEmail, deriveUsername } from "./auth-service";
+import {
+  validateEmailFormat,
+  isDisposableEmail,
+  deriveUsername,
+  hashPassword,
+  verifyPassword,
+} from "./auth-service";
 
 describe("rate-limit", () => {
   beforeEach(() => {
@@ -48,5 +54,23 @@ describe("auth-service validators", () => {
     const name = deriveUsername("ember.mage@arcanis.app");
     expect(name.startsWith("embermage_")).toBe(true);
     expect(name.length).toBeGreaterThan(9);
+  });
+});
+
+describe("password hashing", () => {
+  it("round-trips a password", () => {
+    const stored = hashPassword("dragon-fire-42");
+    expect(stored).toContain(":");
+    expect(verifyPassword("dragon-fire-42", stored)).toBe(true);
+  });
+
+  it("rejects the wrong password", () => {
+    const stored = hashPassword("dragon-fire-42");
+    expect(verifyPassword("dragon-fire-43", stored)).toBe(false);
+  });
+
+  it("rejects malformed stored values", () => {
+    expect(verifyPassword("anything", "not-a-valid-store")).toBe(false);
+    expect(verifyPassword("anything", "")).toBe(false);
   });
 });

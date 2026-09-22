@@ -12,16 +12,20 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapSpellToCardProps } from "@/lib/adapters";
-import { Wand2, Sparkles, Share2, MailCheck, ArrowRight } from "lucide-react";
+import { Wand2, Sparkles, Share2, MailCheck, ArrowRight, Lock, MessageSquareMore } from "lucide-react";
 
 export default function Home() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordMode, setPasswordMode] = useState(false);
   const [devUrl, setDevUrl] = useState<string | null>(null);
 
   const featured = trpc.spells.featured.useQuery();
   const requestLink = trpc.auth.requestMagicLink.useMutation();
+  const accountStatus = trpc.auth.accountStatus.useQuery({ email }, { enabled: false });
+  const signInPw = trpc.auth.signInWithPassword.useMutation();
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -29,10 +33,31 @@ export default function Home() {
     }
   }, [isAuthenticated, user, navigate]);
 
-  const handleSignup = async (e: React.FormEvent) => {
+  const handleContinue = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (passwordMode) {
+      if (!password.trim()) {
+        toast.error("Please enter your password");
+        return;
+      }
+      try {
+        const result = await signInPw.mutateAsync({ email, password });
+        login(result.token, result.user);
+        navigate("/create");
+      } catch (error: any) {
+        toast.error(error?.message ?? "Something went wrong");
+      }
+      return;
+    }
+
     if (!email.trim()) return;
     try {
+      const res = await accountStatus.refetch();
+      if (res.data?.hasPassword) {
+        setPasswordMode(true);
+        return;
+      }
       const result = await requestLink.mutateAsync({ email });
       if (result.devUrl) {
         setDevUrl(result.devUrl);
@@ -46,6 +71,12 @@ export default function Home() {
     }
   };
 
+  const resetSignup = () => {
+    setPasswordMode(false);
+    setPassword("");
+    setDevUrl(null);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/60">
@@ -54,6 +85,12 @@ export default function Home() {
             Arcanis
           </span>
           <nav className="flex items-center gap-2">
+            <Link to="/reviews" className="inline-block">
+              <Button size="sm" variant="ghost">
+                <MessageSquareMore />
+                Reviews
+              </Button>
+            </Link>
             {isAuthenticated ? (
               <Button size="sm" onClick={() => navigate("/create")}>
                 <Wand2 />
@@ -141,7 +178,7 @@ export default function Home() {
                 <p className="text-[11px] text-muted-foreground break-all">{devUrl}</p>
               </div>
             ) : (
-              <form onSubmit={handleSignup} className="space-y-3">
+              <form onSubmit={handleContinue} className="space-y-3">
                 <Label htmlFor="home-email">Email address</Label>
                 <div className="flex gap-2">
                   <Input
@@ -149,16 +186,54 @@ export default function Home() {
                     type="email"
                     placeholder="you@example.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setPasswordMode(false);
+                    }}
                     required
+                    disabled={passwordMode}
                   />
-                  <Button type="submit" disabled={requestLink.isPending}>
-                    {requestLink.isPending ? <Spinner /> : <ArrowRight />}
-                    Send link
+                  <Button
+                    type="submit"
+                    disabled={signInPw.isPending || requestLink.isPending}
+                  >
+                    {signInPw.isPending || requestLink.isPending ? (
+                      <Spinner />
+                    ) : passwordMode ? (
+                      <Lock />
+                    ) : (
+                      <ArrowRight />
+                    )}
+                    {passwordMode ? "Sign in" : "Continue"}
                   </Button>
                 </div>
+
+                {passwordMode && (
+                  <div className="space-y-2">
+                    <Label htmlFor="home-password">Password</Label>
+                    <Input
+                      id="home-password"
+                      type="password"
+                      placeholder="Your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      onClick={resetSignup}
+                      className="text-[11px] text-muted-foreground underline hover:text-primary"
+                    >
+                      Not your account? Use a different email
+                    </button>
+                  </div>
+                )}
+
                 <p className="text-[11px] text-muted-foreground">
-                  No password needed. You'll get 5 free Sparks — each spell costs 1.
+                  {passwordMode
+                    ? "Welcome back — this account uses a password."
+                    : "New here? No password needed. You'll get 5 free Sparks — each spell costs 1."}
                 </p>
               </form>
             )}
