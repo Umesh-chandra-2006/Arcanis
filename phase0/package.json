@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
-    "build:client": "vite build",
+    "build:client": "node scripts/vercel-config.mjs --check && vite build",
     "start": "node dist/index.js",
     "deploy": "pnpm run build && node dist/index.js",
     "check": "tsc --noEmit",
@@ -21,7 +21,10 @@
     "db:restore-check": "node scripts/db-restore-check.mjs",
     "providers:check": "tsx scripts/providers-check.ts",
     "creation:live": "tsx scripts/live-creation-check.ts",
-    "images:migrate": "tsx scripts/migrate-images.ts"
+    "images:migrate": "tsx scripts/migrate-images.ts",
+    "harness": "tsx tools/balance-harness/harness.ts",
+    "cost-report": "tsx tools/cost-report/cost-report.ts",
+    "vercel:config": "node scripts/vercel-config.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

@@ -11,7 +11,9 @@ import { getFingerprint } from "./lib/fingerprint";
 
 const queryClient = new QueryClient();
 
-const apiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim() || "/api/trpc";
+// Always same-origin: in production Vercel rewrites /api to Render (vercel.json),
+// which keeps the httpOnly session cookie first-party.
+const apiUrl = "/api/trpc";
 
 const trpcClient = trpc.createClient({
   links: [

@@ -25,7 +25,13 @@ const ok = (name: string): TextResult => ({ text: "{}", provider: name, model: "
 describe("classifyHttpError", () => {
   it.each([
     [402, '{"error":"You have no remaining credits"}', "quota"],
-    [429, '{"error":{"message":"You exceeded your current quota"}}', "quota"],
+    [429, '{"error":{"message":"You exceeded your current quota. Quota exceeded for metric: generate_content_free_tier_requests, quotaId: GenerateRequestsPerDayPerProjectPerModel-FreeTier"}}', "quota"],
+    [429, '{"error":{"message":"You exceeded your current quota. quotaId: GenerateRequestsPerMinutePerProjectPerModel-FreeTier"}}', "rate_limited"],
+    [429, '{"error":{"message":"Rate limit reached for model `openai/gpt-oss-120b` on tokens per minute (TPM): Limit 8000. Please try again in 472.5ms."}}', "rate_limited"],
+    [429, '{"error":{"message":"Rate limit reached for model `openai/gpt-oss-120b` on requests per day (RPD): Limit 1000, Used 1000."}}', "quota"],
+    [429, '{"error":{"message":"Resource has been exhausted (e.g. check quota).","status":"RESOURCE_EXHAUSTED"}}', "rate_limited"],
+    [429, '{"error":{"message":"Rate limit exceeded: free-models-per-min."}}', "rate_limited"],
+    [429, '{"error":{"message":"Rate limit exceeded: free-models-per-day."}}', "quota"],
     [429, '{"error":{"message":"temporarily rate-limited upstream. Please retry shortly"}}', "rate_limited"],
     [429, "Too many requests", "rate_limited"],
     [400, '{"error":{"message":"The model `llama-3.1-70b-versatile` has been decommissioned"}}', "model_retired"],

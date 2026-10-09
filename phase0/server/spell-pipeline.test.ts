@@ -40,6 +40,7 @@ function deps(over: Partial<PipelineDeps> = {}): Partial<PipelineDeps> {
     image: fakeImage,
     moderate: async () => pass,
     semantic: async () => ({ pass: true, reasonCode: "ok" }),
+    sleep: async () => {},
     ...over,
   };
 }
@@ -202,6 +203,26 @@ describeDb("creation pipeline", () => {
     const b = await createSpell(user.id, { ...INPUT, name: "Second" }, { deps: deps() });
     const c = await createSpell(user.id, { ...INPUT, name: "Third" }, { deps: deps() });
     expect([a.spell!.researching, b.spell!.researching, c.spell!.researching]).toEqual([false, false, true]);
+  });
+
+  it("backs off and retries when providers are only rate-limited", async () => {
+    const user = await funded();
+    const waits: number[] = [];
+    let calls = 0;
+    const result = await createSpell(user.id, INPUT, {
+      deps: deps({
+        sleep: async (ms) => {
+          waits.push(ms);
+        },
+        text: async () => {
+          if (calls++ === 0) throw new AllProvidersFailedError([new ProviderError("rate_limited", "groq", "TPM"), new ProviderError("rate_limited", "gemini", "RPM")]);
+          return textReply(goodJson());
+        },
+      }),
+    });
+    expect(result.success).toBe(true);
+    expect(waits).toEqual([3000]);
+    expect((await getBreakerStatus()).reason).not.toBe("provider_quota");
   });
 
   it("refuses a restricted account without reserving Spark", async () => {

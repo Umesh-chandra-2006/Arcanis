@@ -50,8 +50,9 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
+// Behind the Vercel rewrite the Host header is Render's; share URLs must use the public domain.
 async function getBaseUrl(req: express.Request): Promise<string> {
-  return `${req.protocol}://${req.get("host") ?? `localhost:${ENV.port}`}`;
+  return ENV.frontendUrl.replace(/\/+$/, "") || `${req.protocol}://${req.get("host") ?? `localhost:${ENV.port}`}`;
 }
 
 export async function registerOgRoutes(app: Express) {

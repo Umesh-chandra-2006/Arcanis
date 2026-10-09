@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -126,6 +126,15 @@ export default function ShareSpell() {
   const recordOpen = trpc.spells.recordShareOpen.useMutation();
   const trackEvent = trpc.analytics.track.useMutation();
   const recordedRef = useRef(false);
+  const [params] = useSearchParams();
+  const captureReferral = trpc.referrals.capture.useMutation();
+
+  // A visitor from a shared link: remember the sharer's code for a later signup.
+  useEffect(() => {
+    const ref = params.get("ref");
+    if (ref && !isAuthenticated) captureReferral.mutate({ code: ref }, { onError: () => {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (spellQuery.data && !recordedRef.current) {

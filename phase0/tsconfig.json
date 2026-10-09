@@ -1,5 +1,5 @@
 {
-  "include": ["client/src/**/*", "shared/**/*", "server/**/*", "drizzle/**/*"],
+  "include": ["client/src/**/*", "shared/**/*", "server/**/*", "drizzle/**/*", "tools/**/*", "scripts/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "noEmit": true,

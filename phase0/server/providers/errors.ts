@@ -15,7 +15,15 @@ export class ProviderError extends Error {
 }
 
 const RETIRED = /decommission|deprecat|no longer supported|model.*(not found|does not exist|not available)|not a valid model|unknown model|is not found for api version/i;
-const QUOTA = /quota|credits|billing|insufficient_quota|exceeded your|daily limit|limit reached|resource.?exhausted|payment required/i;
+// A 429 is only "quota" (trips the daily breaker) on clear evidence of a daily
+// or credit limit. Per-minute limits, "try again in", "temporarily", and
+// ambiguous 429s are "rate_limited": back off and retry, never stop for the day.
+// Real bodies (2026-10-10): Groq "tokens per minute (TPM) ... Please try again in
+// 472.5ms"; Gemini "You exceeded your current quota" for both minute and day
+// limits, told apart by the quota metric (PerMinute / PerDay); OpenRouter
+// "free-models-per-min"; Hugging Face 402 "no remaining credits".
+const DAILY_OR_CREDITS = /per[ _-]?day|\bTPD\b|\bRPD\b|daily|no remaining credits|insufficient_quota|credits? (exhausted|balance)|purchase (pre-?paid )?credits|monthly/i;
+const SHORT_WINDOW = /per[ _-]?min|\bTPM\b|\bRPM\b|try again in|retry (in|after|shortly)|retrydelay|temporarily|per.?second/i;
 
 /** Maps an HTTP failure from any provider to one error kind. */
 export function classifyHttpError(provider: string, status: number, body: string): ProviderError {
@@ -24,7 +32,7 @@ export function classifyHttpError(provider: string, status: number, body: string
   if (status === 402) kind = "quota";
   else if (status === 401 || status === 403) kind = "auth";
   else if ((status === 404 || status === 410 || status === 400) && RETIRED.test(body)) kind = "model_retired";
-  else if (status === 429) kind = QUOTA.test(body) && !/temporarily|upstream|retry shortly/i.test(body) ? "quota" : "rate_limited";
+  else if (status === 429) kind = DAILY_OR_CREDITS.test(body) && !SHORT_WINDOW.test(body) ? "quota" : "rate_limited";
   else if (status === 408 || status === 504) kind = "timeout";
   else if (status >= 500) kind = "server";
   else kind = "bad_response";

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { mapSpellToCardProps, type SpellCardProps } from "@/lib/adapters";
+import { shareUrlFor } from "@/lib/share";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
   Wand2,
@@ -55,6 +56,7 @@ export default function Create() {
     enabled: isAuthenticated,
   });
   const createSpell = trpc.spells.create.useMutation();
+  const myCode = trpc.referrals.myCode.useQuery(undefined, { enabled: isAuthenticated, staleTime: Infinity });
   const trackEvent = trpc.analytics.track.useMutation();
   const utils = trpc.useUtils();
 
@@ -117,9 +119,9 @@ export default function Create() {
   const shareUrl = useMemo(
     () =>
       created
-        ? `${(import.meta.env.VITE_PUBLIC_URL as string | undefined)?.trim() || window.location.origin}/spell/${created.id}`
+        ? shareUrlFor(created.id, myCode.data?.code)
         : "",
-    [created]
+    [created, myCode.data?.code]
   );
 
   const copyLink = async () => {

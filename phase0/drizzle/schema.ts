@@ -28,10 +28,13 @@ export const p0Users = mysqlTable(
     abuseStrikes: int("abuse_strikes").notNull().default(0),
     restrictedUntil: timestamp("restricted_until"),
     bannedAt: timestamp("banned_at"),
+    /** Carried on share links as ?ref= (task A10). */
+    referralCode: varchar("referral_code", { length: 16 }),
   },
   (table) => ({
     emailIdx: uniqueIndex("p0_users_email_idx").on(table.email),
     usernameIdx: uniqueIndex("p0_users_username_idx").on(table.username),
+    referralIdx: uniqueIndex("p0_users_referral_code_idx").on(table.referralCode),
   })
 );
 
@@ -296,6 +299,24 @@ export const p0ModerationEvents = mysqlTable(
   (table) => ({
     statusIdx: index("p0_moderation_events_status_idx").on(table.status, table.createdAt),
     targetIdx: index("p0_moderation_events_target_idx").on(table.targetType, table.targetId),
+  })
+);
+
+// Referral attribution (Master Doc 23.3, Build Plan 9). One row per invitee.
+export const p0Referrals = mysqlTable(
+  "p0_referrals",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    inviterId: int("inviter_id").notNull(),
+    inviteeId: int("invitee_id").notNull(),
+    status: mysqlEnum("status", ["pending", "paid", "rejected"]).notNull().default("pending"),
+    reason: varchar("reason", { length: 32 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    paidAt: timestamp("paid_at"),
+  },
+  (table) => ({
+    inviteeIdx: uniqueIndex("p0_referrals_invitee_idx").on(table.inviteeId),
+    inviterIdx: index("p0_referrals_inviter_idx").on(table.inviterId),
   })
 );
 

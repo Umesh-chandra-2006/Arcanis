@@ -13,7 +13,7 @@ import { SignInCodeSchema, SignInLinkSchema, SignInRequestSchema } from "../../s
 import { trackEvent } from "../analytics";
 import type { Phase0User } from "../../drizzle/schema";
 import type { TrpcContext } from "../_core/context";
-import { appendSetCookie, parseCookies, serializeCookie, SESSION_COOKIE } from "../_core/cookies";
+import { appendSetCookie, parseCookies, REFERRAL_COOKIE, serializeCookie, SESSION_COOKIE } from "../_core/cookies";
 
 export function publicUser(user: Phase0User) {
   return {
@@ -32,13 +32,16 @@ function toTrpcError(error: unknown): never {
   throw error;
 }
 
+const referralCodeOf = (ctx: TrpcContext) => parseCookies(ctx.req.headers.cookie)[REFERRAL_COOKIE] ?? null;
+
 async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "link" | "code") {
   appendSetCookie(ctx.res, serializeCookie(SESSION_COOKIE, result.sessionToken, { maxAgeSeconds: SESSION_TTL_MS / 1000 }));
+  if (referralCodeOf(ctx)) appendSetCookie(ctx.res, serializeCookie(REFERRAL_COOKIE, "", { maxAgeSeconds: 0 }));
   await trackEvent({
     eventType: result.isNewUser ? "signup_completed" : "signin_completed",
     userId: result.user.id,
     sessionId: ctx.sessionId,
-    metadata: { signup_method: method },
+    metadata: { signup_method: method, referred: Boolean(referralCodeOf(ctx)) },
   });
   return { user: publicUser(result.user), isNewUser: result.isNewUser };
 }
@@ -52,12 +55,12 @@ export const authRouter = router({
   }),
 
   verifyLink: publicProcedure.input(SignInLinkSchema).mutation(async ({ ctx, input }) => {
-    const result = await verifySignInLink(input.token, ctx.device).catch(toTrpcError);
+    const result = await verifySignInLink(input.token, ctx.device, referralCodeOf(ctx)).catch(toTrpcError);
     return finishSignIn(ctx, result, "link");
   }),
 
   verifyCode: publicProcedure.input(SignInCodeSchema).mutation(async ({ ctx, input }) => {
-    const result = await verifySignInCode(input.email, input.code, ctx.device, ctx.ip).catch(toTrpcError);
+    const result = await verifySignInCode(input.email, input.code, ctx.device, ctx.ip, referralCodeOf(ctx)).catch(toTrpcError);
     return finishSignIn(ctx, result, "code");
   }),
 

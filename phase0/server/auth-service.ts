@@ -10,6 +10,7 @@ import { DISPOSABLE_EMAIL_DOMAINS, LOGIN_CODE_MAX_ATTEMPTS, LOGIN_TOKEN_TTL_MS, 
 import { grantSignupSpark, type DeviceSignals } from "./spark";
 import { emailProviders, sendEmail } from "./providers/email";
 import { hitRateLimit, sweepRateLimits } from "./db-rate-limit";
+import { attachReferral } from "./referrals";
 
 export const SESSION_TTL_MS = 30 * 24 * 3600 * 1000;
 
@@ -141,18 +142,24 @@ export interface SignInResult {
   sessionToken: string;
 }
 
-export async function verifySignInLink(linkToken: string, device: DeviceSignals): Promise<SignInResult> {
+export async function verifySignInLink(linkToken: string, device: DeviceSignals, referralCode?: string | null): Promise<SignInResult> {
   const db = requireDb();
   const [token] = await db.select().from(p0LoginTokens).where(eq(p0LoginTokens.linkHash, sha256(linkToken))).limit(1);
   if (!token || !(await consume(token.id))) throw new AuthError(VALIDATION_MESSAGES.TOKEN_INVALID, "invalid");
-  return completeSignIn(token.email, device);
+  return completeSignIn(token.email, device, referralCode);
 }
 
 /**
  * Checks a 6-digit code against the newest unconsumed token for the email.
  * Five wrong attempts burn the token; attempts are counted atomically.
  */
-export async function verifySignInCode(email: string, code: string, device: DeviceSignals, ip: string | null): Promise<SignInResult> {
+export async function verifySignInCode(
+  email: string,
+  code: string,
+  device: DeviceSignals,
+  ip: string | null,
+  referralCode?: string | null
+): Promise<SignInResult> {
   const normalized = normalizeEmail(email);
   if (ip) {
     const limit = await hitRateLimit(`signin-code:ip:${ip}`, 30, 3_600);
@@ -179,7 +186,7 @@ export async function verifySignInCode(email: string, code: string, device: Devi
   if (!safeEqualHex(hashCode(token.id, code), token.codeHash) || !(await consume(token.id))) {
     throw new AuthError(VALIDATION_MESSAGES.CODE_INVALID, "invalid");
   }
-  return completeSignIn(normalized, device);
+  return completeSignIn(normalized, device, referralCode);
 }
 
 async function findAvailableUsername(email: string): Promise<string> {
@@ -192,7 +199,7 @@ async function findAvailableUsername(email: string): Promise<string> {
   return `wanderer_${nanoid(8)}`;
 }
 
-async function completeSignIn(email: string, device: DeviceSignals): Promise<SignInResult> {
+async function completeSignIn(email: string, device: DeviceSignals, referralCode?: string | null): Promise<SignInResult> {
   const db = requireDb();
   let isNewUser = false;
   let [user] = await db.select().from(p0Users).where(eq(p0Users.email, email)).limit(1);
@@ -204,7 +211,10 @@ async function completeSignIn(email: string, device: DeviceSignals): Promise<Sig
         .$returningId();
       [user] = await db.select().from(p0Users).where(eq(p0Users.id, created.id)).limit(1);
       isNewUser = true;
-      await grantSignupSpark(user.id, device);
+      const grant = await grantSignupSpark(user.id, device);
+      await attachReferral(user.id, referralCode, device, grant.reason === "device_used").catch((error) =>
+        console.warn("[Referral] attach failed:", error)
+      );
     } catch (error) {
       // Two sign-ins for the same new email raced; use the row that won.
       [user] = await db.select().from(p0Users).where(eq(p0Users.email, email)).limit(1);

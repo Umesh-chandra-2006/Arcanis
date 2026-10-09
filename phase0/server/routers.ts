@@ -5,6 +5,7 @@ import { analyticsRouter } from "./routers/analytics";
 import { reviewsRouter } from "./routers/reviews";
 import { adminRouter } from "./routers/admin";
 import { moderationRouter } from "./routers/moderation";
+import { referralsRouter } from "./routers/referrals";
 
 export const appRouter = router({
   auth: authRouter,
@@ -13,6 +14,7 @@ export const appRouter = router({
   reviews: reviewsRouter,
   admin: adminRouter,
   moderation: moderationRouter,
+  referrals: referralsRouter,
 });
 
 export type AppRouter = typeof appRouter;

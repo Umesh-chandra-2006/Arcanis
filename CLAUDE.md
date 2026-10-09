@@ -48,7 +48,7 @@ Current state and decisions live in `PROGRESS.md` (read it at session start). Th
 
 ### Layout (as of 2026-10-10, after task A0)
 
-Architecture is a modular monolith (Build Plan v2.2 Section 3): one deployable with gateway, lab and game modules. `tools/balance-harness` and `tools/cost-report` are planned (tasks A8, A14) and do not exist yet.
+Architecture is a modular monolith (Build Plan v2.2 Section 3): one deployable with gateway, lab and game modules. `phase0/tools/balance-harness` and `phase0/tools/cost-report` exist (task A8).
 
 | Path | What it is |
 |---|---|
@@ -102,7 +102,17 @@ Run `db:backup` weekly and before every production migration. It needs the MySQL
 
 ### Balance harness and cost report
 
-Neither exists yet (Build Plan Sections 7.7 and 11; tasks A8 and A14). The harness must cover Power Budget conformance in 1a and win rates plus Will band dwell time in 1b. When built, document the commands here.
+Both live in `phase0/tools/` (not a root `tools/`: there is no root package, and they import phase0's code).
+
+```
+cd phase0 && pnpm harness              # Power Budget conformance over tools/balance-harness/corpus (live Layer 1, telemetry to the TEST db)
+cd phase0 && pnpm harness --offline    # same report from random allocations, no provider calls
+cd phase0 && pnpm cost-report [--test] [--days N | --since ISO] [--write]   # cost per creation, retry, schema, 2a, 2b, 2c rates, latency
+cd phase0 && pnpm creation:live        # one real creation through every provider, TEST db
+cd phase0 && pnpm providers:check [--images]   # live check of every configured model and key
+```
+
+Reports go to `tools/balance-harness/reports/` and `tools/cost-report/reports/`. The harness runs one request at a time with backoff because free tiers are per-minute limited. Battle simulation (win rates, Will band dwell time) is added in B8.
 
 ### Conventions found in the code
 

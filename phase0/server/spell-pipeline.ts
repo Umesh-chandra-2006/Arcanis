@@ -19,6 +19,7 @@ import { moderate as moderateDefault, recordModerationEvent, type ModerationSurf
 import { semanticCheck as semanticCheckDefault, stripFences, type SemanticCheckResult } from "./semantic-check";
 import { storeSpellImage as storeSpellImageDefault } from "./spell-images";
 import { addAbuseStrike, canCreate } from "./abuse";
+import { payReferralOnFirstCreation } from "./referrals";
 import { GENERATION_RETRIES, RESEARCH_EXEMPT_SPELLS, VALIDATION_MESSAGES } from "../shared/constants";
 
 export type CreationErrorCode =
@@ -45,6 +46,7 @@ export interface PipelineDeps {
   semantic: typeof semanticCheckDefault;
   storeImage: typeof storeSpellImageDefault;
   now: () => Date;
+  sleep: (ms: number) => Promise<void>;
 }
 
 export const defaultDeps: PipelineDeps = {
@@ -54,13 +56,17 @@ export const defaultDeps: PipelineDeps = {
   semantic: semanticCheckDefault,
   storeImage: storeSpellImageDefault,
   now: () => new Date(),
+  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
 };
+
+/** Wait before retrying Layer 1 when every provider was only throttled (free tiers are per-minute limited). */
+export const RATE_LIMIT_BACKOFF_MS = [3000, 8000];
 
 interface Trace {
   steps: Array<Record<string, unknown>>;
 }
 
-const IDENTITY_SYSTEM_PROMPT = `You are the spell forge of Arcanis, a fantasy game where players invent spells.
+export const IDENTITY_SYSTEM_PROMPT = `You are the spell forge of Arcanis, a fantasy game where players invent spells.
 A player has described a spell. Give it a voice and allocate its stats. Return ONLY one JSON object, no markdown:
 {
   "flavor_text": "1 to 3 vivid sentences on what casting it looks and feels like. No numbers.",
@@ -122,7 +128,8 @@ async function finishRun(
     .where(eq(p0ProviderCalls.runId, runId));
   await db
     .update(p0GenerationRuns)
-    .set({ ...fields, outcome, trace, totalCostUsd: Number(cost?.total ?? 0), finishedAt: new Date() })
+    // The database clock, like created_at, so durations are not skewed by the app server's clock.
+    .set({ ...fields, outcome, trace, totalCostUsd: Number(cost?.total ?? 0), finishedAt: sql`CURRENT_TIMESTAMP(3)` })
     .where(eq(p0GenerationRuns.id, runId));
 }
 
@@ -291,6 +298,9 @@ export async function createSpell(
           break;
         }
         lastReason = "provider_unavailable";
+        const throttled =
+          error instanceof AllProvidersFailedError && error.errors.length > 0 && error.errors.every((e) => e.kind === "rate_limited" || e.kind === "server");
+        if (throttled && attempt < GENERATION_RETRIES) await deps.sleep(RATE_LIMIT_BACKOFF_MS[attempt] ?? 8000);
         continue;
       }
 
@@ -426,6 +436,7 @@ export async function createSpell(
     });
     await commitSpark(spend.entryId);
     await finishRun(runId, "success", { ...flags, attempts, spellId: runId }, trace);
+    await payReferralOnFirstCreation(userId).catch((error) => console.warn("[Referral] payout failed:", error));
 
     const [spell] = await db.select().from(p0Spells).where(eq(p0Spells.id, runId)).limit(1);
     return { success: true, spell: toPublicSpell(spell, now), sparkBalance: spend.balance };

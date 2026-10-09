@@ -3,6 +3,22 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://RENDER_API_ORIGIN/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://RENDER_API_ORIGIN/health"
+    },
+    {
+      "source": "/spell/:id/image",
+      "destination": "https://RENDER_API_ORIGIN/spell/:id/image"
+    },
+    {
+      "source": "/spell/:id",
+      "destination": "https://RENDER_API_ORIGIN/spell/:id"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
