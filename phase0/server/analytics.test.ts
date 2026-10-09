@@ -1,9 +1,9 @@
 import { it, expect } from "vitest";
 import { nanoid } from "nanoid";
-import { eq } from "drizzle-orm";
+import { and, eq, gte, lt } from "drizzle-orm";
 import { appRouter } from "./routers";
 import { getDb } from "./db";
-import { p0AnalyticsEvents, p0Referrals, p0Spells } from "../drizzle/schema";
+import { p0AnalyticsEvents, p0Referrals, p0Spells, p0Users } from "../drizzle/schema";
 import { computeGateMetrics } from "./gate-metrics";
 import { describeDb } from "./test/db";
 import { createTestUser } from "./test/factories";
@@ -69,6 +69,12 @@ describeDb("gate 1a metrics", () => {
     // An isolated period far in the future so other test data never counts.
     const t0 = new Date(Date.UTC(2034, 0, 1, 12));
     const at = (days: number) => new Date(t0.getTime() + days * 86_400_000);
+    // Repeatable: clear this test's window in the test database first.
+    const window = and(gte(p0Spells.createdAt, at(-30)), lt(p0Spells.createdAt, at(60)));
+    await db.delete(p0Spells).where(window);
+    await db.delete(p0AnalyticsEvents).where(and(gte(p0AnalyticsEvents.createdAt, at(-30)), lt(p0AnalyticsEvents.createdAt, at(60))));
+    await db.delete(p0Referrals).where(and(gte(p0Referrals.createdAt, at(-30)), lt(p0Referrals.createdAt, at(60))));
+    await db.delete(p0Users).where(and(gte(p0Users.createdAt, at(-30)), lt(p0Users.createdAt, at(60))));
     const users = await Promise.all([0, 1, 2, 3].map(() => createTestUser({ createdAt: t0 })));
     const spell = async (owner: number, day: number) => {
       const id = nanoid(36);
