@@ -16,7 +16,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "seed": "tsx server/seed.ts"
+    "seed": "tsx server/seed.ts",
+    "db:backup": "node scripts/db-backup.mjs",
+    "db:restore-check": "node scripts/db-restore-check.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

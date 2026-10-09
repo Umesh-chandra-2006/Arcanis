@@ -37,8 +37,8 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** `main` contains only the canonical app plus docs; CI is green; tests cannot touch production data.
 
 ### A1 Database backup (0.5)
-- [ ] Before any schema work: logical dump of the current TiDB database (`mysqldump` or `tidb dumpling`) stored outside the repo; restore it into a scratch DB once to prove it works.
-- [ ] Script for a recurring dump (run weekly and before every migration); document it in `CLAUDE.md`.
+- [x] Before any schema work: logical dump of the current TiDB database stored outside the repo (`D:\Arcanis-backups`); restored into a scratch DB with every table's row count matching. (2026-10-10)
+- [x] `pnpm db:backup` and `pnpm db:restore-check` (`phase0/scripts/`), documented in `CLAUDE.md`. (2026-10-10)
 - [ ] Founder, best effort: find which TiDB Cloud account owns host `gateway06.us-east-1.prod.aws.tidbcloud.com` (try each likely email at tidbcloud.com).
 - **Done when:** a verified restore exists and the dump script is documented. The host move itself is B0.
 

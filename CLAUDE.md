@@ -94,7 +94,11 @@ Drizzle Kit against `DATABASE_URL` (MySQL). Tables are prefixed `p0_`; the produ
 ```
 cd phase0 && pnpm db:generate && pnpm db:migrate   # migrations in phase0/drizzle/
 cd phase0 && pnpm seed                              # 12 platform spells + archivist user
+cd phase0 && pnpm db:backup                         # mysqldump of DATABASE_URL to ../../Arcanis-backups (BACKUP_DIR)
+cd phase0 && pnpm db:restore-check                  # restore newest backup into a scratch DB, compare row counts, drop it
 ```
+
+Run `db:backup` weekly and before every production migration. It needs the MySQL client tools (`mysqldump`, `mysql`) on PATH. TiDB rejects mysqldump savepoints, so the dump is not a single transaction; take it at low traffic.
 
 ### Balance harness and cost report
 
