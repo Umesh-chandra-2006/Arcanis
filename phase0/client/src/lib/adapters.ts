@@ -1,6 +1,8 @@
-import type { Phase0Spell as DrizzleSpell } from "@drizzle/schema";
+import type { PublicSpell } from "@shared/spell-view";
 
-export type Phase0Spell = DrizzleSpell;
+export type Phase0Spell = PublicSpell;
+
+const STRAIN_LABEL = { light: "Light", moderate: "Moderate", heavy: "Heavy" } as const;
 
 const ELEMENT_ACCENTS: Record<string, string> = {
   fire: "#d4713a",
@@ -45,11 +47,6 @@ export function mapSpellToCardProps(spell: Phase0Spell) {
       ? `${spell.damageMin}`
       : `${spell.damageMin}-${spell.damageMax}`;
 
-  const willCost =
-    spell.willCostMin === spell.willCostMax
-      ? `${spell.willCostMin}`
-      : `${spell.willCostMin}-${spell.willCostMax}`;
-
   const elementKey = (spell.element || "arcane").toLowerCase();
 
   const artUrl =
@@ -65,16 +62,15 @@ export function mapSpellToCardProps(spell: Phase0Spell) {
     category: spell.category,
     castType: spell.castType || "Instant",
     damage,
-    willCost,
+    strain: STRAIN_LABEL[spell.strain],
     castTime: (spell.castTimeMs / 1000).toFixed(1),
     mpCost: spell.mpCost,
-    scalingFactor: spell.scalingFactor,
-    mpModifier: spell.mpModifier,
     interruptionThreshold: spell.interruptionThreshold,
+    drainRatio: spell.drainRatio,
     maintenanceCostPerTurn: spell.maintenanceCostPerTurn,
     lore: spell.loreLine || spell.flavorText || "",
     flavor: spell.flavorText || spell.loreLine || "",
-    assessmentQuestion: spell.assessmentQuestion,
+    researching: spell.researching,
     shareCount: spell.shareCount,
     imageUrl: artUrl,
     art: artUrl,

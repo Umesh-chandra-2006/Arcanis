@@ -26,10 +26,10 @@ import {
   BookOpen,
   LogOut,
 } from "lucide-react";
-import { PHASE0_ELEMENTS, PHASE0_CATEGORIES } from "@shared/constants";
+import { CREATION_ENABLED, type CreationCategory, type Element } from "@shared/taxonomy";
 
-const ELEMENTS = PHASE0_ELEMENTS;
-const CATEGORIES = PHASE0_CATEGORIES;
+const ELEMENTS = CREATION_ENABLED.elements;
+const CATEGORIES = CREATION_ENABLED.categories;
 
 const FORGE_STEPS = [
   "The Tower weighs your words…",
@@ -91,8 +91,8 @@ export default function Create() {
     try {
       const result = await createSpell.mutateAsync({
         name: name.trim(),
-        element: element as "Fire" | "Water" | "Earth" | "Wind",
-        category: category as "Attack" | "Defense" | "Regen" | "Debuff",
+        element: element as Element,
+        category: category as CreationCategory,
         castType: "Instant",
         description: description.trim(),
       });

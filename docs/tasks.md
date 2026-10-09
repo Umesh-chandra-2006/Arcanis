@@ -72,20 +72,20 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] `accountStatus` removed; `requestSignIn` returns the same response for any valid email. (2026-10-10)
 - **Done when:** Build Plan Section 16 identity tests pass. Met (`server/auth-service.test.ts`: 12 parallel wrong guesses stop at 5 attempts; link and code each redeem once under concurrency; identical response for new and existing emails), plus an HTTP smoke test of request, code, session, `me` and logout. Production note: the client must call the API same-origin (Vercel `/api` rewrite, A10) or the cookie is not sent.
 
-### A6 Moderation and Layer 2c (3) (after A2; OpenAI `omni-moderation`, needs `OPENAI_API_KEY`)
-- [ ] Layer 2b on user input (before any generation), generated text, generated images, and reviews (before display).
-- [ ] Layer 2c small-model check, only when 2a or 2b flags; structured pass/fail with reason code.
-- [ ] Silent retry with adjusted prompt (default 2); refund on exhaustion; user-caused input rejection does not refund and adds an abuse strike.
-- [ ] `moderation_events`, report button on public spells and reviews, minimal admin queue, takedown (preview returns 410).
-- **Done when:** no unmoderated AI text, image or review can reach a user; 2c trigger rate is logged.
+### A6 Moderation and Layer 2c (3) (after A2; OpenAI `omni-moderation`)
+- [x] Layer 2b on user input (before any generation), generated text, generated images (base64 data URL, verified live) and reviews (before display). Policy is ours, not the provider's `flagged` flag: omni-moderation flags ordinary fantasy combat as `violence`, so plain violence never blocks; per-surface thresholds for sexual, minors, hate, harassment, self-harm, illicit and graphic violence (`server/moderation.ts`; tuned in A14). (2026-10-10)
+- [x] Layer 2c (`server/semantic-check.ts`): small model, only when 2b says borderline or 2a fell back; structured pass/fail with a reason code; fails closed. (2026-10-10)
+- [x] Silent retry with an adjusted prompt (2 retries, `GENERATION_RETRIES`); refund on exhaustion; user-caused input rejection keeps the Spark and adds an abuse strike (3 strikes: 24h restriction; 6: ban). An unexpected exception after the reservation always refunds. Images regenerate on a flag, then fall back to the placeholder. (2026-10-10)
+- [x] `p0_moderation_events`, `p0_generation_runs` (migrations 0010 to 0012, applied to production after a backup); report button on public spells and reviews; admin queue at `/admin/moderation` (approve, take down, strike, ban, restore); takedown makes the preview and image routes return 410. (2026-10-10)
+- **Done when:** no unmoderated AI text, image or review can reach a user; 2c trigger rate is logged. Met: every path is covered by `server/spell-pipeline.test.ts` (12 cases with fake providers) and one live creation (`pnpm creation:live`, Groq plus OpenAI, 8.9s, shadow cost $0.0003); `layer_2c_fired` is recorded per run. Note: Layer 1 and the image run in sequence, not in parallel as Build Plan 7.1 step 4 says, because 7.6 derives the image prompt from Layer 1's output.
 
 ### A7 Hybrid Power Budget (2.5)
-- [ ] Budget in power points from tier, element, category, cast type; per-field ranges inside Master Doc caps; point costs and 85 percent floor in config.
-- [ ] Layer 1 prompt carries budget and ranges; model returns an allocation plus identity text.
-- [ ] Layer 2a clamps fields, enforces caps and budget total (proportional rescale), raises below-floor allocations, falls back to the deterministic profile on malformed output and logs a flag. Tier always from the request.
-- [ ] Creation form: all 12 elements; categories Attack, Defense, Regen, Debuff, Drain; Instant only.
-- [ ] Property tests: no input, including adversarial allocations, escapes ranges, caps, floor or budget.
-- **Done when:** two spells with the same classification but different descriptions can differ mechanically, and every stored allocation passes the property checks.
+- [x] Budget in power points from tier, category and cast type (element tilts the default profile); per-field ranges inside Master Doc caps; weights, modifiers and the 85 percent floor in `POWER_BUDGET_CONFIG` (`shared/power-budget.ts`). (2026-10-10)
+- [x] Layer 1 prompt carries the ranges and the budget share; the model returns real stat values plus identity text. (2026-10-10)
+- [x] Layer 2a clamps fields, enforces caps and the budget total (proportional rescale), raises below-floor allocations, settles rounding exactly inside the bounds, falls back to the default profile on malformed output and flags it (which escalates to 2c). Tier always from the request. (2026-10-10)
+- [x] Creation form and validation: all 12 elements; Attack, Defense, Regen, Debuff, Drain (drain ratio is a stat); Instant only (`CREATION_ENABLED`, `shared/taxonomy.ts`). Engine taxonomy, caps and enums cover all 10 categories, 5 cast types and 4 tiers. (2026-10-10)
+- [x] Property tests (`shared/power-budget.test.ts`): 2,880 random and adversarial allocations across the full taxonomy, plus the default profile for every combination, stay inside ranges, caps, floor and budget with zero tolerance. (2026-10-10)
+- **Done when:** two spells with the same classification but different descriptions can differ mechanically. Met (unit test, and live: "slow, heavy meteor" gave damage 25 to 35, MP 15, heavy strain). Code fix flagged: phase0 clamped Instant cast time to 800 to 1200 ms; Master Doc 5.2 says 200 to 800, now enforced. Will cost never leaves the server as a number: spells go out through `toPublicSpell` with a Light/Moderate/Heavy `strain`.
 
 ### A8 Balance harness skeleton and cost report (2)
 - [ ] `tools/balance-harness/corpus/`: 100+ realistic prompts across all 12 elements and enabled categories, plus adversarial prompts.
@@ -95,9 +95,9 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** both tools run from one command each and produce a readable report.
 
 ### A9 Object storage and OG image (1.5) (Cloudinary)
-- [ ] `STORAGE_PROVIDER=cloudinary`; upload original, portrait card and 1200x630 OG variant; DB stores URLs only. Keep Cloudinary specifics inside the provider so B0 can swap to R2 by config.
-- [ ] OG variant is a composed image (art, spell name, element, Arcanis mark), not a crop.
-- [ ] Dominant color for the card border.
+- [x] `STORAGE_PROVIDER=cloudinary`; new spells upload the original, a 768x1024 portrait card crop and a composed 1200x630 OG image (`server/spell-images.ts`, sharp); DB stores URLs only. (2026-10-10)
+- [x] OG variant is a composition (art on the right, spell name, element, Arcanis mark, black and gold frame), not a crop. (2026-10-10)
+- [x] Dominant colour stored for the card border. (2026-10-10)
 - [ ] One-off script migrating existing base64 rows.
 - **Done when:** no base64 image remains in the DB and the OG endpoint serves a 1200x630 image.
 

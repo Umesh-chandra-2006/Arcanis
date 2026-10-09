@@ -53,7 +53,7 @@ export const spellsRouter = router({
         metadata: { name: input.name, element: input.element, category: input.category },
       });
 
-      const result = await createSpell(ctx.user.id, input);
+      const result = await createSpell(ctx.user.id, input, { sessionId: ctx.sessionId });
 
       if (result.success && result.spell) {
         await trackEvent({

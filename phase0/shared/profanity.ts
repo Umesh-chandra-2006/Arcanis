@@ -1,5 +1,5 @@
 /**
- * Phase 0 content moderation — profanity blocklist for generated spell identity.
+ * Cheap word-list check (Layer 2a) on generated text and the dev-only moderation provider.
  */
 const PROFANITY_PATTERN =
   /\b(fuck|shit|bitch|asshole|cunt|nigger|faggot|whore|slut|retard|dick|pussy|rape|kill yourself)\b/i;

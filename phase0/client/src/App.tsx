@@ -11,6 +11,7 @@ const Library = lazy(() => import("./pages/Library"));
 const ShareSpell = lazy(() => import("./pages/ShareSpell"));
 const ReviewsPage = lazy(() => import("./pages/ReviewsPage"));
 const AdminMetrics = lazy(() => import("./pages/AdminMetrics"));
+const AdminModeration = lazy(() => import("./pages/AdminModeration"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function LoadingFallback() {
@@ -35,6 +36,7 @@ function App() {
           <Route path="/spell/:spellId" element={<ShareSpell />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/admin/metrics" element={<AdminMetrics />} />
+          <Route path="/admin/moderation" element={<AdminModeration />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

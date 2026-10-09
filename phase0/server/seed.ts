@@ -2,12 +2,13 @@ import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { p0Users, p0Spells } from "../drizzle/schema";
-import { computeSpellStats } from "./power-budget";
+import { computeBudgetSpec, defaultAllocation } from "../shared/power-budget";
+import type { Element } from "../shared/taxonomy";
 
 interface SeedSpell {
   name: string;
-  element: "Fire" | "Water" | "Earth" | "Wind";
-  category: "Attack" | "Defense" | "Regen" | "Debuff";
+  element: Element;
+  category: "Attack" | "Defense" | "Regen" | "Debuff" | "Drain";
   flavorText: string;
   loreLine: string;
   shareCount: number;
@@ -115,7 +116,7 @@ const SEED_SPELLS: SeedSpell[] = [
 async function main() {
   const db = await getDb();
   if (!db) {
-    console.error("DATABASE_URL not set — cannot seed.");
+    console.error("DATABASE_URL not set; cannot seed.");
     process.exit(1);
   }
 
@@ -151,7 +152,8 @@ async function main() {
       .limit(1);
     if (existing) continue;
 
-    const stats = computeSpellStats(seed.element, seed.category, "Instant", "Basic");
+    const spec = computeBudgetSpec({ tier: "Basic", element: seed.element, category: seed.category, castType: "Instant" });
+    const stats = defaultAllocation(spec);
 
     await db.insert(p0Spells).values({
       id: nanoid(36),
@@ -167,21 +169,14 @@ async function main() {
       willCostMin: stats.will_cost_min,
       willCostMax: stats.will_cost_max,
       castTimeMs: stats.cast_time_ms,
-      scalingFactor: stats.scaling_factor,
-      mpModifier: stats.mp_modifier,
       interruptionThreshold: stats.interruption_threshold,
       maintenanceCostPerTurn: stats.maintenance_cost_per_turn,
+      drainRatio: stats.drain_ratio,
       flavorText: seed.flavorText,
       loreLine: seed.loreLine,
-      assessmentQuestion: null,
       imageUrl: "",
       shareCount: seed.shareCount,
-      generationMetadata: {
-        llmProvider: "seed",
-        pbUsed: stats.pb_used,
-        pbTotal: stats.pb_total,
-        verification: "seeded",
-      },
+      generationMetadata: { source: "seed", budget: Math.round(spec.budget * 10) / 10 },
       isPlatformSpell: true,
     });
     created++;

@@ -12,6 +12,7 @@ import {
   text,
 } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
+import { CAST_TYPES, CATEGORIES, ELEMENTS, TIERS } from "../shared/taxonomy";
 
 export const p0Users = mysqlTable(
   "p0_users",
@@ -23,6 +24,10 @@ export const p0Users = mysqlTable(
     role: mysqlEnum("role", ["user", "admin"]).notNull().default("user"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     lastSignedInAt: timestamp("last_signed_in_at"),
+    /** User-caused moderation rejections (Build Plan 13). */
+    abuseStrikes: int("abuse_strikes").notNull().default(0),
+    restrictedUntil: timestamp("restricted_until"),
+    bannedAt: timestamp("banned_at"),
   },
   (table) => ({
     emailIdx: uniqueIndex("p0_users_email_idx").on(table.email),
@@ -36,10 +41,11 @@ export const p0Spells = mysqlTable(
     id: varchar("id", { length: 36 }).primaryKey(),
     ownerId: int("owner_id").notNull(),
     name: varchar("name", { length: 64 }).notNull(),
-    element: mysqlEnum("element", ["Fire", "Water", "Earth", "Wind"]).notNull(),
-    category: mysqlEnum("category", ["Attack", "Defense", "Regen", "Debuff"]).notNull(),
-    castType: mysqlEnum("cast_type", ["Instant"]).notNull().default("Instant"),
-    tier: mysqlEnum("tier", ["Basic"]).notNull().default("Basic"),
+    element: mysqlEnum("element", ELEMENTS).notNull(),
+    category: mysqlEnum("category", CATEGORIES).notNull(),
+    secondaryCategory: mysqlEnum("secondary_category", CATEGORIES),
+    castType: mysqlEnum("cast_type", CAST_TYPES).notNull().default("Instant"),
+    tier: mysqlEnum("tier", TIERS).notNull().default("Basic"),
     damageMin: int("damage_min").notNull(),
     damageMax: int("damage_max").notNull(),
     mpCost: int("mp_cost").notNull(),
@@ -50,10 +56,22 @@ export const p0Spells = mysqlTable(
     mpModifier: double("mp_modifier"),
     interruptionThreshold: int("interruption_threshold"),
     maintenanceCostPerTurn: int("maintenance_cost_per_turn"),
+    drainRatio: double("drain_ratio"),
     flavorText: text("flavor_text").notNull(),
     loreLine: text("lore_line").notNull(),
-    assessmentQuestion: text("assessment_question"),
     imageUrl: text("image_url").notNull(),
+    /** Portrait card crop and 1200x630 Open Graph composition (Build Plan 7.6). */
+    cardImageUrl: text("card_image_url"),
+    ogImageUrl: text("og_image_url"),
+    dominantColor: varchar("dominant_color", { length: 7 }),
+    imagePrompt: text("image_prompt"),
+    imageAttempts: int("image_attempts").notNull().default(0),
+    researchComplexity: int("research_complexity").notNull().default(1),
+    /** "Researching" is simply now < research_ready_at (Build Plan 7.5). */
+    researchReadyAt: timestamp("research_ready_at").notNull().defaultNow(),
+    verificationTrace: json("verification_trace"),
+    isPublic: boolean("is_public").notNull().default(true),
+    removedAt: timestamp("removed_at"),
     shareCount: int("share_count").notNull().default(0),
     generationMetadata: json("generation_metadata").notNull(),
     isPlatformSpell: boolean("is_platform_spell").notNull().default(false),
@@ -122,6 +140,7 @@ export const p0Reviews = mysqlTable(
     userId: int("user_id").notNull(),
     rating: int("rating").notNull(),
     comment: text("comment").notNull(),
+    status: mysqlEnum("status", ["visible", "removed"]).notNull().default("visible"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
   },
@@ -225,6 +244,61 @@ export const p0RateLimits = mysqlTable("p0_rate_limits", {
   expiresAt: timestamp("expires_at").notNull(),
 });
 
+// One row per creation attempt (Build Plan 9 generation_runs).
+export const p0GenerationRuns = mysqlTable(
+  "p0_generation_runs",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("user_id").notNull(),
+    spellId: varchar("spell_id", { length: 36 }),
+    attempts: int("attempts").notNull().default(0),
+    layer2aClamped: boolean("layer_2a_clamped").notNull().default(false),
+    layer2aFallback: boolean("layer_2a_fallback").notNull().default(false),
+    layer2bFlagged: boolean("layer_2b_flagged").notNull().default(false),
+    layer2cFired: boolean("layer_2c_fired").notNull().default(false),
+    outcome: varchar("outcome", { length: 24 }).notNull().default("running"),
+    failureReason: varchar("failure_reason", { length: 64 }),
+    totalCostUsd: double("total_cost_usd").notNull().default(0),
+    trace: json("trace"),
+    createdAt: timestamp("created_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+    finishedAt: timestamp("finished_at", { fsp: 3 }),
+  },
+  (table) => ({
+    userIdx: index("p0_generation_runs_user_idx").on(table.userId),
+    createdAtIdx: index("p0_generation_runs_created_at_idx").on(table.createdAt),
+  })
+);
+
+// Non-passing moderation verdicts, player reports, and their resolution (admin queue).
+export const p0ModerationEvents = mysqlTable(
+  "p0_moderation_events",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("user_id"),
+    surface: varchar("surface", { length: 32 }).notNull(), // spell_input | spell_text | spell_image | review | report
+    contentType: varchar("content_type", { length: 16 }).notNull(), // text | image
+    targetType: varchar("target_type", { length: 16 }), // spell | review
+    targetId: varchar("target_id", { length: 36 }),
+    verdict: varchar("verdict", { length: 16 }).notNull(), // borderline | reject | report
+    reason: varchar("reason", { length: 64 }),
+    scores: json("scores"),
+    excerpt: text("excerpt"),
+    escalatedTo2c: boolean("escalated_to_2c").notNull().default(false),
+    layer2cResult: varchar("layer_2c_result", { length: 32 }),
+    runId: varchar("run_id", { length: 36 }),
+    status: varchar("status", { length: 16 }).notNull().default("open"), // open | resolved
+    resolution: varchar("resolution", { length: 16 }), // approved | removed | struck | banned
+    reviewedByHuman: boolean("reviewed_by_human").notNull().default(false),
+    reviewedBy: int("reviewed_by"),
+    reviewedAt: timestamp("reviewed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index("p0_moderation_events_status_idx").on(table.status, table.createdAt),
+    targetIdx: index("p0_moderation_events_target_idx").on(table.targetType, table.targetId),
+  })
+);
+
 export type Phase0User = typeof p0Users.$inferSelect;
 export type Phase0Spell = typeof p0Spells.$inferSelect;
 export type Phase0SparkLedgerEntry = typeof p0SparkLedger.$inferSelect;
@@ -232,3 +306,5 @@ export type Phase0AnalyticsEvent = typeof p0AnalyticsEvents.$inferSelect;
 export type Phase0Review = typeof p0Reviews.$inferSelect;
 export type Phase0ProviderCall = typeof p0ProviderCalls.$inferSelect;
 export type Phase0BreakerDay = typeof p0BreakerDays.$inferSelect;
+export type Phase0GenerationRun = typeof p0GenerationRuns.$inferSelect;
+export type Phase0ModerationEvent = typeof p0ModerationEvents.$inferSelect;

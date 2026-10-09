@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "ARCANIS Phase 0 — demand validation prototype: single-page spell builder with magic-link auth, Power Budget engine, LLM + image generation, public share pages.",
+  "description": "Arcanis: describe a spell, get a verified spell card, share it, battle with it.",
   "scripts": {
     "dev": "tsx watch server/_core/index.ts",
     "build": "vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
@@ -19,7 +19,8 @@
     "seed": "tsx server/seed.ts",
     "db:backup": "node scripts/db-backup.mjs",
     "db:restore-check": "node scripts/db-restore-check.mjs",
-    "providers:check": "tsx scripts/providers-check.ts"
+    "providers:check": "tsx scripts/providers-check.ts",
+    "creation:live": "tsx scripts/live-creation-check.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
@@ -45,6 +46,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-router-dom": "^7.18.1",
+    "sharp": "^0.35.5",
     "sonner": "^2.0.7",
     "superjson": "^1.13.3",
     "tailwind-merge": "^3.3.1",

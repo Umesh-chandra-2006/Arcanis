@@ -9,7 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { getDb } from "../db";
 import { serveStatic, setupVite } from "./vite";
-import { getSpellPublic } from "../spell-pipeline";
+import { getSpellRow, isTakenDown } from "../spell-pipeline";
 import { ENV } from "./env";
 import { findProjectRoot } from "./paths";
 import { deviceCookieMiddleware } from "./cookies";
@@ -28,14 +28,14 @@ function renderOgTags(
 ): string {
   const absoluteImage = `${baseUrl}/spell/${spell.id}/image`;
   return [
-    `<title>${escapeHtml(spell.name)} — Arcanis</title>`,
-    `<meta property="og:title" content="${escapeHtml(spell.name)} — Arcanis" />`,
+    `<title>${escapeHtml(spell.name)} | Arcanis</title>`,
+    `<meta property="og:title" content="${escapeHtml(spell.name)} | Arcanis" />`,
     `<meta property="og:description" content="${escapeHtml(spell.flavorText.slice(0, 200))}" />`,
     `<meta property="og:image" content="${absoluteImage}" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:url" content="${baseUrl}/spell/${spell.id}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
-    `<meta name="twitter:title" content="${escapeHtml(spell.name)} — Arcanis" />`,
+    `<meta name="twitter:title" content="${escapeHtml(spell.name)} | Arcanis" />`,
     `<meta name="twitter:description" content="${escapeHtml(spell.flavorText.slice(0, 200))}" />`,
     `<meta name="twitter:image" content="${absoluteImage}" />`,
   ].join("\n    ");
@@ -64,9 +64,19 @@ export async function registerOgRoutes(app: Express) {
 
   app.get("/spell/:spellId/image", async (req, res) => {
     try {
-      const spell = await getSpellPublic(req.params.spellId);
+      const spell = await getSpellRow(req.params.spellId);
       if (!spell) {
         return res.status(404).send("Not found");
+      }
+      if (isTakenDown(spell)) {
+        return res.status(410).send("Gone");
+      }
+
+      // Prefer the composed 1200x630 share image (A9); fall back to the art.
+      const shareImage = spell.ogImageUrl || spell.imageUrl;
+      if (shareImage.startsWith("http")) {
+        res.set("Cache-Control", "public, max-age=86400");
+        return res.redirect(302, shareImage);
       }
 
       if (spell.imageUrl.startsWith("data:")) {
@@ -80,10 +90,6 @@ export async function registerOgRoutes(app: Express) {
         return res.send(buffer);
       }
 
-      if (spell.imageUrl.startsWith("http")) {
-        return res.redirect(302, spell.imageUrl);
-      }
-
       const svg = placeholderSvg(spell.element);
       res.set({ "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=3600" });
       return res.send(svg);
@@ -95,12 +101,13 @@ export async function registerOgRoutes(app: Express) {
 
   app.get("/spell/:spellId", async (req, res) => {
     try {
-      const spell = await getSpellPublic(req.params.spellId);
+      const spell = await getSpellRow(req.params.spellId);
       const baseUrl = await getBaseUrl(req);
 
-      if (!spell) {
-        if (prodIndexHtml) return res.status(404).send(prodIndexHtml);
-        return res.status(404).send("Spell not found");
+      if (!spell || isTakenDown(spell)) {
+        const status = spell ? 410 : 404;
+        if (prodIndexHtml) return res.status(status).send(prodIndexHtml);
+        return res.status(status).send(spell ? "This spell was removed." : "Spell not found");
       }
 
       const ogTags = renderOgTags(baseUrl, {

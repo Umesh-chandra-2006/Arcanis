@@ -12,6 +12,9 @@ process.env.DATABASE_URL = decision.ok ? decision.url : "";
 process.env.ARCANIS_TEST_DB = decision.ok ? "1" : "";
 process.env.NODE_ENV = "test";
 process.env.JWT_SECRET ||= "test-secret";
+// The shared test database accumulates creations across runs; breaker tests set
+// their own limits explicitly.
+process.env.DAILY_CREATION_LIMIT = "1000000";
 
 // Tests never call live providers (no quota spent, no real email) unless asked.
 if (process.env.LIVE_PROVIDERS !== "1") {

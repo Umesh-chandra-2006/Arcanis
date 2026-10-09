@@ -1,21 +1,23 @@
 import { z } from "zod";
-import { PHASE0_CATEGORIES, PHASE0_ELEMENTS, PHASE0_CAST_TYPES } from "./constants";
+import { CREATION_ENABLED } from "./taxonomy";
 
 export const SpellCreationInputSchema = z.object({
   name: z.string().trim().min(1).max(64),
-  element: z.enum(PHASE0_ELEMENTS),
-  category: z.enum(PHASE0_CATEGORIES),
-  castType: z.enum(PHASE0_CAST_TYPES).default("Instant"),
+  element: z.enum(CREATION_ENABLED.elements),
+  category: z.enum(CREATION_ENABLED.categories),
+  castType: z.enum(CREATION_ENABLED.castTypes).default("Instant"),
   description: z.string().trim().min(1).max(1000),
 });
 
 export type SpellCreationInput = z.infer<typeof SpellCreationInputSchema>;
 
+/** Layer 1 output. Stats are checked separately by enforceAllocation (Layer 2a). */
 export const LLMSpellIdentitySchema = z.object({
-  flavor_text: z.string().min(1).max(400),
-  lore_line: z.string().min(1).max(400),
-  assessment_question: z.string().max(200).nullable(),
-  image_prompt: z.string().min(1).max(600),
+  flavor_text: z.string().trim().min(1).max(400),
+  lore_line: z.string().trim().min(1).max(300),
+  image_prompt: z.string().trim().min(1).max(600),
+  research_complexity: z.coerce.number().int().min(1).max(10).catch(5),
+  stats: z.record(z.string(), z.unknown()),
 });
 
 export type LLMSpellIdentity = z.infer<typeof LLMSpellIdentitySchema>;

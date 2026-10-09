@@ -91,17 +91,17 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
             <div className="grid grid-cols-4 gap-2 text-center p-3 bg-secondary/30 rounded-md border border-border">
               <StatCell label="Damage" value={spell.damage} />
               <StatCell label="MP" value={String(spell.mpCost)} className="text-sky-400" />
-              <StatCell label="Will" value={spell.willCost} className="text-accent-foreground" />
+              <StatCell label="Strain" value={spell.strain} className="text-accent-foreground" />
               <StatCell label="Cast" value={`${spell.castTime}s`} />
             </div>
 
-            {(spell.interruptionThreshold !== null || spell.scalingFactor !== null || spell.maintenanceCostPerTurn !== null) && (
+            {(spell.interruptionThreshold !== null || spell.drainRatio !== null || spell.maintenanceCostPerTurn !== null) && (
               <div className="grid grid-cols-3 gap-2 text-center p-3 bg-secondary/30 rounded-md border border-border">
                 {spell.interruptionThreshold !== null && (
                   <StatCell label="Interrupt" value={String(spell.interruptionThreshold)} />
                 )}
-                {spell.scalingFactor !== null && (
-                  <StatCell label="Scaling" value={`x${spell.scalingFactor}`} />
+                {spell.drainRatio !== null && (
+                  <StatCell label="Drain" value={`${Math.round(spell.drainRatio * 100)}%`} />
                 )}
                 {spell.maintenanceCostPerTurn !== null && (
                   <StatCell label="Maint/Turn" value={String(spell.maintenanceCostPerTurn)} />
@@ -113,13 +113,6 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Lore</p>
                 <p className="text-sm italic text-foreground/90 font-serif leading-relaxed">{spell.lore}</p>
-              </div>
-            )}
-
-            {spell.assessmentQuestion && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">The Tower asks</p>
-                <p className="text-sm italic text-foreground/90 font-serif leading-relaxed">{spell.assessmentQuestion}</p>
               </div>
             )}
 

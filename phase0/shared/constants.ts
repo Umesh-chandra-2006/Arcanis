@@ -1,15 +1,5 @@
 export const UNAUTHED_ERR_MSG = "Please login (10001)";
 
-export const PHASE0_ELEMENTS = ["Fire", "Water", "Earth", "Wind"] as const;
-export const PHASE0_CATEGORIES = ["Attack", "Defense", "Regen", "Debuff"] as const;
-export const PHASE0_CAST_TYPES = ["Instant"] as const;
-export const PHASE0_TIERS = ["Basic"] as const;
-
-export type Phase0Element = (typeof PHASE0_ELEMENTS)[number];
-export type Phase0Category = (typeof PHASE0_CATEGORIES)[number];
-export type Phase0CastType = (typeof PHASE0_CAST_TYPES)[number];
-export type Phase0Tier = (typeof PHASE0_TIERS)[number];
-
 // Spark economy, Phase 1a values (Master Doc v7.2 22.1, founder decision F7).
 export const SPARK = {
   creationCost: 1,
@@ -28,24 +18,18 @@ export const SPARK_CREATION_COST = SPARK.creationCost;
 export const LOGIN_TOKEN_TTL_MS = 10 * 60 * 1000;
 export const LOGIN_CODE_MAX_ATTEMPTS = 5;
 
-export const SPELL_CAPS: Record<
-  Phase0Tier,
-  {
-    damage: [number, number];
-    mp: [number, number];
-    will: [number, number];
-    interruption: [number, number];
-    castTimeMs: [number, number];
-  }
-> = {
-  Basic: {
-    damage: [10, 40],
-    mp: [8, 20],
-    will: [10, 25],
-    interruption: [15, 25],
-    castTimeMs: [800, 1200],
-  },
-};
+/** Abuse strikes from user-caused moderation rejections (Build Plan 13). */
+export const ABUSE = {
+  restrictAtStrikes: 3,
+  restrictHours: 24,
+  banAtStrikes: 6,
+} as const;
+
+/** Silent retries of Layer 1 or image generation before giving up (Build Plan 7.1). */
+export const GENERATION_RETRIES = 2;
+
+/** First N spells per account skip research (Master Doc 6.3, v7.1). */
+export const RESEARCH_EXEMPT_SPELLS = 2;
 
 export const DISPOSABLE_EMAIL_DOMAINS = new Set([
   "mailinator.com",
@@ -130,6 +114,8 @@ export const VALIDATION_MESSAGES = {
   NO_SPARKS: "You're out of Spark. Your free Spark refills every Monday.",
   INVALID_LLM_OUTPUT: "The forge could not shape that spell. Your Spark was returned; please try again.",
   CONTENT_MODERATED: "That description can't be forged. Please rephrase it.",
+  INPUT_REJECTED: "That description breaks the forge's rules, so it can't be made. The Spark was spent.",
+  ACCOUNT_RESTRICTED: "Your account can't create spells right now.",
   GENERATION_FAILED: "The forge is busy. Please try again in a moment.",
 } as const;
 

@@ -1,0 +1,1 @@
+ALTER TABLE `p0_spells` DROP COLUMN `assessment_question`;

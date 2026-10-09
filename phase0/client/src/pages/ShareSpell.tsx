@@ -12,6 +12,7 @@ import { Stars } from "@/components/reviews/stars";
 import { mapSpellToCardProps, elementAccent } from "@/lib/adapters";
 import { Sparkles, Wand2, Star, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { ReportButton } from "@/components/ReportButton";
 
 function ReviewsSection({ spellId }: { spellId: string }) {
   const { isAuthenticated } = useAuth();
@@ -68,9 +69,10 @@ function ReviewsSection({ spellId }: { spellId: string }) {
                   <Stars value={review.rating} size={13} />
                 </div>
                 <p className="mt-1.5 text-sm leading-relaxed text-foreground/90">{review.comment}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {new Date(review.createdAt).toLocaleDateString()}
-                </p>
+                <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>{new Date(review.createdAt).toLocaleDateString()}</span>
+                  <ReportButton targetType="review" targetId={review.id} compact />
+                </div>
               </div>
             ))}
           </div>
@@ -215,6 +217,9 @@ export default function ShareSpell() {
             <p className="text-center font-serif text-sm italic leading-relaxed text-foreground/90">
               "{spell.flavorText}"
             </p>
+            <div className="mt-3 flex justify-end">
+              <ReportButton targetType="spell" targetId={spell.id} />
+            </div>
           </Panel>
 
           <div className="w-full max-w-xl">

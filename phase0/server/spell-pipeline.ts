@@ -1,236 +1,476 @@
+// Spell creation pipeline (Build Plan 7.1). Every path that calls a provider
+// here runs after a Spark reservation and ends in exactly one of: commit
+// (success, or a user-caused input rejection) or refund (anything else).
 import { nanoid } from "nanoid";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireDb } from "./db";
-import { p0Spells, type Phase0Spell } from "../drizzle/schema";
+import { p0GenerationRuns, p0ProviderCalls, p0Spells, p0Users, type Phase0Spell } from "../drizzle/schema";
 import { AllProvidersFailedError, generateText } from "./providers/text";
-import { checkBreaker, FORGE_COOLING_MESSAGE, tripBreaker } from "./spend-breaker";
 import { generateImage } from "./providers/image";
-import {
-  LLMSpellIdentitySchema,
-  SpellCreationInputSchema,
-  type SpellCreationInput,
-  type LLMSpellIdentity,
-} from "../shared/validation";
-import { validateSpellIdentityText } from "../shared/profanity";
-import { computeStatProfile } from "./power-budget";
+import type { CallContext, ImageRequest, ImageResult, ModerationInput, TextRequest, TextResult } from "../shared/providers";
+import { LLMSpellIdentitySchema, SpellCreationInputSchema, type LLMSpellIdentity, type SpellCreationInput } from "../shared/validation";
+import { containsProfanity } from "../shared/profanity";
+import { allocationPromptFields, computeBudgetSpec, enforceAllocation, type BudgetSpec, type EnforcementResult } from "../shared/power-budget";
+import { CREATION_ENABLED } from "../shared/taxonomy";
+import { toPublicSpell, type PublicSpell } from "../shared/spell-view";
 import { commitSpark, refundSpark, reserveSpark } from "./spark";
-import { VALIDATION_MESSAGES } from "../shared/constants";
+import { checkBreaker, FORGE_COOLING_MESSAGE, tripBreaker } from "./spend-breaker";
+import { moderate as moderateDefault, recordModerationEvent, type ModerationSurface, type PolicyDecision } from "./moderation";
+import { semanticCheck as semanticCheckDefault, stripFences, type SemanticCheckResult } from "./semantic-check";
+import { storeSpellImage as storeSpellImageDefault } from "./spell-images";
+import { addAbuseStrike, canCreate } from "./abuse";
+import { GENERATION_RETRIES, RESEARCH_EXEMPT_SPELLS, VALIDATION_MESSAGES } from "../shared/constants";
+
+export type CreationErrorCode =
+  | "invalid_input"
+  | "restricted"
+  | "forge_cooling"
+  | "no_spark"
+  | "input_rejected"
+  | "generation_failed";
 
 export interface SpellCreationResult {
   success: boolean;
-  spell?: Phase0Spell;
+  spell?: PublicSpell;
   error?: string;
+  code?: CreationErrorCode;
   sparkBalance?: number;
 }
 
-const IDENTITY_SYSTEM_PROMPT = `You are the Magic Tower, the ancient classification system of Arcanis.
-A spellcaster has described a spell they wish to forge. Your role is to give it a voice — NOT stats.
-Return ONLY valid JSON matching the schema exactly. No preamble. No markdown. No code fences.
-Fields:
-- flavor_text: a short evocative description of what the spell looks and feels like when cast (1-3 sentences, no numbers).
-- lore_line: a mystical one-liner whispered about the spell (max 2 sentences).
-- assessment_question: a short reflective question for the caster, or null.
-- image_prompt: a vivid art prompt for the spell's artwork (subject, mood, colors, composition).`;
-
-export async function createSpell(userId: number, input: unknown): Promise<SpellCreationResult> {
-  const parseResult = SpellCreationInputSchema.safeParse(input);
-  if (!parseResult.success) {
-    return {
-      success: false,
-      error: `Invalid input: ${parseResult.error.issues[0]?.message ?? "unknown"}`,
-    };
-  }
-
-  const data = parseResult.data;
-
-  const startedAt = Date.now();
-  const stats = computeStatProfile({
-    element: data.element,
-    category: data.category,
-    castType: data.castType,
-    tier: "Basic",
-  });
-
-  const db = requireDb();
-  const spellId = nanoid(36);
-
-  const blocked = await checkBreaker({ userId });
-  if (blocked) {
-    return { success: false, error: FORGE_COOLING_MESSAGE };
-  }
-
-  const spend = await reserveSpark(userId, spellId);
-  if (!spend.ok) {
-    return { success: false, error: VALIDATION_MESSAGES.NO_SPARKS, sparkBalance: spend.balance };
-  }
-  const refund = async () => {
-    await refundSpark(spend.entryId);
-    return spend.balance + 1;
-  };
-
-  const identity = await generateSpellIdentity(data, { userId, runId: spellId });
-  if (!identity) {
-    return { success: false, error: VALIDATION_MESSAGES.INVALID_LLM_OUTPUT, sparkBalance: await refund() };
-  }
-
-  for (const field of [identity.flavor_text, identity.lore_line, identity.assessment_question ?? ""]) {
-    const check = validateSpellIdentityText(field);
-    if (!check.valid) {
-      return { success: false, error: VALIDATION_MESSAGES.CONTENT_MODERATED, sparkBalance: await refund() };
-    }
-  }
-
-  const imagePromise = generateSpellImage(identity.image_prompt, { userId, runId: spellId });
-
-  const metadata = {
-    llmProvider: "identity-llm",
-    generationMs: Date.now() - startedAt,
-    pbUsed: stats.pb_used,
-    pbTotal: stats.pb_total,
-    verification: "passed",
-  };
-
-  await db.insert(p0Spells).values({
-    id: spellId,
-    ownerId: userId,
-    name: data.name,
-    element: data.element,
-    category: data.category,
-    castType: data.castType,
-    tier: "Basic",
-    damageMin: stats.damage_min,
-    damageMax: stats.damage_max,
-    mpCost: stats.mp_cost,
-    willCostMin: stats.will_cost_min,
-    willCostMax: stats.will_cost_max,
-    castTimeMs: stats.cast_time_ms,
-    scalingFactor: stats.scaling_factor,
-    mpModifier: stats.mp_modifier,
-    interruptionThreshold: stats.interruption_threshold,
-    maintenanceCostPerTurn: stats.maintenance_cost_per_turn,
-    flavorText: identity.flavor_text,
-    loreLine: identity.lore_line,
-    assessmentQuestion: identity.assessment_question,
-    imageUrl: "",
-    shareCount: 0,
-    generationMetadata: metadata as Record<string, unknown>,
-    isPlatformSpell: false,
-  });
-
-  const [spell] = await db
-    .select()
-    .from(p0Spells)
-    .where(eq(p0Spells.id, spellId))
-    .limit(1);
-
-  if (!spell) {
-    return { success: false, error: "Failed to save spell", sparkBalance: await refund() };
-  }
-  await commitSpark(spend.entryId);
-
-  try {
-    const imageResult = await imagePromise;
-    if (imageResult.success && imageResult.url) {
-      await db.update(p0Spells).set({ imageUrl: imageResult.url }).where(eq(p0Spells.id, spellId));
-      spell.imageUrl = imageResult.url;
-    } else {
-      console.warn(`[Spell Pipeline] Image generation failed: ${imageResult.error}`);
-    }
-  } catch (error) {
-    console.error("[Spell Pipeline] Image generation error:", error);
-  }
-
-  return { success: true, spell, sparkBalance: spend.balance };
+/** Everything that talks to a provider, injectable for tests. */
+export interface PipelineDeps {
+  text: (ctx: CallContext, req: TextRequest) => Promise<TextResult>;
+  image: (ctx: CallContext, req: ImageRequest) => Promise<ImageResult>;
+  moderate: (ctx: Omit<CallContext, "surface">, surface: ModerationSurface, inputs: ModerationInput[]) => Promise<PolicyDecision>;
+  semantic: typeof semanticCheckDefault;
+  storeImage: typeof storeSpellImageDefault;
+  now: () => Date;
 }
 
-const IMAGE_STYLE_ANCHOR =
-  "Dark fantasy digital painting, semi-realistic illustration style, dramatic chiaroscuro lighting, painterly brushwork with visible texture, atmospheric depth, cinematic single-subject composition, highly detailed";
-const IMAGE_EXCLUSIONS =
-  "no text, no letters, no words, no numbers, no UI elements, no borders, no frame, no watermark, no signature, isolated illustration only, no card layout";
+export const defaultDeps: PipelineDeps = {
+  text: (ctx, req) => generateText(ctx, req),
+  image: (ctx, req) => generateImage(ctx, req),
+  moderate: moderateDefault,
+  semantic: semanticCheckDefault,
+  storeImage: storeSpellImageDefault,
+  now: () => new Date(),
+};
 
-async function generateSpellImage(
-  prompt: string,
-  ids: { userId: number; runId: string }
-): Promise<{ success: boolean; url?: string; error?: string }> {
-  try {
-    const image = await generateImage(
-      { surface: "image", ...ids },
-      { prompt: `${IMAGE_STYLE_ANCHOR}, ${prompt}, ${IMAGE_EXCLUSIONS}`, width: 1024, height: 1024 }
-    );
-    return { success: true, url: `data:${image.mime};base64,${Buffer.from(image.bytes).toString("base64")}` };
-  } catch (error) {
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+interface Trace {
+  steps: Array<Record<string, unknown>>;
+}
+
+const IDENTITY_SYSTEM_PROMPT = `You are the spell forge of Arcanis, a fantasy game where players invent spells.
+A player has described a spell. Give it a voice and allocate its stats. Return ONLY one JSON object, no markdown:
+{
+  "flavor_text": "1 to 3 vivid sentences on what casting it looks and feels like. No numbers.",
+  "lore_line": "one short mystical line whispered about the spell",
+  "image_prompt": "an art prompt for the card: subject, mood, colors, composition. Never ask for text, letters or UI in the image.",
+  "research_complexity": 1 to 10 (how intricate the spell is),
+  "stats": { ...the stat fields listed below... }
+}
+Write in a neutral narrator voice. Do not mention towers, levels, XP or game rules.`;
+
+function describeCategory(category: string): string {
+  switch (category) {
+    case "Attack":
+      return "damage_min/damage_max = damage dealt";
+    case "Defense":
+      return "damage_min/damage_max = damage absorbed";
+    case "Regen":
+      return "damage_min/damage_max = HP restored";
+    case "Debuff":
+      return "damage_min/damage_max = strength of the weakening effect";
+    case "Drain":
+      return "damage_min/damage_max = damage dealt; drain_ratio = share returned to the caster";
+    default:
+      return "damage_min/damage_max = the effect's magnitude";
   }
 }
 
-async function generateSpellIdentity(
-  data: SpellCreationInput,
-  ids: { userId: number; runId: string }
-): Promise<LLMSpellIdentity | null> {
-  const userPrompt = `The spellcaster wishes to forge a spell:
+export function buildLayer1Prompt(data: SpellCreationInput, spec: BudgetSpec, feedback: string | null): string {
+  const fields = allocationPromptFields(spec);
+  const lines = Object.entries(fields).map(
+    ([k, r]) => `- ${k}: ${r.min} to ${r.max} (${r.better} is stronger)`
+  );
+  const share = Math.round((spec.budget / spec.maxPoints) * 100);
+  return `Spell request
 Name: ${data.name}
 Element: ${data.element}
 Category: ${data.category}
-Cast Type: ${data.castType}
-Their description: ${data.description}
+Cast type: ${data.castType}
+Player's description: ${data.description}
 
-Return the identity JSON now.`;
+Stats (${describeCategory(data.category)}):
+${lines.join("\n")}
 
-  try {
-    const response = await generateText(
-      { surface: "spell_identity", ...ids },
-      { system: IDENTITY_SYSTEM_PROMPT, user: userPrompt, json: true }
-    );
-    const cleaned = response.text
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/, "");
-    const parsed = JSON.parse(cleaned);
-    const result = LLMSpellIdentitySchema.safeParse(parsed);
-    if (!result.success) {
-      console.error("[Spell Pipeline] Invalid LLM identity:", result.error.issues);
+Power budget: this spell may be about ${share}% as strong as a spell maxed in every field. Spend it to fit the description: a slow, heavy, costly spell can hit hard; a quick, cheap one should be weaker. Do not max everything.${
+    feedback ? `\n\nYour previous answer was rejected: ${feedback}. Fix that and answer again.` : ""
+  }`;
+}
+
+async function finishRun(
+  runId: string,
+  outcome: "success" | "refunded" | "user_rejected" | "error",
+  fields: Partial<typeof p0GenerationRuns.$inferInsert>,
+  trace: Trace
+): Promise<void> {
+  const db = requireDb();
+  const [cost] = await db
+    .select({ total: sql<string | null>`SUM(${p0ProviderCalls.costEstimateUsd})` })
+    .from(p0ProviderCalls)
+    .where(eq(p0ProviderCalls.runId, runId));
+  await db
+    .update(p0GenerationRuns)
+    .set({ ...fields, outcome, trace, totalCostUsd: Number(cost?.total ?? 0), finishedAt: new Date() })
+    .where(eq(p0GenerationRuns.id, runId));
+}
+
+/** Image with Layer 2b; regenerates on a flag; null means "use the placeholder". */
+async function produceImage(
+  deps: PipelineDeps,
+  ids: { userId: number; runId: string },
+  prompt: string,
+  trace: Trace
+): Promise<ImageResult | null> {
+  const style =
+    "Dark fantasy digital painting, semi-realistic, dramatic chiaroscuro lighting, painterly brushwork, atmospheric depth, single-subject cinematic composition, highly detailed";
+  const exclusions = "no text, no letters, no numbers, no UI, no border, no frame, no watermark, no signature";
+  for (let attempt = 0; attempt <= GENERATION_RETRIES; attempt++) {
+    const safer = attempt > 0 ? ", tasteful, non-graphic, no gore, fully clothed figures" : "";
+    let image: ImageResult;
+    try {
+      image = await deps.image({ surface: "image", ...ids }, { prompt: `${style}, ${prompt}${safer}, ${exclusions}`, width: 1024, height: 1024 });
+    } catch (error) {
+      trace.steps.push({ step: "image", attempt, error: error instanceof Error ? error.message.slice(0, 200) : String(error) });
+      if (error instanceof AllProvidersFailedError && error.quotaExhausted) return null;
+      continue;
+    }
+    const dataUrl = `data:${image.mime};base64,${Buffer.from(image.bytes).toString("base64")}`;
+    let decision: PolicyDecision;
+    try {
+      decision = await deps.moderate(ids, "spell_image", [{ type: "image", url: dataUrl }]);
+    } catch (error) {
+      // Unmoderated images never reach a player.
+      trace.steps.push({ step: "image_2b", attempt, error: String(error).slice(0, 200) });
       return null;
     }
-    return result.data;
+    trace.steps.push({ step: "image_2b", attempt, verdict: decision.verdict, reason: decision.reason });
+    if (decision.verdict === "pass") return image;
+    // A text model cannot see the image, so a borderline image is regenerated rather than sent to 2c.
+    await recordModerationEvent({
+      userId: ids.userId,
+      surface: "spell_image",
+      contentType: "image",
+      targetType: "spell",
+      targetId: ids.runId,
+      verdict: decision.verdict,
+      reason: decision.reason,
+      scores: decision.scores,
+      excerpt: prompt,
+      runId: ids.runId,
+      status: "resolved",
+    });
+  }
+  return null;
+}
+
+export async function createSpell(
+  userId: number,
+  input: unknown,
+  options: { deps?: Partial<PipelineDeps>; sessionId?: string | null } = {}
+): Promise<SpellCreationResult> {
+  const deps: PipelineDeps = { ...defaultDeps, ...options.deps };
+  const parsed = SpellCreationInputSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, code: "invalid_input", error: `Invalid input: ${parsed.error.issues[0]?.message ?? "unknown"}` };
+  }
+  const data = parsed.data;
+  const db = requireDb();
+  const now = deps.now();
+
+  const [user] = await db.select().from(p0Users).where(eq(p0Users.id, userId)).limit(1);
+  if (!user || !canCreate(user, now)) {
+    return { success: false, code: "restricted", error: VALIDATION_MESSAGES.ACCOUNT_RESTRICTED };
+  }
+
+  if (await checkBreaker({ userId, sessionId: options.sessionId })) {
+    return { success: false, code: "forge_cooling", error: FORGE_COOLING_MESSAGE };
+  }
+
+  const runId = nanoid(36);
+  const spend = await reserveSpark(userId, runId, now);
+  if (!spend.ok) {
+    return { success: false, code: "no_spark", error: VALIDATION_MESSAGES.NO_SPARKS, sparkBalance: spend.balance };
+  }
+  const ids = { userId, runId };
+  const trace: Trace = { steps: [] };
+  const flags = { layer2aClamped: false, layer2aFallback: false, layer2bFlagged: false, layer2cFired: false };
+  await db.insert(p0GenerationRuns).values({ id: runId, userId });
+
+  const refund = async (reason: string, code: CreationErrorCode = "generation_failed", error: string = VALIDATION_MESSAGES.GENERATION_FAILED) => {
+    await refundSpark(spend.entryId);
+    await finishRun(runId, "refunded", { ...flags, failureReason: reason }, trace);
+    return { success: false, code, error, sparkBalance: spend.balance + 1 } satisfies SpellCreationResult;
+  };
+
+  try {
+    // ---- Layer 2b on the player's own words, before any generation ----
+    const inputText = `${data.name}\n${data.description}`;
+    const inputDecision = await deps.moderate(ids, "spell_input", [{ type: "text", text: inputText }]);
+    trace.steps.push({ step: "input_2b", verdict: inputDecision.verdict, reason: inputDecision.reason });
+    let inputRejected = inputDecision.verdict === "reject";
+    if (inputDecision.verdict !== "pass") flags.layer2bFlagged = true;
+    if (inputDecision.verdict === "borderline") {
+      flags.layer2cFired = true;
+      const check = await deps.semantic(ids, {
+        kind: "player_input",
+        category: data.category,
+        element: data.element,
+        content: inputText,
+        flag: `moderation borderline: ${inputDecision.reason}`,
+      });
+      trace.steps.push({ step: "input_2c", ...check });
+      await recordModerationEvent({
+        userId,
+        surface: "spell_input",
+        contentType: "text",
+        verdict: "borderline",
+        reason: inputDecision.reason,
+        scores: inputDecision.scores,
+        excerpt: inputText,
+        escalatedTo2c: true,
+        layer2cResult: check.reasonCode,
+        runId,
+        status: check.pass ? "open" : "resolved",
+      });
+      if (check.reasonCode === "check_unavailable") return await refund("input_2c_unavailable");
+      inputRejected = !check.pass;
+    }
+    if (inputRejected) {
+      if (inputDecision.verdict === "reject") {
+        await recordModerationEvent({
+          userId,
+          surface: "spell_input",
+          contentType: "text",
+          verdict: "reject",
+          reason: inputDecision.reason,
+          scores: inputDecision.scores,
+          excerpt: inputText,
+          runId,
+        });
+      }
+      // User-caused: the Spark is spent and a strike is added (Build Plan 6).
+      await commitSpark(spend.entryId);
+      await addAbuseStrike(userId, now);
+      await finishRun(runId, "user_rejected", { ...flags, failureReason: "input_rejected" }, trace);
+      return { success: false, code: "input_rejected", error: VALIDATION_MESSAGES.INPUT_REJECTED, sparkBalance: spend.balance };
+    }
+
+    // ---- Layer 1 with Layer 2a, 2b and 2c, silent retries ----
+    const spec = computeBudgetSpec({ tier: CREATION_ENABLED.tier, element: data.element, category: data.category, castType: data.castType });
+    let accepted: { identity: LLMSpellIdentity; stats: EnforcementResult } | null = null;
+    let feedback: string | null = null;
+    let attempts = 0;
+    let lastReason = "layer1_failed";
+    for (let attempt = 0; attempt <= GENERATION_RETRIES && !accepted; attempt++) {
+      attempts++;
+      let response: TextResult;
+      try {
+        response = await deps.text({ surface: "spell_identity", ...ids }, {
+          system: IDENTITY_SYSTEM_PROMPT,
+          user: buildLayer1Prompt(data, spec, feedback),
+          json: true,
+          maxTokens: 1200,
+        });
+      } catch (error) {
+        trace.steps.push({ step: "layer1", attempt, error: error instanceof Error ? error.message.slice(0, 200) : String(error) });
+        if (error instanceof AllProvidersFailedError && error.quotaExhausted) {
+          await tripBreaker("provider_quota", now);
+          lastReason = "provider_quota";
+          break;
+        }
+        lastReason = "provider_unavailable";
+        continue;
+      }
+
+      // Layer 2a: schema
+      let identity: LLMSpellIdentity;
+      try {
+        const schema = LLMSpellIdentitySchema.safeParse(JSON.parse(stripFences(response.text)));
+        if (!schema.success) throw new Error(schema.error.issues[0]?.message ?? "schema");
+        identity = schema.data;
+      } catch (error) {
+        trace.steps.push({ step: "layer2a_schema", attempt, error: String(error).slice(0, 200) });
+        feedback = "the JSON was invalid or missing fields";
+        lastReason = "schema_invalid";
+        continue;
+      }
+      const generated = `${identity.flavor_text}\n${identity.lore_line}\n${identity.image_prompt}`;
+      if (containsProfanity(generated)) {
+        trace.steps.push({ step: "layer2a_text", attempt, reason: "profanity" });
+        feedback = "the text used offensive language";
+        lastReason = "text_profanity";
+        continue;
+      }
+
+      // Layer 2a: stats against the Power Budget
+      const stats = enforceAllocation(spec, identity.stats);
+      flags.layer2aClamped ||= stats.clamped || stats.rescaled !== null;
+      flags.layer2aFallback ||= stats.fallback;
+      trace.steps.push({ step: "layer2a_stats", attempt, reasons: stats.reasons, fallback: stats.fallback });
+
+      // Layer 2b on generated text
+      const textDecision = await deps.moderate(ids, "spell_text", [{ type: "text", text: generated }]);
+      trace.steps.push({ step: "text_2b", attempt, verdict: textDecision.verdict, reason: textDecision.reason });
+      if (textDecision.verdict === "reject") {
+        flags.layer2bFlagged = true;
+        await recordModerationEvent({
+          userId,
+          surface: "spell_text",
+          contentType: "text",
+          verdict: "reject",
+          reason: textDecision.reason,
+          scores: textDecision.scores,
+          excerpt: generated,
+          runId,
+        });
+        feedback = "the text was too graphic or unsafe; keep it fantastical and non-graphic";
+        lastReason = "text_rejected";
+        continue;
+      }
+
+      // Layer 2c only when 2a or 2b flagged
+      if (textDecision.verdict === "borderline" || stats.fallback) {
+        if (textDecision.verdict === "borderline") flags.layer2bFlagged = true;
+        flags.layer2cFired = true;
+        const check: SemanticCheckResult = await deps.semantic(ids, {
+          kind: "generated_text",
+          category: data.category,
+          element: data.element,
+          content: generated,
+          flag: textDecision.verdict === "borderline" ? `moderation borderline: ${textDecision.reason}` : "stat allocation malformed",
+        });
+        trace.steps.push({ step: "text_2c", attempt, ...check });
+        if (textDecision.verdict === "borderline") {
+          await recordModerationEvent({
+            userId,
+            surface: "spell_text",
+            contentType: "text",
+            verdict: "borderline",
+            reason: textDecision.reason,
+            scores: textDecision.scores,
+            excerpt: generated,
+            escalatedTo2c: true,
+            layer2cResult: check.reasonCode,
+            runId,
+            status: check.pass ? "open" : "resolved",
+          });
+        }
+        if (!check.pass) {
+          feedback = `a reviewer flagged it (${check.reasonCode}); match the requested ${data.category} spell and keep it safe`;
+          lastReason = `text_2c_${check.reasonCode}`;
+          continue;
+        }
+      }
+      accepted = { identity, stats };
+    }
+
+    if (!accepted) return await refund(lastReason);
+
+    // ---- Image (never blocks creation; falls back to the placeholder) ----
+    const image = await produceImage(deps, ids, accepted.identity.image_prompt, trace);
+    const stored = image ? await deps.storeImage({ userId, runId }, runId, image, { name: data.name, element: data.element }) : null;
+
+    // ---- Research timer: first spells skip it ----
+    const [owned] = await db.select({ n: count() }).from(p0Spells).where(eq(p0Spells.ownerId, userId));
+    const complexity = accepted.identity.research_complexity;
+    // Floored to the second: the column has no fractional seconds and MySQL rounds,
+    // which could otherwise put an exempt spell's ready time slightly in the future.
+    const researchReadyAt =
+      Number(owned?.n ?? 0) < RESEARCH_EXEMPT_SPELLS
+        ? new Date(Math.floor(now.getTime() / 1000) * 1000)
+        : new Date(now.getTime() + (5 + (complexity - 1) * 5) * 60_000);
+
+    const a = accepted.stats.allocation;
+    await db.insert(p0Spells).values({
+      id: runId,
+      ownerId: userId,
+      name: data.name,
+      element: data.element,
+      category: data.category,
+      castType: data.castType,
+      tier: CREATION_ENABLED.tier,
+      damageMin: a.damage_min,
+      damageMax: a.damage_max,
+      mpCost: a.mp_cost,
+      willCostMin: a.will_cost_min,
+      willCostMax: a.will_cost_max,
+      castTimeMs: a.cast_time_ms,
+      interruptionThreshold: a.interruption_threshold,
+      maintenanceCostPerTurn: a.maintenance_cost_per_turn,
+      drainRatio: a.drain_ratio,
+      flavorText: accepted.identity.flavor_text,
+      loreLine: accepted.identity.lore_line,
+      imageUrl: stored?.imageUrl ?? "",
+      cardImageUrl: stored?.cardImageUrl ?? null,
+      ogImageUrl: stored?.ogImageUrl ?? null,
+      dominantColor: stored?.dominantColor ?? null,
+      imagePrompt: accepted.identity.image_prompt,
+      imageAttempts: 1,
+      researchComplexity: complexity,
+      researchReadyAt,
+      verificationTrace: { ...flags, attempts, steps: trace.steps.length },
+      generationMetadata: { pointsSpent: Math.round(accepted.stats.pointsSpent * 10) / 10, budget: Math.round(spec.budget * 10) / 10 },
+      isPlatformSpell: false,
+    });
+    await commitSpark(spend.entryId);
+    await finishRun(runId, "success", { ...flags, attempts, spellId: runId }, trace);
+
+    const [spell] = await db.select().from(p0Spells).where(eq(p0Spells.id, runId)).limit(1);
+    return { success: true, spell: toPublicSpell(spell, now), sparkBalance: spend.balance };
   } catch (error) {
-    if (error instanceof AllProvidersFailedError && error.quotaExhausted) await tripBreaker("provider_quota");
-    console.error("[Spell Pipeline] LLM call failed:", error);
-    return null;
+    console.error("[Spell Pipeline] unexpected error:", error);
+    await refundSpark(spend.entryId).catch(() => {});
+    await finishRun(runId, "error", { ...flags, failureReason: "exception" }, trace).catch(() => {});
+    return { success: false, code: "generation_failed", error: VALIDATION_MESSAGES.GENERATION_FAILED, sparkBalance: spend.balance + 1 };
   }
 }
 
-export async function getMySpells(userId: number): Promise<Phase0Spell[]> {
-  const db = requireDb();
-  return db
-    .select()
-    .from(p0Spells)
-    .where(eq(p0Spells.ownerId, userId))
-    .orderBy(desc(p0Spells.createdAt));
+// ---- reads ----
+
+const visible = and(eq(p0Spells.isPublic, true), sql`${p0Spells.removedAt} IS NULL`);
+
+export async function getMySpells(userId: number): Promise<PublicSpell[]> {
+  const rows = await requireDb().select().from(p0Spells).where(eq(p0Spells.ownerId, userId)).orderBy(desc(p0Spells.createdAt));
+  return rows.map((r) => toPublicSpell(r));
 }
 
-export async function getSpellPublic(spellId: string): Promise<Phase0Spell | null> {
-  const db = requireDb();
-  const [spell] = await db
-    .select()
-    .from(p0Spells)
-    .where(eq(p0Spells.id, spellId))
-    .limit(1);
+/** Raw row for server-side use (OG route); includes taken-down spells so callers can return 410. */
+export async function getSpellRow(spellId: string): Promise<Phase0Spell | null> {
+  const [spell] = await requireDb().select().from(p0Spells).where(eq(p0Spells.id, spellId)).limit(1);
   return spell ?? null;
 }
 
-export async function getFeaturedSpells(limit = 5): Promise<Phase0Spell[]> {
-  const db = requireDb();
-  return db
+export function isTakenDown(spell: Pick<Phase0Spell, "isPublic" | "removedAt">): boolean {
+  return !spell.isPublic || spell.removedAt !== null;
+}
+
+export async function getSpellPublic(spellId: string): Promise<PublicSpell | null> {
+  const spell = await getSpellRow(spellId);
+  return spell && !isTakenDown(spell) ? toPublicSpell(spell) : null;
+}
+
+export async function getFeaturedSpells(limit = 5): Promise<PublicSpell[]> {
+  const rows = await requireDb()
     .select()
     .from(p0Spells)
-    .where(eq(p0Spells.isPlatformSpell, true))
+    .where(and(eq(p0Spells.isPlatformSpell, true), visible))
     .orderBy(desc(p0Spells.shareCount), desc(p0Spells.createdAt))
     .limit(limit);
+  return rows.map((r) => toPublicSpell(r));
 }
 
 export async function incrementShareCount(spellId: string): Promise<void> {
-  const db = requireDb();
-  await db.execute(
-    sql`UPDATE ${p0Spells} SET share_count = share_count + 1 WHERE id = ${spellId}`
-  );
+  await requireDb().execute(sql`UPDATE ${p0Spells} SET share_count = share_count + 1 WHERE id = ${spellId}`);
 }
