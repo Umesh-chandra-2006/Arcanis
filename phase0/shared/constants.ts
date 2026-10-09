@@ -11,6 +11,17 @@ export const SPARK = {
   referralInvitee: 0,
 } as const;
 
+/**
+ * Fake-door Spark packs (Phase Plan 5, task A13). Prices from Master Doc 28.3;
+ * Spark counts are placeholders (founder to set before Phase 2). Nothing is sold.
+ */
+export const SPARK_PACKS = [
+  { id: "small", spark: 10, price: "$2.99" },
+  { id: "medium", spark: 30, price: "$7.99" },
+  { id: "large", spark: 90, price: "$19.99" },
+] as const;
+export type SparkPackId = (typeof SPARK_PACKS)[number]["id"];
+
 export const SPARK_SIGNUP_GRANT = SPARK.signupGrant;
 export const SPARK_CREATION_COST = SPARK.creationCost;
 

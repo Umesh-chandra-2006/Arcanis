@@ -7,6 +7,7 @@ import { Panel } from "@/components/game/panel";
 import { SpellCardWrapper } from "@/components/SpellCard";
 import { ElementIcon } from "@/components/game/element-icon";
 import { SparkDots } from "@/components/SparkDots";
+import { SparkPacksDialog } from "@/components/SparkPacks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,8 @@ export default function Create() {
   });
   const createSpell = trpc.spells.create.useMutation();
   const { gate, dialog: nameDialog } = useNameGate();
+  const [zeroOpen, setZeroOpen] = useState(false);
+  const [zeroShown, setZeroShown] = useState(false);
   const myCode = trpc.referrals.myCode.useQuery(undefined, { enabled: isAuthenticated, staleTime: Infinity });
   const trackEvent = trpc.analytics.track.useMutation();
   const utils = trpc.useUtils();
@@ -84,6 +87,14 @@ export default function Create() {
 
   const balance = sparkBalance.data?.balance ?? 5;
 
+  // Fake door: the first time the player is at zero Spark on this visit, show the packs.
+  useEffect(() => {
+    if (sparkBalance.data?.balance === 0 && !zeroShown && phase === "form") {
+      setZeroShown(true);
+      setZeroOpen(true);
+    }
+  }, [sparkBalance.data?.balance, zeroShown, phase]);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !description.trim()) {
@@ -91,6 +102,7 @@ export default function Create() {
       return;
     }
     if (balance < 1) {
+      setZeroOpen(true);
       toast.error("You're out of Spark");
       return;
     }
@@ -116,7 +128,8 @@ export default function Create() {
         setPhase("done");
       } else {
         setPhase("form");
-        toast.error(result.error ?? "The forge could not shape that spell. Please try again.");
+        if (result.code === "no_spark") setZeroOpen(true);
+        else toast.error(result.error ?? "The forge could not shape that spell. Please try again.");
       }
     } catch (error: any) {
       setPhase("form");
@@ -178,6 +191,7 @@ export default function Create() {
           </button>
           <nav className="flex items-center gap-2">
             <SparkDots balance={balance} />
+            <SparkPacksDialog open={zeroOpen} onOpenChange={setZeroOpen} source="zero_spark" balance={0} />
             <Button size="sm" variant="ghost" onClick={() => navigate("/library")}>
               <BookOpen />
               Spellbook

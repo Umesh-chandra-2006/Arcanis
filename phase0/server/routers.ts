@@ -7,6 +7,7 @@ import { adminRouter } from "./routers/admin";
 import { moderationRouter } from "./routers/moderation";
 import { referralsRouter } from "./routers/referrals";
 import { profileRouter } from "./routers/profile";
+import { sparkRouter } from "./routers/spark";
 
 export const appRouter = router({
   auth: authRouter,
@@ -17,6 +18,7 @@ export const appRouter = router({
   moderation: moderationRouter,
   referrals: referralsRouter,
   profile: profileRouter,
+  spark: sparkRouter,
 });
 
 export type AppRouter = typeof appRouter;

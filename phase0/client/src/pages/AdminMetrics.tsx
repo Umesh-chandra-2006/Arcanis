@@ -27,6 +27,7 @@ export default function AdminMetrics() {
   const daily = trpc.analytics.dailyMetrics.useQuery(undefined, { enabled: isAdmin });
   const overview = trpc.analytics.overview.useQuery(undefined, { enabled: isAdmin });
   const breaker = trpc.admin.breakerStatus.useQuery(undefined, { enabled: isAdmin, refetchInterval: 60_000 });
+  const fakeDoor = trpc.spark.fakeDoorStats.useQuery(undefined, { enabled: isAdmin });
   const reset = trpc.admin.breakerReset.useMutation();
   const setLimits = trpc.admin.breakerSetLimits.useMutation();
   const [creationLimit, setCreationLimit] = useState("");
@@ -84,6 +85,19 @@ export default function AdminMetrics() {
                 </p>
               )}
             </div>
+          )}
+        </Panel>
+
+        <Panel title="Fake door (Spark packs)">
+          {!fakeDoor.data ? <Spinner /> : (
+            <p className="text-sm">
+              Pack clicks:{" "}
+              {fakeDoor.data.intents.length
+                ? fakeDoor.data.intents.map((i) => `${i.pack} ${i.clicks}`).join(" · ")
+                : "none yet"}
+              {" · "}waitlist {fakeDoor.data.waitlist}
+              <span className="block text-xs text-muted-foreground">Clicks overstate real purchases: read as an upper bound on H3.</span>
+            </p>
           )}
         </Panel>
 

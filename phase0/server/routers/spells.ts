@@ -10,6 +10,7 @@ import {
 } from "../spell-pipeline";
 import { getSparkBalance, recentSparkEntries } from "../spark";
 import { trackEvent } from "../analytics";
+import { hitRateLimit } from "../db-rate-limit";
 
 const SHARE_DEDUP_WINDOW_MS = 60 * 60 * 1000;
 const recentShareOpens = new Map<string, number>();
@@ -61,6 +62,12 @@ export const spellsRouter = router({
           sessionId: ctx.sessionId,
           metadata: result.spell ? { spellId: result.spell.id, element: result.spell.element, category: result.spell.category } : { code: result.code },
         });
+      }
+
+      // Denominator for the fake-door metric: players who ran out (once per player per day).
+      if (result.code === "no_spark" || (result.success && result.sparkBalance === 0)) {
+        const first = await hitRateLimit(`sparkzero:${ctx.user.id}`, 1, 86_400);
+        if (first.allowed) await trackEvent({ eventType: "spark_zero_reached", userId: ctx.user.id, sessionId: ctx.sessionId, metadata: {} });
       }
 
       return result;

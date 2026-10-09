@@ -43,4 +43,5 @@ export const SERVER_EVENTS = [
   "session_day_n",
   "spark_pack_intent",
   "spark_waitlist_joined",
+  "spark_zero_reached",
 ] as const;

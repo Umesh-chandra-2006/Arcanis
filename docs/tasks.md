@@ -123,8 +123,8 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** DoD item 9 passes (no XP, circles, proficiency or Tower anywhere) and no Will number appears in any payload or screen. Met (`server/leakage.test.ts`: every spell-returning endpoint checked through the real router; client source scan).
 
 ### A13 Fake door (0.5)
-- [ ] Spark pack tiles marked "coming soon" at zero Spark and from the Spark chip; `spark_pack_intent` with pack; waitlist opt-in (`spark_waitlist`); no grant.
-- **Done when:** intent and waitlist joins are recorded and visible on the admin page.
+- [x] Spark pack tiles marked "coming soon" (prices from Master Doc 28.3; Spark counts 10/30/90 are placeholders for the founder in `SPARK_PACKS`), shown when the player reaches zero Spark and from the Spark chip; `spark_pack_intent` with pack, source and balance; waitlist opt-in (`p0_spark_waitlist`, migration 0015 applied to production); no grant ever. `spark_zero_reached` (once per player per day) gives the metric its denominator. (2026-10-10)
+- **Done when:** intent and waitlist joins are recorded and visible on the admin page. Met (`server/fake-door.test.ts`; `/admin/metrics` shows pack clicks, waitlist size and intent rate at zero Spark).
 
 ### A14 Phase 0 measurement (1) (after A2, A6, A7, A8)
 - [ ] Run the corpus through the chosen providers.

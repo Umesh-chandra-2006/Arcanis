@@ -322,6 +322,13 @@ export const p0Referrals = mysqlTable(
   })
 );
 
+// Fake-door waitlist (Build Plan 9). Intent clicks are analytics events.
+export const p0SparkWaitlist = mysqlTable("p0_spark_waitlist", {
+  userId: int("user_id").primaryKey(),
+  packClicked: varchar("pack_clicked", { length: 16 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export type Phase0User = typeof p0Users.$inferSelect;
 export type Phase0Spell = typeof p0Spells.$inferSelect;
 export type Phase0SparkLedgerEntry = typeof p0SparkLedger.$inferSelect;
