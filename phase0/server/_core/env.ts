@@ -58,5 +58,7 @@ export const ENV = {
   // Spend protection (Build Plan 7.7)
   dailySpendLimitUsd: num(process.env.DAILY_SPEND_LIMIT_USD, 2),
   dailyCreationLimit: num(process.env.DAILY_CREATION_LIMIT, 50),
+  /** Providers that bill real money; spend from others is shadow cost. Empty while all keys are free. */
+  billedProviders: (process.env.BILLED_PROVIDERS ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   founderAlertEmail: process.env.FOUNDER_ALERT_EMAIL ?? "",
 };

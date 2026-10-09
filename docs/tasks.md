@@ -59,10 +59,10 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** the double-spend race in `phase0/server/spark.ts` is gone and tests prove it. Met. The tests first failed: TiDB's REPEATABLE READ snapshot hid concurrent spends after the lock; fixed with READ COMMITTED.
 
 ### A4 Daily spend circuit breaker (0.5) (after A2)
-- [ ] Before reserving Spark, sum today's UTC `cost_estimate_usd`; at or above `DAILY_SPEND_LIMIT_USD`, refuse with "The forge is cooling", reserve nothing, log `creation_blocked_spend_cap`, email the founder.
-- [ ] `DAILY_CREATION_LIMIT` (F1): count today's successful and in-flight creations; at the limit refuse the same way. A provider 429 or quota error refunds and trips the breaker for the day. Defaults: `DAILY_SPEND_LIMIT_USD=2` (real spend), `DAILY_CREATION_LIMIT=50` until the A2 audit sets it.
-- [ ] Admin reset or raise.
-- **Done when:** a test proves generation is refused at either limit with no Spark reserved.
+- [x] `server/spend-breaker.ts`: before reserving Spark, sums today's UTC `cost_estimate_usd` over `BILLED_PROVIDERS` (real spend; empty while every key is free) against `DAILY_SPEND_LIMIT_USD`; refuses with "The forge is cooling. Try again soon.", reserves nothing, logs `creation_blocked_spend_cap`, emails `FOUNDER_ALERT_EMAIL` once per day. (2026-10-10)
+- [x] `DAILY_CREATION_LIMIT`: counts today's pending and committed spends; a provider quota exhaustion trips the breaker until the next UTC day or an admin reset. Defaults 2 USD and 50. (2026-10-10)
+- [x] Admin reset or raise: `admin.breakerStatus`, `admin.breakerReset`, `admin.breakerSetLimits` (admin role only; UI in A11). State in `p0_breaker_days` (migration 0007, applied to production). (2026-10-10)
+- **Done when:** a test proves generation is refused at either limit with no Spark reserved. Met (`server/spend-breaker.test.ts`).
 
 ### A5 Identity (1.5)
 - [ ] 6-digit code in the same email as the link: hashed, 10 minute expiry, single use, 5 attempts, rate-limited per email and IP. Using link or code consumes both.

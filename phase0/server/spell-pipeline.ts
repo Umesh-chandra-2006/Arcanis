@@ -2,7 +2,8 @@ import { nanoid } from "nanoid";
 import { desc, eq, sql } from "drizzle-orm";
 import { requireDb } from "./db";
 import { p0Spells, type Phase0Spell } from "../drizzle/schema";
-import { generateText } from "./providers/text";
+import { AllProvidersFailedError, generateText } from "./providers/text";
+import { checkBreaker, FORGE_COOLING_MESSAGE, tripBreaker } from "./spend-breaker";
 import { generateImage } from "./providers/image";
 import {
   LLMSpellIdentitySchema,
@@ -52,6 +53,11 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
 
   const db = requireDb();
   const spellId = nanoid(36);
+
+  const blocked = await checkBreaker({ userId });
+  if (blocked) {
+    return { success: false, error: FORGE_COOLING_MESSAGE };
+  }
 
   const spend = await reserveSpark(userId, spellId);
   if (!spend.ok) {
@@ -187,6 +193,7 @@ Return the identity JSON now.`;
     }
     return result.data;
   } catch (error) {
+    if (error instanceof AllProvidersFailedError && error.quotaExhausted) await tripBreaker("provider_quota");
     console.error("[Spell Pipeline] LLM call failed:", error);
     return null;
   }

@@ -188,9 +188,21 @@ export const p0ProviderCalls = mysqlTable(
   })
 );
 
+// Daily spend circuit breaker state, one row per UTC day (Build Plan 7.7).
+export const p0BreakerDays = mysqlTable("p0_breaker_days", {
+  day: varchar("day", { length: 10 }).primaryKey(), // YYYY-MM-DD (UTC)
+  trippedReason: varchar("tripped_reason", { length: 64 }),
+  trippedAt: timestamp("tripped_at"),
+  resetAt: timestamp("reset_at"),
+  spendLimitOverrideUsd: double("spend_limit_override_usd"),
+  creationLimitOverride: int("creation_limit_override"),
+  alertedAt: timestamp("alerted_at"),
+});
+
 export type Phase0User = typeof p0Users.$inferSelect;
 export type Phase0Spell = typeof p0Spells.$inferSelect;
 export type Phase0SparkLedgerEntry = typeof p0SparkLedger.$inferSelect;
 export type Phase0AnalyticsEvent = typeof p0AnalyticsEvents.$inferSelect;
 export type Phase0Review = typeof p0Reviews.$inferSelect;
 export type Phase0ProviderCall = typeof p0ProviderCalls.$inferSelect;
+export type Phase0BreakerDay = typeof p0BreakerDays.$inferSelect;
