@@ -1,12 +1,32 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.0*
+*Complete Vision Blueprint | Version 7.1*
 
 Author: Umesh Chandra Tirumani
-Status: Architecture Complete | Ready for Implementation | **Commercial Product**
+Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.0 supersedes all prior versions, including v6.0. This is the authoritative reference document ("the bible") for the project.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.1 supersedes all prior versions, including v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.1, WHAT CHANGED FROM v7.0 (2026-10-09)
+
+Founder decisions taken after the 2026-10-09 repo audit (`docs/status_report.md`). Locked decisions are clarified, not reopened; Will secrecy is unchanged.
+
+- **Will: capacity vs current Will (Section 2.1, clarification).** Will is two hidden numbers: *capacity* (absolute, 0 to 500, grows, gates tier access) and *current Will* (starts each battle at capacity, depleted per cast). State bands are now percentages of capacity, which fixes v7.0's absolute bands that put every new avatar (95 to 125 Will) in Strained from turn one. Exact tuning through the balance harness.
+- **Will cost display (Sections 2.1, 6.5).** No numeric Will cost anywhere in the UI. The spell detail view shows a qualitative strain descriptor (Light, Moderate, Heavy) and nothing else about Will.
+- **Hybrid Power Budget for spell stats (Sections 5.4, 6.3, 21.2).** Code computes a power budget from tier and classification; the LLM allocates stats within it; Layer 2a enforces the budget total and the caps. Prevents every spell with the same classification from being mechanically identical.
+- **Research timer (Section 6.3).** First 2 spells per account skip the research wait. The timer is stored as a `research_ready_at` timestamp, not an in-process timer.
+- **No assessment questions at creation until the Tower ships (Sections 5.4, 6.3).** Phase 1 creation does not generate Tower questions.
+- **Minigame scoring and async piloting (Sections 11.2, 11.6).** The server scores minigames from raw input events. The piloted side samples its owner's stored performance per element group, blended toward the population median by sample size.
+- **Identity (Section 18.1).** The magic-link email also carries a 6-digit code, for players whose email opens in an in-app browser. No passwords anywhere.
+- **Onboarding (Section 18.2).** Signup goes straight to creation. The first battle comes later. The post-battle "Spell XP" reveal is removed.
+- **Platform spell fix (Section 5.6).** Conflagration Wave is category Attack, cast type Continuous (v7.0 listed "Continuous" as its category).
+- **Viral coefficient (Section 23.6).** Defined as the standard k-factor: invites (shares) per user x invite conversion rate.
+- **Architecture (Sections 24, 25, 26).** Phase 1 ships as a modular monolith (one deployable, four internal modules matching the four services) on MySQL, with card images in object storage. Services split when load or team size requires it. Payments fallback recorded: Paddle (also a Merchant of Record).
+
+**Still open after v7.1 (flagged, not resolved):** Section 2.1 Will cost ranges vs Section 6.2 Will floors/caps disagree (for example Advanced 30 to 60 vs 28 to 65); Section 18.2 avatar selection shows Will numerically, which conflicts with Section 2.1; Fusion Spark cost appears in Phase 0 scope while Fusion is V2.
 
 ---
 
@@ -82,15 +102,26 @@ Arcanis is built on an **"op at the start, opt into grind"** philosophy. Players
 
 Will is quantified internally but never shown to the player. The game surfaces qualitative feedback only when Will crosses critical thresholds. Will can be regenerated via regen spells but this is NEVER disclosed. Players discover this mechanic themselves. Will is never explained anywhere in the UI, ever. **This is a firm, locked design decision, not open for reconsideration.** The designer's position: Arcanis is not a stagnant, static game but a broad, expanding environment; players are expected to do the actual work of understanding it, individually and as a community, rather than being handed a meter.
 
+### Capacity and Current Will (clarified in v7.1)
+
+Will is tracked internally as two numbers. Neither is ever sent to the client.
+
+- **Capacity** is absolute (0 to 500 internal scale). It is set by the avatar's base Will, grows only through the Will Growth Sources below, never decays, and is the number that gates tier access and governs summon and fusion stability thresholds.
+- **Current Will** starts each battle equal to capacity and is depleted by each cast's Will cost (after proficiency and terrain modifiers). Regen spells can restore it, never above capacity. It resets to capacity at the start of the next battle.
+
+The battle state band is computed from current Will as a percentage of capacity, so a new avatar and a veteran both start every battle Sharp, and a veteran simply has more room before strain sets in. The server emits only the band key; the client receives feedback text, never the numbers or the percentage.
+
 ### Will States and Player Feedback
 
-| Will Range | State | Player Feedback |
+| Current Will as % of capacity | State | Player Feedback |
 |---|---|---|
-| 300-500 | Sharp / Sovereign | None. Clean casting. |
-| 150-299 | Focused / Steady | None. Full power. |
-| 80-149 | Strained | "Your thoughts feel heavy," "Focus slips at the edges" |
-| 30-79 | Failing | Knockoff cast. "The construct trembles," "Your vision swims" |
-| 0-29 | Broken | Spell fires and fails. MP consumed. "Your mind goes blank" |
+| 60% and above | Sharp / Sovereign | None. Clean casting. |
+| 30% to under 60% | Focused / Steady | None. Full power. |
+| 16% to under 30% | Strained | "Your thoughts feel heavy," "Focus slips at the edges" |
+| 6% to under 16% | Failing | Knockoff cast. "The construct trembles," "Your vision swims" |
+| under 6% | Broken | Spell fires and fails. MP consumed. "Your mind goes blank" |
+
+Band edges are starting values; exact tuning is done through the balance harness (Phase 1 Build Plan Section 11). v7.0 used absolute bands (300+, 150 to 299, 80 to 149, 30 to 79, under 30), which placed every default avatar (95 to 125 Will) in Strained before its first cast.
 
 ### Feedback String Variant Pools (New, Locked Design)
 
@@ -116,6 +147,8 @@ To preserve the mystery, each Will-state band must draw from a **pool of multipl
 | Mega | 70-120 | Channeled and Continuous spells drain Will per turn of maintenance |
 | Freestyle | 15-30 | No element modifier |
 | Fusion (V2) | Sum of both + 20% surcharge | Both terrain and proficiency modifiers apply |
+
+Will cost is never shown as a number. The spell detail view (Section 6.5) shows only a qualitative strain descriptor: **Light**, **Moderate**, or **Heavy**, derived server-side from the spell's Will cost relative to its tier range. The descriptor describes the spell, not the player, so it reveals nothing about the player's capacity or current Will.
 
 ### Proficiency Reduction on Will Cost
 
@@ -345,6 +378,8 @@ The trap's trigger condition is not chosen from a fixed enum, it emerges from th
 
 Generated by Layer 1 (Section 21), then clamped and checked by Layer 2 before storage.
 
+**v7.1, Power Budget:** before the Layer 1 call, code computes a power budget from tier, element, primary/secondary category and cast type. The prompt gives the model that budget, and the model allocates it across the numeric fields (damage range, MP cost, Will cost, cast time, maintenance cost, interruption threshold, and so on) to fit the described concept. Layer 2a then enforces both the per-field caps (Sections 5.5, 6.2) and the budget total, rescaling an over-budget allocation proportionally. `assessment_questions` is omitted from the Phase 1 schema; it returns when the Tower ships (Section 6.3).
+
 ```json
 {
   "name": "string",
@@ -404,7 +439,7 @@ Validation layer caps for summon stats per spell tier. Prevents LLM generating b
 | Element | Spell | Primary Category | Cast Type | Notable |
 |---|---|---|---|---|
 | Fire | Ember Lance | Attack | Instant | Standard fire projectile |
-| Fire | Conflagration Wave | Continuous | Continuous | Variable damage, interruptible, spreads per turn |
+| Fire | Conflagration Wave | Attack | Continuous | Variable damage, interruptible, spreads per turn (category corrected in v7.1) |
 | Fire | Solar Collapse | Attack | Charged | Interruptible during charge turn |
 | Water | Tidal Strike | Attack | Instant | Reliable damage |
 | Water | Undertow Bind | Debuff | Instant | Reduces opponent spell effectiveness |
@@ -469,11 +504,13 @@ These caps are enforced by Layer 2a of Two-Step Verification (Section 21.2), det
 ## 6.3 Spell Creation Flow
 
 - Player inputs: spell name, element, description (flavor only, no mechanical weight). Color and aesthetic are emergent from spell identity not forced by element. A black fire spell generates dark obsidian art. A crimson blood water spell generates deep red fluid art.
-- LLM (Layer 1) generates simultaneously: all spell stats, classification fields, summon profile if applicable, assessment questions 2D array (10 per tier), research_complexity_score.
+- Code computes the spell's power budget from tier and classification (Section 5.4). LLM (Layer 1) then generates simultaneously: a stat allocation within that budget, classification fields, summon profile if applicable, flavor/lore text, research_complexity_score.
+- Assessment questions (10 per tier) are **not** generated at creation until the Tower ships (Phase 3). When it does, a Two-Step Verified batch job backfills questions for existing spells.
 - Output passes through full Two-Step Verification (Section 21) before storage.
 - Image generation fires in parallel: spell card art via paid FLUX-class inference. Prompt derived from spell name, flavor text, lore line, and classification. Generated image also passes moderation (Layer 2b).
 - Fusion spells: same flow, dual-element image prompt. Both constituent elements present in art.
-- Research time: stopwatch only. No countdown. No time disclosed. Scales with research_complexity_score.
+- Research time: stopwatch only. No countdown. No time disclosed. Scales with research_complexity_score. Stored as a `research_ready_at` timestamp on the spell, so it survives restarts and needs no in-process timer.
+- **First 2 spells per account skip research entirely** (v7.1): they are usable as soon as generation and verification finish. The real generation time (roughly 10 to 30 seconds) is presented as the forging moment. This keeps the first session's payoff inside the first minute.
 - First 3 spells if above requirements: stored locked. "This spell awaits your growth." No restriction language.
 - **Every creation consumes Spark** (Section 22). Creation cannot be initiated without sufficient Spark balance.
 
@@ -497,6 +534,8 @@ The spell card is the primary UI unit for displaying a spell, both in-game (coll
 - Border and accent color derived from the spell image's dominant color, not a fixed element palette
 
 **What's never on the card:** damage numbers, MP cost, Will cost, proficiency tier. Stats stay in-game, accessible by clicking the card to open full spell info. The card is identity, not a stat sheet.
+
+**Spell detail view (v7.1):** shows damage range, MP cost, classification and cast time. Will appears only as the strain descriptor (Light, Moderate, Heavy; Section 2.1), never as a number, range, bar or icon count, here or anywhere else in the UI.
 
 Card aspect ratio is set by in-game UI context (portrait, trading-card-like), not fixed to a social media square. **The public share/preview surface (Section 23) generates a properly-sized Open Graph image variant automatically so the card renders correctly when shared externally**, this is a distinct rendering target from the in-game UI card, not the same asset reused.
 
@@ -658,6 +697,7 @@ A traditional live-PvP queue is only fun if an opponent is available within seco
   - **Resource discipline:** average MP/Will spent per turn relative to available pool.
 - When Player A queues for Open Brawl, the system selects a **stored profile** (Player B's real deck + vector) from the matchmaking pool.
 - **Player B's opponent-side turns are piloted by the existing rule-based combat engine** (the same engine originally specified for the "vs. System" bot), weighted by B's playstyle vector and constrained to B's actual owned deck. This means Player A is genuinely fighting "the way Player B plays," using spells Player B actually created or owns, just without Player B needing to be online.
+- **Minigame performance on the piloted side (v7.1).** A human's damage depends on their minigame result, so the piloted side needs one too, or async battles become asymmetric. The server keeps every player's server-scored minigame results per element group. For the piloted side, it samples from the owner's stored results for that group, blended toward the population median for that group with weight n/(n+10), where n is the owner's sample count. A new player with no history is piloted at the population median; a veteran is piloted at roughly their own skill. Only server-scored results (Section 11.6) enter these distributions.
 - **This incurs zero LLM cost.** The async opponent is not an AI-generated entity in the LLM sense; it is deterministic rule-based logic reading real stored data. The only LLM-cost battle surface in the entire product is Freestyle Mode (Section 12), which is already session-capped by design.
 - Profiles refresh on deck edit, and periodically thereafter, so no player is ever permanently fighting a stale ghost of someone who quit the game a year ago.
 - Turn structure, terrain, interruption, summon resolution, and trap mechanics all resolve exactly as specified in Sections 5 and 10, async changes only the opponent's decision source, nothing about how a turn is computed.
@@ -690,7 +730,7 @@ Live, truly real-time PvP is **not abandoned, it is sequenced correctly.** Once 
 - Player selects spell or sets a Trap if cast type allows.
 - Trap spells set in a trap slot and do not consume turn action when they trigger.
 - Minigame triggers based on spell element (element-group minigames for V1, see companion Phase 1 Build Plan).
-- Minigame outcome determines actual damage within spell damage range.
+- Minigame outcome determines actual damage within spell damage range. **The server scores the minigame (v7.1):** it issues the seed and timing windows, the client sends raw input events, and the server computes accuracy and rejects implausible input. A client-reported accuracy number is never trusted.
 - Terrain modifiers applied: damage, MP cost, proficiency effectiveness, Will cost.
 - If opponent action triggers interruption threshold on caster's active Continuous/Channeled/Charged spell: interruption resolves.
 - HP/MP/Will updated. Summon actions resolve if active. Win condition checked.
@@ -934,22 +974,24 @@ The onboarding flow is rebuilt around one non-negotiable rule: **the funnel is n
 
 ## 18.1 The Identity Model
 
-- **No password required at signup. Magic-link email only**, one field, no verification wall, account created instantly on link click. This preserves nearly all the frictionlessness of a true zero-signup flow while giving the product a real, rate-limitable, billable identity.
+- **No password required at signup. Magic-link email only**, one field, no verification wall, account created instantly on link click. **v7.1:** the same email also carries a 6-digit code that can be typed into the tab that requested it. This covers players whose mail app opens links in an in-app browser, where a link-only session would land in the wrong browser. There are no passwords anywhere in the product; codes are single-use, short-lived and attempt-limited. This preserves nearly all the frictionlessness of a true zero-signup flow while giving the product a real, rate-limitable, billable identity.
 - **Viewing is free and anonymous. Generating is not.** An anonymous visitor arriving via a shared spell card (Section 23) can view the full public preview, card art, flavor text, lore line, with zero friction and no account. The moment they attempt to *create* their own spell, they hit the magic-link step. This is the correct place to draw the line: browsing costs nothing, generation costs real money.
 - **Hard per-identity and per-device rate limits apply regardless of subscription tier**, plus a fraud-detection layer (device fingerprinting, disposable-email domain heuristics) to catch abuse before it consumes real inference spend, not after.
 - First free Spark grant lands automatically on account confirmation, and the player is dropped directly into a minimal creation flow, no tour, no forced tutorial sequence before the first meaningful action.
 
 ## 18.2 Onboarding Flow
 
+**v7.1: onboarding goes straight to creation.** v7.0 put a guided battle before the first creation here while Sections 18.1 and 23.2 said "straight into creation"; the founder resolved this in favor of creation first, because the creation loop is the product. The post-battle Spell XP reveal is removed (XP is a Phase 3 system and Phase 1 shows no progression).
+
 | Step | What Happens | What Is Shown |
 |---|---|---|
-| 1. Magic-link signup | Email only. Instant confirmation via link click. | Email field only. |
-| 2. Avatar selection | Pick from default avatars | Full stats: HP, MP, Will, affinity bonus |
-| 3. Name your mage | Single text input | Name field only |
-| 4. First guided battle | System battle (rule-based) on Neutral Grounds. Small pre-loaded starter deck. | HP/MP bars, spell grid, timer. No XP bars, no Will, no proficiency. |
-| 5. Post-battle reveal | First win screen | One system: Spell XP. One-line explanation. |
-| 6. Lab introduction | First Spark grant already available. Free spell creation. | Full Lab flow, trimmed to a reduced onboarding subset of categories/cast types (see companion Phase 1 Build Plan) to minimize first-session cognitive load. Spell stored locked if above requirements: "This spell awaits your growth." |
-| 7. Home screen unlock | All pages accessible | All pages. Tower tooltip: "The Tower does not accept visitors without proven spells." |
+| 1. Magic-link signup | Email only. Confirm by link click or by typing the 6-digit code from the same email. | Email field, then code field. |
+| 2. First creation | First Spark grant already available. Minimal creation flow, no tour. First 2 spells skip research (Section 6.3). | Lab flow, trimmed to the launch creation subset (see companion Phase 1 Build Plan). Spell stored locked if above requirements: "This spell awaits your growth." |
+| 3. Share prompt | Card revealed with a share action. | The card, share button, "Create another". |
+| 4. Name your mage | Single text input, asked the first time the name is needed (first share or first battle). | Name field only. |
+| 5. Avatar selection | Asked the first time the player enters battle. | HP, MP, affinity bonus. **Flag (pending founder):** v7.0 listed Will here as a visible stat, which conflicts with Section 2.1. Until decided, Will is not shown. |
+| 6. First guided battle | System battle (rule-based) on Neutral Grounds, using a small starter deck plus the player's own spells. | HP/MP bars, spell grid, timer. No XP bars, no Will, no proficiency. |
+| 7. Home screen unlock | All pages accessible | All pages available in the current phase. The Tower tooltip ("The Tower does not accept visitors without proven spells.") appears only once the Tower ships. |
 
 **Critical (unchanged):** Will is NEVER explained anywhere in the UI. No tooltip. No tutorial. No documentation.
 
@@ -1007,7 +1049,7 @@ The onboarding flow is rebuilt around one non-negotiable rule: **the funnel is n
 
 ### 21.2 Layer 2a, Schema & Numeric Validation (deterministic, zero LLM cost)
 
-Pure code. Every numeric or enum field the generation model produces is clamped against the hard caps already defined in this document (Section 6.2 stat caps, Section 5.5 summon caps, cast-type/category taxonomy enforcement, Trap requiring a condition and visibility choice, Hybrid requiring a secondary category, Summon forced to Continuous). This layer runs on 100% of generations and costs nothing beyond compute.
+Pure code. Every numeric or enum field the generation model produces is clamped against the hard caps already defined in this document (Section 6.2 stat caps, Section 5.5 summon caps, cast-type/category taxonomy enforcement, Trap requiring a condition and visibility choice, Hybrid requiring a secondary category, Summon forced to Continuous). Since v7.1 it also enforces the spell's power budget total (Section 5.4), so the model chooses the shape of a spell but never its total strength, and tier always comes from the request, never from the model. This layer runs on 100% of generations and costs nothing beyond compute.
 
 ### 21.3 Layer 2b, Safety & Moderation (fast, cheap, purpose-built classifier)
 
@@ -1021,7 +1063,7 @@ The genuinely hard case: does this spell's flavor text actually match its assign
 
 | Surface | Layer 1 Output | Layer 2a | Layer 2b | Layer 2c (conditional) |
 |---|---|---|---|---|
-| Spell creation | Stats, classification, flavor/lore text, summon profile, assessment questions | Yes, full stat/schema clamp | Yes, text + image | Yes, category/flavor coherence check on flag |
+| Spell creation | Stat allocation within the power budget, classification, flavor/lore text, summon profile (assessment questions once the Tower ships) | Yes, full stat/schema clamp plus budget total | Yes, text + image | Yes, category/flavor coherence check on flag |
 | Fusion research | Fusion spell stats, dual-element art | Yes | Yes | Yes |
 | Tower batch grading | Pass/Fail per submitted answer | N/A (binary output) | Yes, on submitted text | Yes, grading defensibility on flag |
 | Freestyle Mode turn | Opponent move, narrative, HP change, round result | Partial, HP/damage bounds clamp | Yes, narrative text | Yes, plausibility check on flag |
@@ -1098,38 +1140,43 @@ The existing Tower Daily Arc lore drops (Section 16.1) and Sunday Arc events are
 The growth loop is unvalidated until real data exists. Track, at minimum:
 - Signup → first-creation conversion rate
 - First-creation → share rate
-- Share-click → new-signup rate (this is the effective viral coefficient, the single number that determines whether the loop compounds or leaks)
+- Share-click → new-signup rate
+- **Viral coefficient (k-factor), standard definition (v7.1):** k = invites per user x invite conversion rate, where "invites per user" is shares sent per active user in the period and "invite conversion rate" is new signups attributed to a share divided by shares sent. k is the single number that determines whether the loop compounds (k at or above 1) or leaks. v7.0 called share-click to signup "the viral coefficient"; that is only the conversion half.
 
 ---
 
 # 24. Technical Stack (UPDATED)
 
+*v7.1: Phase 1 runs as a modular monolith (Section 26). The four service rows below are now internal modules of one Node.js deployable on one paid Render instance; they split into separate services when load or team size requires it. The database is MySQL (Drizzle ORM) rather than Supabase Postgres; the host is under review (see Phase 1 Build Plan Section 3). Card images live in object storage, not in the database.*
+
 | Layer | Technology | Purpose |
 |---|---|---|
-| Frontend | React 18 + Vite | SPA framework |
+| Frontend | React 19 + Vite (v7.0 said React 18) | SPA framework |
 | Styling | Tailwind CSS | Dark fantasy UI |
 | Animation | Framer Motion | HP/MP bars, battle transitions, spell cast effects |
-| State | Zustand | Game, character, battle state |
+| State | React Query via tRPC, plus local component state (Zustand only if battle state needs it) | Game, character, battle state |
+| API | tRPC over Express | Typed client/server contract |
 | Real-time | Socket.io (WebSockets) | Live battle events (used for the human player's own session even in async matches; not required for the opponent side) |
 | Game Service | Node.js + Socket.io on Render | Battle state machine, async opponent piloting engine, matchmaking pool, rule-based bot logic |
 | Lab Service | Node.js + Express on Render | Spell creation, fusion, Tower, LLM provider abstraction, Two-Step Verification pipeline, image generation |
 | Progression Service | Node.js + Express on Render | XP events via Redis pub/sub, circle advancement |
 | Gateway + Community | Node.js + Express on Render | Auth (magic-link), routing, halls, friends, leaderboards, Spark/Aether Shard ledger |
-| Database | Supabase (PostgreSQL) | All persistent data |
-| Cache / Queue | Upstash Redis | Battle sessions, matchmaking pool, Spark ledgers, summon state |
+| Database | MySQL via Drizzle ORM (v7.0: Supabase PostgreSQL; host under review) | All persistent data, including the Spark ledger (ledger lives in the database, not Redis) |
+| Object storage | S3-compatible bucket behind the CDN (provider TBD in Build Plan) | Card images and OG image variants |
+| Cache / Queue | Upstash Redis, added only when a feature needs it (rate limits across instances, battle sessions) | Battle sessions, matchmaking pool, summon state |
 | Spell creation LLM (Layer 1) | Cost-tiered provider selection, see 24.3 | Stat/classification generation |
 | Moderation (Layer 2b) | Purpose-built moderation classifier, not a generalist LLM | Text + image safety check |
 | Image generation | Paid FLUX-class inference | Spell card art. **No longer assumed free at scale, real per-image cost budgeted, see Section 25.** |
 | Spell animations | fal.ai Kling-class | Deferred until revenue milestone. Feature flag. |
 | Frontend hosting | Vercel | Static build, CDN |
-| Payments | Lemon Squeezy (Merchant of Record) | Subscriptions, Spark packs, Founder's Pass, handles global VAT |
+| Payments | Lemon Squeezy (Merchant of Record), pending founder verification for an India-based seller; fallback Paddle (also MoR). Razorpay is not an MoR and would mean handling global tax ourselves. | Subscriptions, Spark packs, Founder's Pass, handles global VAT |
 | Migration target | AWS (ECS + ElastiCache + RDS) | When platform limits hit |
 
 ## 24.1 LLM Call Surfaces
 
 | Call | Trigger | Output | Verification |
 |---|---|---|---|
-| Spell creation | Player confirms new spell in Lab, Spark deducted | All spell stats + classification + summon profile + assessment questions + card image | Full 2a/2b/2c |
+| Spell creation | Player confirms new spell in Lab, Spark deducted | Stat allocation within the power budget + classification + summon profile + card image (assessment questions once the Tower ships) | Full 2a/2b/2c |
 | Fusion research | Compatible pair confirmed, Spark deducted | Fusion spell stats + dual-element art | Full 2a/2b/2c |
 | Tower batch | Cron every 6 hours | Pass/Fail per answer | 2b + conditional 2c |
 | Freestyle turn | Each turn in Freestyle Mode | Opponent move, narrative, HP changes | Partial 2a + 2b + conditional 2c |
@@ -1137,6 +1184,8 @@ The growth loop is unvalidated until real data exists. Track, at minimum:
 **Note:** async PvP (Section 11) is explicitly *not* an LLM call surface, it is rule-based and free. This is the largest single cost saving in the v7.0 architecture relative to any design that piloted async opponents with an LLM.
 
 ## 24.2 Redis Key Namespacing (Updated)
+
+*v7.1: Spark and Aether Shard balances and ledgers are authoritative in the database (append-only ledger, atomic reserve/commit/refund). The `spark:*` and `shards:*` keys below are optional read caches at most, never the source of truth. Research status lives in `research_ready_at` on the spell row, not `lab:research:*`.*
 
 | Key Pattern | Purpose |
 |---|---|
@@ -1170,9 +1219,10 @@ v6.0's "Zero Cost Launch Strategy" assumed free-tier LLM and image generation wo
 | Service | Provider | Cost |
 |---|---|---|
 | Frontend hosting | Vercel free tier | $0 |
-| Database | Supabase free tier (early), upgrades on real usage | $0 → paid on growth |
-| Redis | Upstash free tier (early), pay-as-you-go on growth | $0 → paid on growth |
-| Backend hosting | Render free tier per service (early) | $0 → paid on growth |
+| Database | MySQL (v7.1; currently TiDB Cloud, under review). Must not sleep, must not hit a connection cap at launch volume, and must have backups; otherwise migrate before soft launch | $0 → paid on growth |
+| Redis | Upstash free tier, only once a feature needs it | $0 → paid on growth |
+| Object storage | S3-compatible bucket for card and OG images (v7.1) | Low, usage-based |
+| Backend hosting | One paid Render instance for the monolith before soft launch (v7.1; free tier sleeps and would break first impressions from shared links) | Paid from soft launch |
 | Domain | One-time purchase | ~$1/month |
 
 ## 25.2 What Is Budgeted as Real COGS From Day One
@@ -1184,6 +1234,8 @@ v6.0's "Zero Cost Launch Strategy" assumed free-tier LLM and image generation wo
 | Moderation classifier (Layer 2b) | Cheap, high-volume, budgeted as a near-fixed per-generation cost |
 | Semantic check (Layer 2c) | Budgeted only against the conditional-trigger rate, not full volume, this is why the conditional design in Section 21.4 matters financially, not just architecturally |
 
+**Spend protection (v7.1):** hard spend caps are set at every provider account (founder action), and the app runs its own daily spend circuit breaker computed from per-call cost telemetry. When the day's estimated spend crosses the configured limit, new generations are refused with a friendly "the forge is cooling" message (no Spark is reserved) until the next day or a manual reset.
+
 ## 25.3 Upgrade Triggers
 
 Same principle as v6.0, infrastructure spend scales with revenue milestones, not ahead of them, but the trigger table must now be recomputed against real, measured usage once the product is live, rather than the estimated free-tier ceilings assumed in v6.0. Placeholder structure retained; exact numeric triggers to be finalized post-launch with real cost data (flagged as an open item in Section 29.4).
@@ -1193,6 +1245,8 @@ Same principle as v6.0, infrastructure spend scales with revenue milestones, not
 # 26. Distributed System Architecture
 
 *Largely unchanged from v6.0, the four-service separation remains correct. Two additions reflect the new architecture.*
+
+**v7.1, deployment shape:** for Phase 1 the four services below are four modules inside one deployable (a modular monolith). Each module owns its tables and exposes its functions only through its own router or interface; no module reaches into another's tables. This keeps the responsibility split and the later service split cheap, while avoiding three paid instances, cross-service auth and network hops before there is load to justify them. The Lab vs Progression workload concern is handled in Phase 1 by keeping provider calls async and off the battle path; Progression is not built until Phase 3.
 
 Four services. Single responsibility each. Lab and Progression deliberately kept separate: Lab is I/O bound on LLM calls, Progression is event-driven. Combining them causes workload interference.
 
@@ -1304,7 +1358,17 @@ The project was originally named "Magic Spar," then renamed to "Arcanis." All re
 - **Repriced subscription tiers** (Section 28): the $24.99 recurring tier is retired in favor of a one-time/annual Founder's Pass; a la carte Spark packs are introduced as the primary lever for revenue beyond subscription allowance.
 - **Infrastructure cost model** (Section 24, 25): real LLM and image-generation cost is budgeted as COGS from the first paying user. Free tiers are treated as early-development convenience, not a scaling assumption. Model tiering (mid-tier for stat generation, higher-quality only where output is player-visible and un-clampable) is the primary cost lever.
 
+### Clarified in v7.1
+- Will is capacity (absolute, grows, gates tiers) plus current Will (per battle, depleted per cast); bands are percentages of capacity. Secrecy unchanged. Will cost appears in the UI only as Light / Moderate / Heavy.
+- Spell stats use a hybrid Power Budget: code sets the budget, the LLM allocates within it, Layer 2a enforces it.
+- Minigames are server-scored; the async piloted side samples the owner's stored results, blended to the population median by n/(n+10).
+- Magic link plus 6-digit code in the same email; no passwords.
+- Onboarding goes straight to creation; first 2 spells skip research; no Spell XP reveal.
+- Phase 1 ships as a modular monolith on MySQL, one paid instance, images in object storage.
+
 ## 29.3 Current State of the Project
+
+**v7.1 (2026-10-09):** implementation is underway in the `phase0/` app, which is the canonical codebase; the older root prototype is being archived. Creation and share are partly built; battles are early. Phase 0 measurement (cost per creation, provider rates, balance harness) has not been done. See `PROGRESS.md` and `docs/status_report.md` in the repo for live status. The plan is a creation-first soft launch once the blockers are fixed, with async battles built in parallel (Phase Plan Section 5).
 
 Architecture is complete and reflects the commercial pivot. All major structural risks identified in the pre-pivot market assessment have a corresponding designed resolution in this document: liquidity risk → async PvP; unbounded cost risk → Two-Step Verification + model tiering + real COGS budgeting; undermonetized creation → Spark economy; no acquisition channel → Growth & Virality System; bad tier pricing → repriced tiers + Founder's Pass. The project is ready to proceed to phase-sequencing and Phase 1 implementation planning, see the companion Arcanis Phase Plan and Arcanis Phase 1 Build Plan documents.
 
@@ -1325,13 +1389,18 @@ Architecture is complete and reflects the commercial pivot. All major structural
 - Hall emblem and customization details
 - Summon cap in V1: confirmed as 1 active summon. V2 multi-summon design not started.
 - Exact upgrade-trigger numeric table for infrastructure scaling (Section 25.3), placeholder structure only until real usage data exists
+- Whether Lemon Squeezy can onboard and pay out to an India-based seller (founder verifying; Paddle is the fallback). Prerequisite for Phase 2.
+- Exact Will band edges and the strain descriptor cut points (starting values in Section 2.1, tuned through the balance harness)
+- Reconciling Section 2.1 Will cost ranges with Section 6.2 Will floors/caps (they disagree; flagged in v7.1)
 
 ## 29.5 Key Terminology Quick Reference (Updated)
 
 | Term | Definition |
 |---|---|
 | Circle | Character level. 10 max, undisclosed. Cap never shown to players. |
-| Will | Hidden mental capacity stat (0-500). Hard gate on spell access. Never displayed. Never explained. Feedback strings drawn from rotating variant pools (Section 2.1). |
+| Will | Hidden mental stat. Capacity (0-500, grows, hard gate on spell access) plus current Will (per battle, depleted per cast; bands are percentages of capacity). Never displayed. Never explained. Feedback strings drawn from rotating variant pools (Section 2.1). |
+| Strain descriptor | Light / Moderate / Heavy. The only way a spell's Will cost appears in the UI, in the spell detail view only. |
+| Power Budget | Code-computed total stat budget per spell from tier and classification. The LLM allocates within it; Layer 2a enforces it. |
 | Async PvP | Default battle mode. Opponent is a stored player profile piloted by the rule-based combat engine per a computed playstyle vector. No LLM cost. |
 | Playstyle Vector | Computed aggression/risk-tolerance/resource-discipline profile derived from a player's own battle history, used to pilot their async combat profile when offline. |
 | Live Duel | Later, liquidity-gated real-time PvP layer built atop the same battle engine. Not a launch dependency. |
@@ -1340,7 +1409,7 @@ Architecture is complete and reflects the commercial pivot. All major structural
 | Aether Shards | Soft, earned currency. Cosmetic/social sinks only (Halls, alts, cosmetics). Never touches generation cost. |
 | Founder's Pass | One-time/annual premium offer replacing the retired $24.99 recurring tier. Bundled Spark + cosmetic prestige + early access. |
 | Public Spell Preview | No-login external landing page for a shared spell card. The entry point of the growth funnel. |
-| Magic-Link Signup | Passwordless, email-only, instant-confirmation identity step. Required before any generation; never required before viewing. |
+| Magic-Link Signup | Passwordless, email-only, instant-confirmation identity step (link click or the 6-digit code in the same email). Required before any generation; never required before viewing. |
 | Mana Quality | Character sub-stat. Affects regen spell effectiveness and summon strength. |
 | Awakened Spell | Proficiency Tier 5 + Channeler affinity minimum. Also called Enhanced Spell. |
 | Summon | Spell category. Manifests a persistent beast or spirit. Always Continuous consumption. Available from Circle 1. Autonomous or Controlled mode chosen at creation. |
@@ -1357,4 +1426,4 @@ Architecture is complete and reflects the commercial pivot. All major structural
 
 ---
 
-*End of Master Documentation v7.0. Companion documents: the Arcanis Phase Plan (multi-phase sequencing) and the Arcanis Phase 1 Build Plan (agent-facing implementation detail) are being updated next to reconcile against this version.*
+*End of Master Documentation v7.1. Companion documents: the Arcanis Phase Plan v2.1 (multi-phase sequencing) and the Arcanis Phase 1 Build Plan v2.1 (agent-facing implementation detail), both reconciled against this version.*

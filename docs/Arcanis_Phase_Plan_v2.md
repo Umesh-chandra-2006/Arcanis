@@ -1,7 +1,19 @@
-# Arcanis: Phase Plan v2.0
+# Arcanis: Phase Plan v2.1
 
-**Companion to: Arcanis Master Documentation v7.0 (the bible)**
-**Status:** Commercial product. Supersedes the build order in the old Phased Build Plan v1.0 and Section 24 of Master Doc v6.0.
+**Companion to: Arcanis Master Documentation v7.1 (the bible)**
+**Status:** Commercial product. Supersedes the build order in the old Phased Build Plan v1.0 and Section 24 of Master Doc v6.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.1 (2026-10-09)
+
+Founder decisions after the 2026-10-09 repo audit (`docs/status_report.md`):
+
+- **Phase 0 status recorded (Section 4):** not done. Its measurements now run on the soft-launch traffic plus an offline corpus; the cost sheet is still required.
+- **Phase 1 split into 1a and 1b (Section 5):** 1a is a creation-first soft launch (create, preview, share) once the soft-launch blockers in the Build Plan are fixed; 1b adds async battles, built in parallel. Phase 1 is complete only when 1b ships.
+- **Creation-only Gate 1 (Section 5):** applies to 1a, with day-7 retention defined as "returned and created again". The battle-based Gate 1 applies once battles ship. Numeric thresholds are written here before launch.
+- **k-factor definition fixed:** standard k = invites per user x invite conversion rate (Master Doc 23.6).
+- **Fake-door Spark pricing (Section 5):** Phase 1a shows "coming soon" Spark pack tiles and logs intent, to get an early H3 signal without payments.
+- **Phase 2 prerequisite (Section 6):** founder verifies Lemon Squeezy can onboard and pay out to an India-based seller; Paddle (MoR) is the fallback.
+- **Infrastructure:** one paid Render instance for the modular monolith before soft launch.
 
 ---
 
@@ -30,7 +42,8 @@ The governing principle: **every phase must either reduce a named risk or prove 
 | Phase | Name | Core output | Risk/hypothesis addressed |
 |---|---|---|---|
 | 0 | Measure and decide | Provider selection, real cost per generation, balance harness | R2, R3 |
-| 1 | Creation + Async Battles | Launchable core loop with Spark ledger, magic-link identity, share loop | R1, R3, H1, H2 |
+| 1a | Creation soft launch | Create, preview, share with Spark ledger, magic-link identity, moderation, cost telemetry | R2, R3, H1 (creation half), H2 |
+| 1b | Async Battles | Async Open Brawl, vs-System, server-scored minigames, playstyle vector | R1, R4, H1 (battle half) |
 | 2 | Monetization | Lemon Squeezy, subscriptions, Spark packs, Founder's Pass | H3 |
 | 3 | Progression | Progression Service, XP tracks, proficiency, Tower assessments | H4 |
 | 4 | Community and Social | Halls, friends, boards, spell showcase, Tower daily arcs | Retention |
@@ -52,29 +65,55 @@ Deliverables:
 
 **Exit criteria:** a one-page cost sheet with measured numbers, and a provider choice per surface. If all-in cost per spell exceeds roughly $0.08, revisit model tiering before building anything else.
 
+**Status (v2.1, 2026-10-09):** not done. No cost telemetry, cost sheet, provider comparison, harness or test corpus exists; the `phase0/` app is a creation prototype, not these deliverables. Revised approach: build per-call cost telemetry and the balance harness as Phase 1a blockers, run the offline corpus (100+ prompts) through the chosen providers before soft launch, then treat the soft launch as the real-traffic measurement. The $0.08 check is applied to the offline corpus before launch and re-checked on live data at Gate 1.
+
 ## 5. Phase 1: Creation + Async Battles (the launch build)
 
-**Goal:** a player can sign up in under a minute, create a spell, battle a real player's profile with it, and share the card. Detailed spec lives in the Phase 1 Build Plan v2.0.
+**Goal:** a player can sign up in under a minute, create a spell, battle a real player's profile with it, and share the card. Detailed spec lives in the Phase 1 Build Plan v2.1.
 
-In scope: Gateway, Lab, Game services; magic-link auth; Spark ledger (grants and spend only, no purchases yet); Two-Step Verification pipeline; 36 platform spells; async Open Brawl plus vs-System bot; playstyle vector; public spell preview with OG images; referral grants; moderation; analytics events.
+**Delivery order (v2.1):** battles were measured at about 10 to 15 percent complete versus 50 to 60 percent for creation and share, so Phase 1 ships in two steps:
+
+- **Phase 1a, creation soft launch:** sign up, create, preview, share, referral, fake-door Spark pricing. Ships once every soft-launch blocker in Build Plan Section 15 is closed. Doubles as the real-traffic Phase 0 cost measurement.
+- **Phase 1b, async battles:** built in parallel, on the same deployable, released to the same users when the Build Plan battle Definition of Done items pass.
+
+Phase 1 is complete, and the full Gate 1 below can be evaluated, only after 1b.
+
+**Fake-door Spark pricing (1a):** when a player hits zero Spark (and from the Spark balance chip), show Spark pack tiles with prices clearly marked "coming soon", log `spark_pack_intent` with the pack clicked, and offer a waitlist email opt-in. No Spark is granted for clicking (that would contaminate the signal). Click intent overstates real conversion, so read it as an upper bound on H3, not a measurement of it.
+
+In scope: Gateway, Lab, Game modules (one deployable, see Build Plan Section 3); magic-link auth; Spark ledger (grants and spend only, no purchases yet); Two-Step Verification pipeline; 36 platform spells; async Open Brawl plus vs-System bot; playstyle vector; public spell preview with OG images; referral grants; moderation; analytics events.
 
 Out of scope: payments, XP tracks, proficiency, Tower, Halls, friends, Live Duel, Freestyle, fusion, animations, arc quests.
 
-**Gate 1 (move to Phase 2 only if most of these hold after 4 to 6 weeks of live use):**
-- Signup to first-creation conversion at or above 50 percent
-- First creation to share rate at or above 15 percent
-- Day-7 retention at or above 15 percent among players who finished a first battle
-- Viral coefficient (share-click to signup) measured; at or above 0.3 is encouraging, below 0.1 means the loop leaks and needs rework before spending on monetization
-- Layer 2c trigger rate and moderation rejection rate inside budget
-- No spell category or cast type with a battle win rate outside roughly 40 to 60 percent band after balancing pass
+**Metric definitions (v2.1, used by both gates):**
+- *Signup to first creation:* accounts with at least one successfully stored spell within 24 hours of account creation, divided by accounts created.
+- *First creation to share:* players whose first spell was shared (share action used, or its public preview opened by someone other than the owner) within 7 days, divided by players with a first creation.
+- *k-factor:* invites per user x invite conversion rate. Invites per user = shares sent in the period / players active in the period. Invite conversion rate = signups attributed to a share link / shares sent. Measured weekly.
+- *Day-7 creation retention (1a):* of players whose first creation was on day 0, the share who created at least one more spell on days 7 to 13. Requires a weekly free Spark allowance to be live; without one, this metric measures Spark exhaustion, not interest.
+- *Day-7 battle retention (1b):* of players who finished a first battle on day 0, the share active (battled or created) on days 7 to 13.
 
-Thresholds are starting hypotheses, not facts. Adjust them once Phase 0 data exists, but write the adjusted numbers down before launch so results cannot be rationalized afterward.
+**Gate 1a, creation-only (evaluated after 4 to 6 weeks of soft launch). Starting values proposed 2026-10-09; founder confirms and locks them before soft launch:**
+- Signup to first creation: at or above 50 percent
+- First creation to share: at or above 15 percent
+- k-factor: at or above 0.3 is encouraging; below 0.1 means the loop leaks and needs rework before monetization
+- Day-7 creation retention: at or above 10 percent
+- All-in cost per creation on live traffic: at or below $0.08
+- Layer 2c trigger rate at or below 15 percent of generations; moderation false-positive rate at or below 2 percent on the reviewed sample
+- Fake-door `spark_pack_intent`: recorded per user who hit zero Spark (no threshold; informs Phase 2 priority)
+
+**Gate 1, full (evaluated once battles ship; move to Phase 2 only if most hold):**
+- All Gate 1a criteria
+- Day-7 battle retention at or above 15 percent
+- No spell category or cast type with a battle win rate outside roughly 40 to 60 percent after the balancing pass
+
+Thresholds are starting hypotheses, not facts. Adjust them once offline Phase 0 data exists, but write the adjusted numbers down before launch so results cannot be rationalized afterward.
 
 ## 6. Phase 2: Monetization
 
 **Goal:** test whether people pay.
 
-- Lemon Squeezy integration: subscriptions (Ember, Archmage), Spark packs, Founder's Pass, Chaosborn purchase
+**Prerequisite (v2.1):** the founder verifies that Lemon Squeezy will onboard an India-based seller and pay out to an Indian bank account, and confirms the tax paperwork it requires (GST registration, LUT for zero-rated exports, inward remittance documentation). If it fails, the fallback is Paddle (also a Merchant of Record). Razorpay is not a Merchant of Record and would mean handling global sales tax ourselves, so it is not a like-for-like fallback.
+
+- Lemon Squeezy (or Paddle) integration: subscriptions (Ember, Archmage), Spark packs, Founder's Pass, Chaosborn purchase
 - Spark ledger purchase flow and rollover cap
 - Non-generative cosmetics storefront (borders, frames, extra deck slots, priority research queue)
 - Refund and chargeback handling policy
@@ -120,6 +159,6 @@ Fusion and multi-cast (Circle 4 feature), per-spell minigames, multiple simultan
 
 ## 13. Open Questions That Affect Sequencing
 
-- Whether payments should move into Phase 1 for a small paid beta (currently Phase 2 to keep launch scope tight; trade-off is slower learning on H3).
+- Whether payments should move into Phase 1 for a small paid beta (currently Phase 2 to keep launch scope tight; trade-off is slower learning on H3). v2.1: confirmed Phase 2; the fake door in Phase 1a gives an early, weaker H3 signal.
 - The exact Live Duel concurrency threshold (set after real usage data).
 - Whether to release additional creation categories as timed content drops (recommended: yes, as a retention and marketing beat).

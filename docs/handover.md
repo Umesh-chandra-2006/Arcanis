@@ -21,7 +21,7 @@ Files to upload (all in this package):
 | `Arcanis_Market_Assessment.md` | The research report that triggered the strategic pivot |
 | Older originals (optional, not in this package) | `Arcanis_Master_Documentation (1).md` (v6.0), `Arcanis_Phased_Build_Plan (1).md` (v1.0), `MagicSpar_GDD_v5.md`. These are your original uploads in the Arcanis Project. They are superseded by v7.0 and are reference only. Do not build from them. Upload only if you want the new chat to see the history |
 
-Precedence if documents conflict: Master Doc v7.0 > Phase 1 Build Plan v2.0 > Phase Plan v2.0 > older originals. Flag conflicts to the founder rather than resolving silently.
+Precedence if documents conflict: Master Doc v7.1 > Phase 1 Build Plan v2.1 > Phase Plan v2.1 > older originals (file names keep v7 and v2). Flag conflicts to the founder rather than resolving silently.
 
 ---
 
@@ -70,18 +70,23 @@ Arcanis (formerly "Magic Spar", same project) is a competitive magic RPG platfor
 
 ## 5. Phase Status
 
+*Updated 2026-10-09 after the repo audit. For live status read `PROGRESS.md` at the repo root; this table is a summary and can go stale.*
+
 | Phase | Status |
 |---|---|
-| Master Doc v7.0 | Written |
-| Phase Plan v2.0 | Written |
-| Phase 1 Build Plan v2.0 | Written |
-| Phase 0 (measure costs, pick providers, balance harness) | **Not started. Next.** |
-| Phase 1 (code) | Not started |
+| Master Doc | v7.1 (2026-10-09) |
+| Phase Plan | v2.1 (2026-10-09) |
+| Phase 1 Build Plan | v2.1 (2026-10-09) |
+| Phase 0 (measure costs, pick providers, balance harness) | **Not done.** No cost telemetry, cost sheet, harness or corpus. Now folded into Phase 1a blockers plus the soft-launch measurement. |
+| Phase 1a (creation soft launch) | In progress in `phase0/` (creation and share roughly 50 to 60 percent). Blockers listed in Build Plan v2.1 Section 15, Track A. |
+| Phase 1b (async battles) | Early. The root prototype's battle code is off-spec and archived; rebuild per Track B. |
 | Everything after | Not started |
 
-No code has been written. No providers chosen. No cost measured.
+The earlier line "No code has been written" is no longer true: see `docs/status_report.md`.
 
 ## 6. Decisions I Made That the Founder Has Not Explicitly Confirmed (verify)
+
+**Resolved 2026-10-09:** all six confirmed by the founder, with changes: (1) launch subset is all 12 elements, Attack/Defense/Regen/Debuff/Drain, Instant only until battles ship, Trap and Charged return with battles; (2) confirmed, and the `phase0/` "Tower" narrative voice is removed too; (3) confirmed, plus a fake door in 1a; (4) confirmed, k-factor fixed to the standard definition and numeric thresholds written before soft launch (Phase Plan v2.1); (5) confirmed, server-side scoring from raw input events; (6) confirmed, one paid instance for the monolith. Original text kept below for history.
 
 1. **Launch creation subset:** categories Attack, Defense, Regen, Debuff, Drain; cast types Instant, Trap, Charged at launch; the rest as timed content drops. The engine and validation must still support everything because platform spells use it. This softens the earlier "full classification at launch" position.
 2. **Tower assessment questions are not generated in Phase 1** (cost with no value until Tower ships in Phase 3). Backfill later.
@@ -98,7 +103,7 @@ No code has been written. No providers chosen. No cost measured.
 - "AI-generated content" is culturally unpopular with gamers. Positioning must frame the LLM as a creative collaborator.
 - Cold-start async PvP needs enough real profiles in the pool; the vs-System bot fallback covers the gap but must be labelled honestly.
 - Small naming collision: "Spark of [Element]" (affinity Threshold 1 title) versus Spark the currency. Consider renaming the title later.
-- Phase 1 Build Plan has one SQL typo to fix when writing migrations if still present: `shard_ledger.created_at` default must be `DEFAULT NOW()`.
+- ~~Phase 1 Build Plan has one SQL typo to fix when writing migrations if still present: `shard_ledger.created_at` default must be `DEFAULT NOW()`.~~ Checked 2026-10-09: the Build Plan SQL already reads `DEFAULT NOW()` and no shard_ledger table exists in the repo; the stale note was removed in Build Plan v2.1.
 
 ## 8. Open Items (not yet designed or decided)
 
@@ -112,6 +117,8 @@ No code has been written. No providers chosen. No cost measured.
 - Infrastructure upgrade trigger numbers (need real usage data)
 
 ## 9. Recommended Next Steps
+
+*Superseded 2026-10-09 by Build Plan v2.1 Section 15 and `PROGRESS.md`. Kept for history.*
 
 1. **Phase 0 (1 to 2 weeks):** shortlist 2 to 3 candidates each for text model, image model, moderation. Run 100+ real prompts. Record cost, latency, schema failure rate, 2a clamp rate, moderation false positives. Produce a one-page cost sheet. Decide Spark pricing from measured numbers.
 2. Build the **balance harness** early; it finds category and cast-type imbalance before players do.
