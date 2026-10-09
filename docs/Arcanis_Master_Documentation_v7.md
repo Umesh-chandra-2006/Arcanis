@@ -1,12 +1,27 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.1*
+*Complete Vision Blueprint | Version 7.2*
 
 Author: Umesh Chandra Tirumani
 Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.1 supersedes all prior versions, including v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.2 supersedes all prior versions, including v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.2, WHAT CHANGED FROM v7.1 (2026-10-10)
+
+Founder answers to the open founder actions (F1 to F11 in `docs/tasks.md`). Locked decisions unchanged.
+
+- **Will cost ranges vs caps resolved (Sections 2.1, 6.2).** The Section 2.1 ranges are the typical target band the Power Budget allocates within; the Section 6.2 floors and caps are the hard limits Layer 2a enforces. A Will cost between the two (for example Advanced 28 or 65) is legal; outside the caps it is not.
+- **Avatar selection never shows Will (Section 18.2).** The v7.0 flag is resolved in favor of the Section 2.1 lock.
+- **Phase 1a Spark values (Sections 22.1, 23.3).** 1 Spark per creation; signup grant 5; weekly free allowance 3; rollover cap 10; referral bonus 3 Spark to the inviter when the invitee's first creation passes verification (the invitee gets the signup grant only).
+- **Free-tier providers through the soft launch (Section 25).** Text, image, moderation and email run on free-tier keys with no payment method attached, so real provider spend is $0 and free-tier quotas are the binding limit. Cost is still logged per call at list price (shadow cost), so Gate 1a's cost criterion and Phase 2 pricing stay meaningful.
+- **Hosting and storage (Sections 25, 26).** Soft launch runs on one free Render instance kept awake by an external health-check ping (replaces the v7.1 paid-instance decision). Card images go to Cloudinary (free tier) for the soft launch and move to Cloudflare R2 in Phase 1b. The database stays on the current TiDB Cloud cluster for the soft launch and migrates to a new, founder-owned host in Phase 1b.
+- **Moderation provider (Section 21).** Layer 2b uses OpenAI `omni-moderation` (text and image).
+
+**Still open after v7.2:** Fusion Spark cost appears in Phase 0 scope while Fusion is V2 (low priority).
 
 ---
 
@@ -26,7 +41,7 @@ Founder decisions taken after the 2026-10-09 repo audit (`docs/status_report.md`
 - **Viral coefficient (Section 23.6).** Defined as the standard k-factor: invites (shares) per user x invite conversion rate.
 - **Architecture (Sections 24, 25, 26).** Phase 1 ships as a modular monolith (one deployable, four internal modules matching the four services) on MySQL, with card images in object storage. Services split when load or team size requires it. Payments fallback recorded: Paddle (also a Merchant of Record).
 
-**Still open after v7.1 (flagged, not resolved):** Section 2.1 Will cost ranges vs Section 6.2 Will floors/caps disagree (for example Advanced 30 to 60 vs 28 to 65); Section 18.2 avatar selection shows Will numerically, which conflicts with Section 2.1; Fusion Spark cost appears in Phase 0 scope while Fusion is V2.
+**Still open after v7.1 (flagged, not resolved):** Section 2.1 Will cost ranges vs Section 6.2 Will floors/caps disagree (for example Advanced 30 to 60 vs 28 to 65); Section 18.2 avatar selection shows Will numerically, which conflicts with Section 2.1; Fusion Spark cost appears in Phase 0 scope while Fusion is V2. *(v7.2: the first two are resolved; see above.)*
 
 ---
 
@@ -148,7 +163,9 @@ To preserve the mystery, each Will-state band must draw from a **pool of multipl
 | Freestyle | 15-30 | No element modifier |
 | Fusion (V2) | Sum of both + 20% surcharge | Both terrain and proficiency modifiers apply |
 
-Will cost is never shown as a number. The spell detail view (Section 6.5) shows only a qualitative strain descriptor: **Light**, **Moderate**, or **Heavy**, derived server-side from the spell's Will cost relative to its tier range. The descriptor describes the spell, not the player, so it reveals nothing about the player's capacity or current Will.
+*v7.2: these ranges are the typical target band the Power Budget allocates within. The hard limits are the Will floors and caps in Section 6.2, which Layer 2a enforces; a value between this range and the cap is legal.*
+
+Will cost is never shown as a number. The spell detail view (Section 6.5) shows only a qualitative strain descriptor: **Light**, **Moderate**, or **Heavy**, derived server-side from the spell's Will cost relative to its tier's floor-to-cap span (Section 6.2); cut points are tuned through the balance harness. The descriptor describes the spell, not the player, so it reveals nothing about the player's capacity or current Will.
 
 ### Proficiency Reduction on Will Cost
 
@@ -500,6 +517,8 @@ Validation layer caps for summon stats per spell tier. Prevents LLM generating b
 | Freestyle | 5-50 | 13 | 17 | 13 | 32 |
 
 These caps are enforced by Layer 2a of Two-Step Verification (Section 21.2), deterministic, zero-LLM-cost clamping applied to every numeric field the generation model produces.
+
+*v7.2: the Will cost ranges in Section 2.1 are typical targets inside these hard floors and caps, not a second set of limits.*
 
 ## 6.3 Spell Creation Flow
 
@@ -989,7 +1008,7 @@ The onboarding flow is rebuilt around one non-negotiable rule: **the funnel is n
 | 2. First creation | First Spark grant already available. Minimal creation flow, no tour. First 2 spells skip research (Section 6.3). | Lab flow, trimmed to the launch creation subset (see companion Phase 1 Build Plan). Spell stored locked if above requirements: "This spell awaits your growth." |
 | 3. Share prompt | Card revealed with a share action. | The card, share button, "Create another". |
 | 4. Name your mage | Single text input, asked the first time the name is needed (first share or first battle). | Name field only. |
-| 5. Avatar selection | Asked the first time the player enters battle. | HP, MP, affinity bonus. **Flag (pending founder):** v7.0 listed Will here as a visible stat, which conflicts with Section 2.1. Until decided, Will is not shown. |
+| 5. Avatar selection | Asked the first time the player enters battle. | HP, MP, affinity bonus. Will is never shown here (v7.2, resolved in favor of Section 2.1; v7.0 listed it as a visible stat). |
 | 6. First guided battle | System battle (rule-based) on Neutral Grounds, using a small starter deck plus the player's own spells. | HP/MP bars, spell grid, timer. No XP bars, no Will, no proficiency. |
 | 7. Home screen unlock | All pages accessible | All pages available in the current phase. The Tower tooltip ("The Tower does not accept visitors without proven spells.") appears only once the Tower ships. |
 
@@ -1094,6 +1113,8 @@ The only currency that can be spent on anything that consumes real generation co
 - **Never earned through gameplay**, this is a deliberate, load-bearing separation. Spark is the money-facing currency; mixing it with earnable soft currency would make its real cost basis impossible to reason about and would open the door to farming real generation cost for free.
 - Unused Spark **rolls forward** rather than evaporating on a weekly reset, within a reasonable cap, so paying players don't feel penalized for an inactive week.
 
+**Phase 1a values (v7.2, founder):** 1 Spark per creation. Signup grant 5 (once per device). Weekly free allowance 3. Rollover cap 10 (the allowance does not top a balance above 10). Referral bonus 3 to the inviter (Section 23.3). While providers run on free tiers, the app's daily creation limit (Phase 1 Build Plan Section 7.7) keeps total creations inside provider quotas regardless of balances.
+
 ## 22.2 Why the Separation Matters
 
 Every dollar of real inference/image-gen cost the product incurs must trace back to Spark spent, and every unit of Spark must trace back either to a subscription payment or a direct purchase. This is what makes the unit economics in Section 24 and 28 actually computable, a currency that can be earned through free play and then spent on LLM generation makes cost-per-user impossible to bound, which is precisely the trap the original quota system's design (correctly) avoided and the reason it must not be repeated here.
@@ -1125,7 +1146,7 @@ Every spell card generated by any player is, by design, a piece of shareable ext
 
 ## 23.3 Referral Incentive
 
-Both inviter and invitee receive a small Spark bonus when the invitee completes their first creation. The cost of funding this is a fraction of a single spell's real generation cost (Section 22, 24) and directly rewards the exact behavior that grows the user base, this is a deliberately cheap, self-funding referral loop, not a discount program.
+Both inviter and invitee receive a small Spark bonus when the invitee completes their first creation. *(v7.2, Phase 1a: the inviter receives 3 Spark when the invitee's first creation passes verification; the invitee receives only the standard signup grant. Revisit at Gate 1a.)* The cost of funding this is a fraction of a single spell's real generation cost (Section 22, 24) and directly rewards the exact behavior that grows the user base, this is a deliberately cheap, self-funding referral loop, not a discount program.
 
 ## 23.4 Battle Results as a Second Share Surface
 
@@ -1147,7 +1168,7 @@ The growth loop is unvalidated until real data exists. Track, at minimum:
 
 # 24. Technical Stack (UPDATED)
 
-*v7.1: Phase 1 runs as a modular monolith (Section 26). The four service rows below are now internal modules of one Node.js deployable on one paid Render instance; they split into separate services when load or team size requires it. The database is MySQL (Drizzle ORM) rather than Supabase Postgres; the host is under review (see Phase 1 Build Plan Section 3). Card images live in object storage, not in the database.*
+*v7.1: Phase 1 runs as a modular monolith (Section 26). The four service rows below are now internal modules of one Node.js deployable on one Render instance (v7.2: free tier kept awake by an external health-check ping through the soft launch); they split into separate services when load or team size requires it. The database is MySQL (Drizzle ORM) rather than Supabase Postgres; the host is under review (see Phase 1 Build Plan Section 3). Card images live in object storage, not in the database.*
 
 | Layer | Technology | Purpose |
 |---|---|---|
@@ -1219,10 +1240,10 @@ v6.0's "Zero Cost Launch Strategy" assumed free-tier LLM and image generation wo
 | Service | Provider | Cost |
 |---|---|---|
 | Frontend hosting | Vercel free tier | $0 |
-| Database | MySQL (v7.1; currently TiDB Cloud, under review). Must not sleep, must not hit a connection cap at launch volume, and must have backups; otherwise migrate before soft launch | $0 → paid on growth |
+| Database | MySQL. v7.2: the current TiDB Cloud cluster through the soft launch, with founder-run logical backups; migrates to a new, founder-owned host in Phase 1b | $0 → paid on growth |
 | Redis | Upstash free tier, only once a feature needs it | $0 → paid on growth |
-| Object storage | S3-compatible bucket for card and OG images (v7.1) | Low, usage-based |
-| Backend hosting | One paid Render instance for the monolith before soft launch (v7.1; free tier sleeps and would break first impressions from shared links) | Paid from soft launch |
+| Object storage | v7.2: Cloudinary free tier for the soft launch; Cloudflare R2 from Phase 1b | $0 (free tiers) |
+| Backend hosting | v7.2: one free Render instance, kept awake by an external `/health` ping every 10 minutes (replaces the v7.1 paid-instance decision). Upgrade to paid if cold starts, memory limits or the monthly free-hours budget show up in soft-launch data | $0 |
 | Domain | One-time purchase | ~$1/month |
 
 ## 25.2 What Is Budgeted as Real COGS From Day One
@@ -1235,6 +1256,8 @@ v6.0's "Zero Cost Launch Strategy" assumed free-tier LLM and image generation wo
 | Semantic check (Layer 2c) | Budgeted only against the conditional-trigger rate, not full volume, this is why the conditional design in Section 21.4 matters financially, not just architecturally |
 
 **Spend protection (v7.1):** hard spend caps are set at every provider account (founder action), and the app runs its own daily spend circuit breaker computed from per-call cost telemetry. When the day's estimated spend crosses the configured limit, new generations are refused with a friendly "the forge is cooling" message (no Spark is reserved) until the next day or a manual reset.
+
+**v7.2, free tiers:** through the soft launch every provider runs on a free tier with no payment method attached, so the hard cap at each provider is effectively $0 and the binding limit is the free quota. The breaker therefore also enforces a daily creation limit set below the tightest provider quota, and cost telemetry records list-price (shadow) cost so measured cost per creation still means something for Phase 2 pricing.
 
 ## 25.3 Upgrade Triggers
 
@@ -1364,7 +1387,7 @@ The project was originally named "Magic Spar," then renamed to "Arcanis." All re
 - Minigames are server-scored; the async piloted side samples the owner's stored results, blended to the population median by n/(n+10).
 - Magic link plus 6-digit code in the same email; no passwords.
 - Onboarding goes straight to creation; first 2 spells skip research; no Spell XP reveal.
-- Phase 1 ships as a modular monolith on MySQL, one paid instance, images in object storage.
+- Phase 1 ships as a modular monolith on MySQL, images in object storage. v7.2: soft launch on a free Render instance kept awake by ping, Cloudinary images, current TiDB cluster, free-tier provider keys; R2 and a new DB host in Phase 1b.
 
 ## 29.3 Current State of the Project
 

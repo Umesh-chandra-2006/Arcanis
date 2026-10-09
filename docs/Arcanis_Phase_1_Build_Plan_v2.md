@@ -1,7 +1,21 @@
-# Arcanis: Phase 1 Build Plan v2.1
+# Arcanis: Phase 1 Build Plan v2.2
 
-**Agent-facing implementation document. Companion to Master Documentation v7.1 (the bible) and Phase Plan v2.1.**
+**Agent-facing implementation document. Companion to Master Documentation v7.2 (the bible) and Phase Plan v2.2.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.2 (2026-10-10)
+
+Founder answers to the open founder actions (F1 to F11 in `docs/tasks.md`). Where this list and older text disagree, this list wins.
+
+- **Repo layout (Section 3):** `phase0/` stays where it is permanently; it is not promoted to the repo root after the archive.
+- **Database (Sections 3, 15):** keep the current TiDB Cloud cluster through the soft launch (the owning account is not confirmed, so A1 becomes a logical backup plus a recurring dump). A new, founder-owned database host is provisioned and migrated to in Phase 1b (task B0).
+- **Object storage (Sections 3, 7.6):** Cloudinary (free tier) behind `STORAGE_PROVIDER` for the soft launch; Cloudflare R2 in Phase 1b (task B0).
+- **Hosting (Sections 3, 14):** one free Render instance, kept awake by an external `/health` ping every 10 minutes. Replaces the v2.1 paid instance.
+- **Providers and spend (Sections 3, 7.7):** every provider runs on a free tier with no payment method attached. A quota audit is added to A2; the breaker (A4) adds a daily creation limit under the tightest quota; telemetry records list-price shadow cost.
+- **Moderation (Sections 3, 13):** Layer 2b uses OpenAI `omni-moderation` (text and image), `MODERATION_PROVIDER=openai`.
+- **Spark (Section 6):** 1 Spark per creation; signup grant 5; weekly allowance 3; rollover cap 10; referral 3 to the inviter only.
+- **Gate 1a thresholds** locked (Phase Plan v2.2 Section 5).
+- **Deploy env vars (Section 14):** `VITE_PUBLIC_URL`, `VITE_API_URL`, `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS` are set fresh at the post-fix redeploy (A10, A16) rather than audited now.
 
 ## What changed in v2.1 (2026-10-09)
 
@@ -88,18 +102,18 @@ Original v2.0 text, which applies again once battles ship: to keep first-session
 | API | tRPC 11 over Express |
 | Real-time | Socket.io (human player's own battle session), Phase 1b |
 | Backend | Node.js modular monolith: gateway, lab, game modules |
-| Database | MySQL via Drizzle ORM. Current host: TiDB Cloud (us-east-1), tier under review. Requirement: it must not sleep, must not hit a connection cap at launch volume, and must have backups; if it fails any of those, migrate to Supabase before the soft launch. Separate databases for dev/test and production. |
-| Object storage | S3-compatible bucket (recommend Cloudflare R2: no egress fees, CDN in front), behind an interface with `STORAGE_PROVIDER` |
+| Database | MySQL via Drizzle ORM. v2.2: the current TiDB Cloud cluster (us-east-1) through the soft launch, with logical backups taken by the app team; migrate to a new, founder-owned host in Phase 1b (B0). Separate databases for dev/test and production. |
+| Object storage | Behind an interface with `STORAGE_PROVIDER`. v2.2: Cloudinary (free tier, `CLOUDINARY_*` keys) for the soft launch; Cloudflare R2 from Phase 1b (B0). The interface must not leak Cloudinary URL transforms into business logic, so the swap is config only. |
 | Cache and queues | None required in 1a (one instance; rate limits and the spend breaker can live in MySQL or process memory). Add Upstash Redis when a second instance or battle sessions require shared state. |
 | Layer 1 text model | Provider chosen in Phase 0, behind abstraction (`SPELL_LLM_PROVIDER`) |
 | Image model | Paid FLUX-class provider chosen in Phase 0, behind abstraction (`IMAGE_PROVIDER`) |
-| Moderation | Purpose-built classifier chosen in Phase 0, behind abstraction (`MODERATION_PROVIDER`) |
+| Moderation | OpenAI `omni-moderation` for text and images (v2.2), behind abstraction (`MODERATION_PROVIDER`) |
 | Email (magic link and code) | Transactional email provider behind `EMAIL_PROVIDER` (Resend and Brevo implemented) |
 | Frontend hosting | Vercel, with rewrites proxying `/api/*` and the share route to the Render API so cookies are first-party and OG tags render |
-| Backend hosting | One paid Render instance before soft launch (free tier sleeps on first click, which leaks shared-link signups) |
+| Backend hosting | v2.2: one free Render instance, kept awake by an external `/health` ping every 10 minutes (cron-job.org or UptimeRobot). Upgrade to paid if soft-launch data shows cold starts, memory pressure or the free-hours budget running out |
 | Analytics | Event table in MySQL plus a lightweight dashboard query set (no third-party tracker required for Phase 1) |
 
-Repository layout (v2.1; the `phase0/` app is canonical and keeps its structure until it is promoted to the repo root):
+Repository layout (v2.2: the `phase0/` app is canonical and stays under `phase0/` permanently; it is not promoted to the repo root):
 
 ```
 phase0/
@@ -120,13 +134,13 @@ tools/
 Collect and store in `.env`, never in the repo:
 - Text model provider and key (decided in Phase 0)
 - Image provider and key
-- Moderation provider and key
+- Moderation provider and key (v2.2: OpenAI API key for `omni-moderation`)
 - Email provider key and verified sender domain
 - MySQL `DATABASE_URL` for production, plus a separate one for tests (tests must never run against production data)
-- Object storage bucket, endpoint, access key and secret, public base URL
+- Object storage credentials (v2.2: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`; R2 bucket, endpoint, keys and public base URL in Phase 1b)
 - Upstash Redis URL and token (only once Redis is needed)
 - JWT signing secret
-- Daily spend breaker limit (USD)
+- Daily spend breaker limit (USD) and daily creation limit
 - Optional: device fingerprint library config, disposable-email domain list source
 
 ## 5. Identity and Anti-Abuse (Gateway)
@@ -156,7 +170,7 @@ Rules from Master Doc Section 22.
 - Entry types in Phase 1: `grant_signup`, `grant_referral_inviter`, `grant_referral_invitee`, `grant_weekly_allowance`, `spend_creation`, `refund_creation`, `admin_adjust`.
 - **Spend is atomic:** reserve Spark before the pipeline runs (`spend_creation` pending), commit on success, auto-refund (`refund_creation`) on any failure the user did not cause (provider error, verification exhaustion after retries, moderation rejection of the system's own output).
 - **A user-caused rejection** (the user's own input fails moderation) does not refund and counts toward abuse strikes.
-- Spark is never granted for gameplay. Weekly allowance for the free tier is a small fixed grant; rollover is allowed up to a cap (value set in config, default to 2x weekly allowance). v2.1: the weekly allowance must be live for the 1a soft launch, because Gate 1a's day-7 creation retention is meaningless if players physically cannot create again. Size is still an open item (Section 17).
+- Spark is never granted for gameplay. Weekly allowance for the free tier is a small fixed grant; rollover is allowed up to a cap (value set in config, default to 2x weekly allowance). v2.1: the weekly allowance must be live for the 1a soft launch, because Gate 1a's day-7 creation retention is meaningless if players physically cannot create again. v2.2 values: 1 Spark per creation; `grant_signup` 5 (once per device); `grant_weekly_allowance` 3, never raising a balance above the rollover cap of 10; `grant_referral_inviter` 3; `grant_referral_invitee` stays in the schema but grants 0 in 1a. All values live in config.
 - Aether Shards ledger is built with the same structure but has no sinks in Phase 1 beyond reserved hooks. Earning rules arrive with progression. Do not build earning logic yet.
 
 ## 7. Lab Service: Spell Creation Pipeline
@@ -234,6 +248,7 @@ Every provider call logs: surface, provider, model, tokens or image units, laten
 v2.1 additions:
 - Logging happens inside the provider interface wrappers, so no call site can skip it. Rows go to a `provider_calls` table.
 - **Daily spend circuit breaker:** before reserving Spark, sum today's (UTC) `cost_estimate_usd` from `provider_calls`. At or above `DAILY_SPEND_LIMIT_USD`, refuse new generations with a friendly message ("The forge is cooling. Try again soon."), log `creation_blocked_spend_cap`, and alert the founder (email). Nothing is reserved, so nothing needs refunding. Admin can reset or raise the limit. This complements, never replaces, the hard caps the founder sets at each provider.
+- v2.2, free tiers: providers run on free-tier keys with no payment method attached. `cost_estimate_usd` records list-price (shadow) cost, so the breaker uses a second limit, `DAILY_CREATION_LIMIT`, set to about 80 percent of the tightest provider daily quota (text, image, moderation, or email for magic links), found by the A2 quota audit. A provider 429 or quota error counts as a provider failure: refund, and trip the breaker for that day.
 - Verify every configured model ID with a live call at startup in non-production and in CI smoke tests; a retired model ID must fail loudly, not silently fall through the cascade.
 
 ## 8. Game Service: Battles
@@ -525,9 +540,9 @@ Derived metrics (definitions in Phase Plan Section 5): signup to first-creation 
 
 ## 14. Deployment
 
-- v2.1: one Render web service for the monolith, on a paid instance before soft launch (decided). UptimeRobot on `/health` for alerting.
+- v2.2: one Render web service for the monolith on the free tier, kept awake by an external ping to `/health` every 10 minutes (the same monitor alerts the founder on downtime). Replaces the v2.1 paid instance. The free tier's monthly hours cover exactly one always-on service, so no other free Render service may run on the account.
 - v2.1: Vercel serves the client. `vercel.json` must rewrite `/api/*` and the share route (`/spell/:id` and its image route) to the Render API **before** the SPA catch-all, so share links on the main domain get server-rendered OG tags and the session cookie is first-party. `VITE_PUBLIC_URL` must equal the public domain.
-- MySQL host (TiDB Cloud today, under review), object storage bucket, Vercel
+- MySQL host (current TiDB Cloud cluster through the soft launch, new host in 1b), Cloudinary (R2 in 1b), Vercel
 - GitHub Actions per service, migrations run in CI, secrets from the platform, never committed
 - Staging environment separate from production, with provider keys on low spend caps
 - Provider spend alerts and hard monthly caps set at each provider
@@ -541,15 +556,15 @@ Derived metrics (definitions in Phase Plan Section 5): signup to first-creation 
 | # | Task | Est. |
 |---|---|---|
 | A0 | Housekeeping: archive the root app on a branch and remove it from `main` (with Hearth and the Manus template leftovers, `arcanis-ui/`, `scratch/`); `.env.example`; separate test database; GitHub Actions running type-check and tests | 1 |
-| A1 | Database host decision (founder): keep TiDB Cloud if it meets the Section 3 requirement, else migrate to Supabase now, before any schema work | 0 to 3 |
-| A2 | Provider interfaces in `shared/` (text, image, moderation, email, storage), each selected by one env var, with cost telemetry inside the wrappers (`provider_calls`); verify model IDs with a live call and replace retired ones | 2 |
+| A1 | v2.2: keep the current TiDB cluster; take a logical backup before any schema work and add a recurring dump script (migration moves to B0) | 0.5 |
+| A2 | Provider interfaces in `shared/` (text, image, moderation, email, storage), each selected by one env var, with cost telemetry inside the wrappers (`provider_calls`); verify model IDs with a live call and replace retired ones; free-tier quota audit per provider | 2 |
 | A3 | Spark ledger rewrite: append-only, transactional reserve/commit/refund, per-device signup grant, weekly allowance, concurrency tests | 2 |
-| A4 | Daily spend circuit breaker plus founder alert | 0.5 |
+| A4 | Daily spend circuit breaker plus daily creation limit (v2.2) plus founder alert | 0.5 |
 | A5 | Identity: 6-digit code in the same email, hashed and atomic link and code redemption, remove passwords and migrate existing users, httpOnly cookie via the Vercel `/api` rewrite, remove the enumeration endpoint | 1.5 |
 | A6 | Moderation (Layer 2b) on input text, generated text, generated images and reviews; Layer 2c on flags; silent retry; `moderation_events`, report button, minimal admin queue, takedown | 3 |
 | A7 | Hybrid Power Budget plus Layer 2a budget enforcement and property tests; open all 12 elements and Drain, Instant only; tier from the request only | 2.5 |
 | A8 | Balance harness skeleton with Power Budget coverage, test corpus, `tools/cost-report` | 2 |
-| A9 | Images to object storage, 1200x630 OG variant, card variant, dominant color; migrate existing base64 rows | 1.5 |
+| A9 | Images to object storage (Cloudinary, v2.2), 1200x630 OG variant, card variant, dominant color; migrate existing base64 rows | 1.5 |
 | A10 | Share path: `vercel.json` rewrites for the share route and `/api`, `VITE_PUBLIC_URL`, referral code on the preview link, referral grants | 1 |
 | A11 | Analytics: allowlisted, schema-validated, rate-limited public endpoint; rename events to Section 12; k-factor fix; Gate 1a metrics on the admin page | 1 |
 | A12 | Product copy and flow: remove the Tower voice and `assessment_question`, remove the Will number from the spell card, strain descriptor in the spell detail view, onboarding straight to creation, `research_ready_at` with the first-2 exemption | 1.5 |
@@ -558,12 +573,13 @@ Derived metrics (definitions in Phase Plan Section 5): signup to first-creation 
 | A15 | Hardening: end-to-end creation test, failure injection (provider down, moderation reject), abuse tests, OG check on Discord, X and WhatsApp | 1.5 |
 | A16 | Soft launch to a small invited cohort; watch cost and funnel for a week, then open | |
 
-Track A total: roughly 22 to 25 working days. Founder actions in parallel: provider spend caps, paid Render instance, DB host decision, object storage account, Gate 1a thresholds locked, weekly allowance and grant sizes, Lemon Squeezy verification (Phase 2 prerequisite).
+Track A total: roughly 20 to 23 working days. v2.2: founder actions F1 to F11 are closed (see `docs/tasks.md`); remaining founder work is the OpenAI key for moderation and the keep-awake monitor.
 
 **Track B, Phase 1b async battles (in parallel once A0 to A3 land):**
 
 | # | Task | Est. |
 |---|---|---|
+| B0 | v2.2 infrastructure move at the start of 1b: provision a new, founder-owned database host and migrate data; move images from Cloudinary to Cloudflare R2 (config swap behind `STORAGE_PROVIDER` plus a copy script) | 2 to 3 |
 | B1 | Battle engine as pure, data-driven functions: turn order, all 10 categories and 5 cast types, interruption, traps, one summon, 15 terrains, Will capacity and current Will with percentage bands; scenario tests per mechanic | 8 to 10 |
 | B2 | Seed the 36 platform spells exactly as Master Doc 5.6 (Conflagration Wave as Attack, Continuous) | 1 |
 | B3 | Server-scored minigames (6 element groups): seed, raw input events, replay scoring, plausibility checks | 3 to 4 |
@@ -605,13 +621,13 @@ Track B total: roughly 27 to 30 working days.
 ## 17. Open Items Phase 1 Must Resolve (decide with the founder, do not guess)
 
 1. Provider choices and measured costs (Phase 0 output)
-2. Weekly free-tier Spark allowance size and rollover cap (v2.1: now a 1a blocker)
-3. First-signup Spark grant size and referral bonus size (sized as a fraction of measured creation cost)
+2. ~~Weekly free-tier Spark allowance size and rollover cap~~ Resolved v2.2: 3 per week, cap 10
+3. ~~First-signup Spark grant size and referral bonus size~~ Resolved v2.2: signup 5, referral 3 to the inviter only, 1 Spark per creation
 4. ~~Launch creation subset confirmation (Section 2.3)~~ Resolved v2.1: 12 elements, Attack/Defense/Regen/Debuff/Drain, Instant only until battles ship
 5. Fraud thresholds (device and IP caps)
 6. Notification channels at launch (in-app plus email digest versus adding web push)
 7. ~~Whether to run a paid beta in Phase 1~~ Resolved v2.1: no; fake door instead
-8. (v2.1) Database host: keep TiDB Cloud or migrate to Supabase (Section 3)
-9. (v2.1) Moderation provider for Layer 2b (text and image)
-10. (v2.1) Object storage provider (recommend Cloudflare R2)
-11. (v2.1) Whether to promote `phase0/` to the repo root after the root app is archived (needs Vercel and Render root-directory changes)
+8. ~~Database host~~ Resolved v2.2: current TiDB cluster through the soft launch, new host in 1b (B0)
+9. ~~Moderation provider~~ Resolved v2.2: OpenAI `omni-moderation`
+10. ~~Object storage provider~~ Resolved v2.2: Cloudinary for the soft launch, Cloudflare R2 in 1b
+11. ~~Promote `phase0/` to the repo root~~ Resolved v2.2: no, `phase0/` stays

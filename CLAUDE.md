@@ -52,7 +52,7 @@ Architecture is a modular monolith (Build Plan v2.1 Section 3): one deployable w
 
 | Path | What it is |
 |---|---|
-| `phase0/` | **Canonical app (decision H1).** Express + tRPC 11 + React 19 + Vite 8 + Tailwind 4, Drizzle on MySQL, tables prefixed `p0_`. Magic link (plus a password step that is being removed), Spark balance, Power Budget stat engine, LLM writes flavor text only, FLUX art, public share page with OG tags, reviews, admin metrics. All work lands here. |
+| `phase0/` | **Canonical app (decision H1). Stays at `phase0/` permanently (F9); never promote it to the root.** Express + tRPC 11 + React 19 + Vite 8 + Tailwind 4, Drizzle on MySQL, tables prefixed `p0_`. Magic link (plus a password step that is being removed), Spark balance, Power Budget stat engine, LLM writes flavor text only, FLUX art, public share page with OG tags, reviews, admin metrics. All work lands here. |
 | `client/`, `server/`, `shared/`, `drizzle/` (root) | Older full-game prototype on a Manus web template. **To be archived on a branch and removed from `main` (task A0).** Never extend it; mine it for ideas only. |
 | `arcanis-ui/` | Orphaned UI component prototype. |
 | `references/`, root `README.md`, `template.json`, `server/_core/{map,voiceTranscription,dataApi,notification,heartbeat}.ts` | Manus template docs and helpers, not project docs. |
@@ -70,7 +70,7 @@ cd phase0 && pnpm install    # phase0 app
 
 ### Environment
 
-One `.env` at the repo root, used by both apps. `phase0/server/_core/env.ts` loads `../.env`, and phase0 tests load it too (real keys and the real `DATABASE_URL`, so never write DB-touching tests until the separate test DB from task A0 exists). The database is MySQL on TiDB Cloud (us-east-1); whether to keep it is decision H2, pending the founder. There is no `.env.example` yet. Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`. phase0 also reads `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `METRICS_KEY`, and client-side `VITE_API_URL` (API base) and `VITE_PUBLIC_URL` (share link base). None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). Root also reads optional `UPSTASH_REDIS_URL` / `UPSTASH_REDIS_TOKEN` and Manus `BUILT_IN_FORGE_*` keys.
+One `.env` at the repo root, used by both apps. `phase0/server/_core/env.ts` loads `../.env`, and phase0 tests load it too (real keys and the real `DATABASE_URL`, so never write DB-touching tests until the separate test DB from task A0 exists). The database is MySQL on TiDB Cloud (us-east-1); kept through the soft launch with logical backups (task A1), migrated to a new founder-owned host in Phase 1b (task B0). There is no `.env.example` yet. Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (image storage for the soft launch; R2 in Phase 1b). `OPENAI_API_KEY` (for `omni-moderation`) is still to be added. All providers run on free-tier keys with no payment method attached. phase0 also reads `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `METRICS_KEY`, and client-side `VITE_API_URL` (API base) and `VITE_PUBLIC_URL` (share link base). None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). Root also reads optional `UPSTASH_REDIS_URL` / `UPSTASH_REDIS_TOKEN` and Manus `BUILT_IN_FORGE_*` keys.
 
 ### Run
 
@@ -80,7 +80,7 @@ cd phase0 && pnpm build && pnpm start
 pnpm dev                     # root app, http://localhost:3000 (auto-increments if busy)
 ```
 
-Deploy (phase0): client on Vercel (`phase0/vercel.json`, `pnpm build:client`, output `dist/public`), API on Render (configured in the dashboard, no `render.yaml`; one paid instance before soft launch). OG tags are injected only by the Express route `/spell/:spellId`. Today `vercel.json` rewrites every path to `index.html`, so share links on the Vercel domain get no OG tags; task A10 adds rewrites for `/api/*` and the share route to Render ahead of the SPA catch-all.
+Deploy (phase0): client on Vercel (`phase0/vercel.json`, `pnpm build:client`, output `dist/public`), API on Render (configured in the dashboard, no `render.yaml`; free instance kept awake by an external `/health` ping, decision F3). OG tags are injected only by the Express route `/spell/:spellId`. Today `vercel.json` rewrites every path to `index.html`, so share links on the Vercel domain get no OG tags; task A10 adds rewrites for `/api/*` and the share route to Render ahead of the SPA catch-all.
 
 ### Tests and type-check
 

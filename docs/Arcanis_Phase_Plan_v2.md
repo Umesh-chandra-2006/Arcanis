@@ -1,7 +1,15 @@
-# Arcanis: Phase Plan v2.1
+# Arcanis: Phase Plan v2.2
 
-**Companion to: Arcanis Master Documentation v7.1 (the bible)**
+**Companion to: Arcanis Master Documentation v7.2 (the bible)**
 **Status:** Commercial product. Supersedes the build order in the old Phased Build Plan v1.0 and Section 24 of Master Doc v6.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.2 (2026-10-10)
+
+Founder answers to the open founder actions (Master Doc v7.2):
+
+- **Gate 1a thresholds locked (Section 5).** The starting values are confirmed as written. The cost criterion is measured at list price (shadow cost), because the soft launch runs on free-tier keys with $0 real spend.
+- **Infrastructure:** the soft launch runs on one free Render instance kept awake by an external health-check ping (replaces the v2.1 paid-instance line below), Cloudinary for images, the current TiDB cluster, and free-tier provider keys. Cloudflare R2 and a new database host arrive in Phase 1b.
+- **Phase 2 prerequisite (Section 6):** Lemon Squeezy verification is parked until after the soft launch.
 
 ## What changed in v2.1 (2026-10-09)
 
@@ -65,7 +73,7 @@ Deliverables:
 
 **Exit criteria:** a one-page cost sheet with measured numbers, and a provider choice per surface. If all-in cost per spell exceeds roughly $0.08, revisit model tiering before building anything else.
 
-**Status (v2.1, 2026-10-09):** not done. No cost telemetry, cost sheet, provider comparison, harness or test corpus exists; the `phase0/` app is a creation prototype, not these deliverables. Revised approach: build per-call cost telemetry and the balance harness as Phase 1a blockers, run the offline corpus (100+ prompts) through the chosen providers before soft launch, then treat the soft launch as the real-traffic measurement. The $0.08 check is applied to the offline corpus before launch and re-checked on live data at Gate 1.
+**Status (v2.1, 2026-10-09):** not done. No cost telemetry, cost sheet, provider comparison, harness or test corpus exists; the `phase0/` app is a creation prototype, not these deliverables. Revised approach: build per-call cost telemetry and the balance harness as Phase 1a blockers, run the offline corpus (100+ prompts) through the chosen providers before soft launch, then treat the soft launch as the real-traffic measurement. The $0.08 check is applied to the offline corpus before launch and re-checked on live data at Gate 1. v2.2: providers run on free tiers through the soft launch; the check uses list-price shadow cost, and the corpus run also records each provider's free quota, since quota, not money, is the soft-launch limit.
 
 ## 5. Phase 1: Creation + Async Battles (the launch build)
 
@@ -91,12 +99,12 @@ Out of scope: payments, XP tracks, proficiency, Tower, Halls, friends, Live Duel
 - *Day-7 creation retention (1a):* of players whose first creation was on day 0, the share who created at least one more spell on days 7 to 13. Requires a weekly free Spark allowance to be live; without one, this metric measures Spark exhaustion, not interest.
 - *Day-7 battle retention (1b):* of players who finished a first battle on day 0, the share active (battled or created) on days 7 to 13.
 
-**Gate 1a, creation-only (evaluated after 4 to 6 weeks of soft launch). Starting values proposed 2026-10-09; founder confirms and locks them before soft launch:**
+**Gate 1a, creation-only (evaluated after 4 to 6 weeks of soft launch). Locked by the founder on 2026-10-10:**
 - Signup to first creation: at or above 50 percent
 - First creation to share: at or above 15 percent
 - k-factor: at or above 0.3 is encouraging; below 0.1 means the loop leaks and needs rework before monetization
 - Day-7 creation retention: at or above 10 percent
-- All-in cost per creation on live traffic: at or below $0.08
+- All-in cost per creation on live traffic: at or below $0.08 (v2.2: measured at provider list price while the soft launch runs on free-tier keys, so it predicts paid-tier cost)
 - Layer 2c trigger rate at or below 15 percent of generations; moderation false-positive rate at or below 2 percent on the reviewed sample
 - Fake-door `spark_pack_intent`: recorded per user who hit zero Spark (no threshold; informs Phase 2 priority)
 

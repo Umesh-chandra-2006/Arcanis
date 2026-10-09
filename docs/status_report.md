@@ -4,6 +4,8 @@
 **Scope:** Read-only audit of the repo against Master Doc v7.0, Phase Plan v2.0, Phase 1 Build Plan v2.0, and handover.md.
 **Author:** Claude Code (audit session). Nothing was changed in code during this audit.
 
+> **Disclaimer (2026-10-10): `phase0/` stays as `phase0/`.** The founder decided not to promote the `phase0/` app to the repo root after the root prototype is archived (founder action F9). Wherever this report, or any doc, says "the phase0 app" or refers to paths under `phase0/`, that is the permanent location of the canonical app, not a temporary one. The name is historical: it is the Phase 1 product codebase, not a Phase 0 throwaway. Founder decisions taken after this audit are recorded in `PROGRESS.md` and Master Doc v7.2; where they differ from this report, they win.
+
 ---
 
 ## 0. Headline (read this if nothing else)

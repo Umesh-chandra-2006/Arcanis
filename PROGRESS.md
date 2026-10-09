@@ -2,7 +2,7 @@
 
 **Read this first in every new session.** It is the single source for "where is the project right now". Update it at the end of every working session: change the snapshot, record decisions, tick tasks, and add a line to the session log. Keep it short; detail belongs in `docs/`.
 
-**Last updated:** 2026-10-09
+**Last updated:** 2026-10-10
 
 ---
 
@@ -10,16 +10,16 @@
 
 | Area | State |
 |---|---|
-| Docs | Master Doc **v7.1**, Phase Plan **v2.1**, Build Plan **v2.1** (file names unchanged). Audit: `docs/status_report.md`. |
-| Canonical codebase | **`phase0/`** (decided H1). Root app to be archived on a branch (task A0). |
-| Architecture | Modular monolith on MySQL, one paid Render instance, images to object storage (decided H2). DB host: TiDB Cloud (us-east-1), keep or migrate pending founder. |
+| Docs | Master Doc **v7.2**, Phase Plan **v2.2**, Build Plan **v2.2** (file names unchanged). Audit: `docs/status_report.md`. |
+| Canonical codebase | **`phase0/`** (decided H1), stays at `phase0/` permanently (F9). Root app to be archived on a branch (task A0). |
+| Architecture | Modular monolith on MySQL. Soft launch: current TiDB cluster, Cloudinary images, free Render instance kept awake by ping, free-tier provider keys. Phase 1b: new DB host and Cloudflare R2 (B0). |
 | Phase 0 (measure) | **Not done.** Folded into Track A (telemetry A2, harness A8, corpus run A14) plus soft-launch measurement. |
 | Phase 1a (creation soft launch) | In progress. Creation and share roughly 50 to 60 percent. Blocked on Track A. |
 | Phase 1b (async battles) | Early (roughly 10 to 15 percent, off-spec root code to be rebuilt). Track B. |
 | Live deployment | phase0 deployed but not publicized. No real users, spells or shares. The soft launch is the first real measurement. |
 | Tests | Root: 9 pass, type-check fails (5 errors). phase0: 19 pass, type-check clean. Tests hit the real DB (no test DB yet). |
-| Code changes this cycle | None. Docs only. **Waiting for founder go-ahead on the task list.** |
-| Task tracker | `docs/tasks.md` (checklist with acceptance checks for Track A, Track B and founder actions F1 to F11). |
+| Code changes this cycle | None. Docs only. **Founder actions closed; waiting for go-ahead on A0.** |
+| Task tracker | `docs/tasks.md` (checklist with acceptance checks for Track A and Track B; founder actions F1 to F11 closed). |
 
 ### Done this cycle (2026-10-09)
 - Full repo audit (`docs/status_report.md`).
@@ -28,10 +28,10 @@
 - `docs/tasks.md` created.
 
 ### In progress
-Nothing in code. Founder actions in flight: provider spend caps (F1).
+Nothing in code. Founder to add `OPENAI_API_KEY` to `.env` (needed by A6).
 
 ### Exact next step
-Founder gives go-ahead on Track A (and answers F2 DB host, F9 promote `phase0/` to root). Then start **A0** in `docs/tasks.md`: archive the root app on `archive/root-prototype`, remove it from `main`, add `.env.example`, a separate test DB, and CI.
+Founder gives go-ahead on Track A. Then start **A0** in `docs/tasks.md`: archive the root app on `archive/root-prototype`, remove it from `main`, add `.env.example`, a separate test DB, and CI. Then **A1**: back up the current TiDB database before any schema change.
 
 ### What works today (phase0)
 Magic link sign-in (plus mandatory password, being removed), 5 Spark signup grant, spell creation (4 elements x Attack/Defense/Regen/Debuff x Instant), deterministic stats via Power Budget, LLM flavor text with profanity check, FLUX card art, library, public share page with OG tags, reviews, admin metrics page.
@@ -63,16 +63,26 @@ Magic link sign-in (plus mandatory password, being removed), 5 Spark signup gran
 | Small | Blockers: images to object storage, 1200x630 OG variant, vercel.json share fix, live model-ID check. Not blocking: delete dead template code, remove Hearth. |
 | Docs | Onboarding goes straight to creation; Spell XP reveal removed; Conflagration Wave = Attack / Continuous. |
 
+### Founder actions closed (2026-10-10)
+
+| ID | Decision |
+|---|---|
+| F1 | All providers on free tiers, no payment method attached (provider cap = $0). App breaker: `DAILY_SPEND_LIMIT_USD=2` real spend plus `DAILY_CREATION_LIMIT` under the tightest free quota (A2 audit; placeholder 50). |
+| F2 | TiDB account owner unknown. Keep current cluster for the soft launch with logical backups (A1); migrate to a new founder-owned host in Phase 1b (B0). |
+| F3 | Free Render instance kept awake by an external `/health` ping every 10 minutes. **Replaces G6.** |
+| F4 | Moderation: OpenAI `omni-moderation`. Needs `OPENAI_API_KEY`. |
+| F5 | Cloudinary for the soft launch (keys in `.env`); Cloudflare R2 in Phase 1b (B0). |
+| F6 | Gate 1a thresholds locked as written; cost measured at list price (shadow cost) since keys are free. |
+| F7 | 1 Spark per creation; signup 5; weekly 3; rollover cap 10; referral 3 to inviter only (Master Doc 23.3 had both sides). |
+| F8 | Deploy env vars set fresh at the post-fix redeploy (A10, A16). |
+| F9 | `phase0/` is not promoted to the repo root. Disclaimer added to `docs/status_report.md`. |
+| F10 | Avatar selection never shows Will. Master Doc 2.1 Will cost ranges = typical targets; 6.2 floors and caps = hard limits. |
+| F11 | Lemon Squeezy parked until after the soft launch. |
+
 ### Still open (needs founder)
-1. **DB host (H2):** repo shows TiDB Cloud (us-east-1). Confirm plan, spend limit, and backup retention in the TiDB console; keep or migrate.
-2. **`VITE_PUBLIC_URL`:** not checkable from here (no Vercel CLI or project link; not in local `.env`). Check Vercel > Project > Settings > Environment Variables. It should be the public domain once A10 lands.
-3. **Gate 1a numbers:** starting values proposed in Phase Plan v2.1 Section 5 (50% / 15% / k 0.3 / day-7 creation 10% / $0.08 / 2c 15% / mod FP 2%). Confirm or change, then they are locked.
-4. **Weekly free Spark allowance and signup/referral grant sizes:** allowance is now a 1a blocker (otherwise day-7 creation retention measures Spark exhaustion).
-5. **Moderation provider** (Layer 2b text + image) and **object storage provider** (recommend Cloudflare R2).
-6. **Promote `phase0/` to repo root** after archiving? Needs Vercel and Render root-directory changes.
-7. **Avatar selection shows Will numerically** in Master Doc 18.2 (v7.0). Conflicts with the Will lock; held as "Will not shown" until decided.
-8. **Will cost ranges (Master Doc 2.1) vs Will floors/caps (6.2)** disagree. Pick one before the engine is written (Track B).
-9. Fusion Spark cost listed in Phase 0 scope while Fusion is V2 (low priority).
+1. `OPENAI_API_KEY` in `.env` before A6 (moderation).
+2. Fusion Spark cost listed in Phase 0 scope while Fusion is V2 (low priority).
+3. Watch item: free-tier quotas (especially Hugging Face FLUX credits) may cap daily creations below soft-launch demand; A2 audit reports it before A16.
 
 ---
 
@@ -84,7 +94,9 @@ Full table with estimates: Build Plan v2.1 Section 15. Checklist with acceptance
 
 **Track B, battles (parallel after A0 to A3, about 27 to 30 days):** B1 engine · B2 36 platform spells · B3 server-scored minigames · B4 piloted sampling · B5 snapshots, vector, piloting, matchmaking, bot · B6 battle UI + Will pools · B7 persistence + rematch · B8 harness battles + Will tuning · B9 re-enable Trap and Charged.
 
-**Founder actions:** provider spend caps (in progress), paid Render instance, DB host, object storage account, Gate 1a numbers, Spark grant sizes, Lemon Squeezy verification.
+**Track B also starts with B0** (new DB host, Cloudinary to R2).
+
+**Founder actions:** F1 to F11 closed 2026-10-10. Remaining: `OPENAI_API_KEY`, and creating the keep-awake monitor at A16.
 
 ---
 
@@ -95,3 +107,4 @@ Full table with estimates: Build Plan v2.1 Section 15. Checklist with acceptance
 | 2026-10-09 | Audit | Read all docs and both codebases, ran tests and type-checks. Wrote `docs/status_report.md`, filled CLAUDE.md "Repo specifics", created this file. Raised decisions A to H. No code changed. |
 | 2026-10-09 | Decisions | Founder decided A to H. Updated Master Doc to v7.1, Phase Plan to v2.1, Build Plan to v2.1 (with Track A/B build order), handover.md status, CLAUDE.md locked items and repo specifics, this file. Found DB host is TiDB Cloud. Could not check `VITE_PUBLIC_URL`. No code changed; waiting for go-ahead. |
 | 2026-10-09 | Wrap | Created `docs/tasks.md` (Phase 0 to 1 checklist). Updated this file and CLAUDE.md. Committed all docs. |
+| 2026-10-10 | Founder actions | Closed F1 to F11. Master Doc v7.2, Phase Plan v2.2, Build Plan v2.2; tasks.md (A1 now backup, A2 quota audit, A4 creation limit, A9 Cloudinary, new B0); status_report.md disclaimer that `phase0/` stays. No code changed. |
