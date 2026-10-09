@@ -33,34 +33,33 @@ function isDuplicateShareOpen(ip: string, spellId: string): boolean {
   return false;
 }
 
-function getClientIp(ctx: { req: { ip?: string; headers: Record<string, string | string[] | undefined> } }): string {
-  const forwarded = ctx.req.headers["x-forwarded-for"];
-  if (typeof forwarded === "string") {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
-  }
-  return ctx.req.ip ?? "unknown";
-}
-
 export const spellsRouter = router({
   create: protectedProcedure
     .input(SpellCreationInputSchema)
     .mutation(async ({ ctx, input }) => {
       await trackEvent({
-        eventType: "spell_creation_started",
+        eventType: "creation_started",
         userId: ctx.user.id,
         sessionId: ctx.sessionId,
-        metadata: { name: input.name, element: input.element, category: input.category },
+        metadata: { element: input.element, category: input.category },
       });
 
       const result = await createSpell(ctx.user.id, input, { sessionId: ctx.sessionId });
 
-      if (result.success && result.spell) {
+      // forge_cooling is logged by the breaker as creation_blocked_spend_cap.
+      const outcome = result.success
+        ? "creation_succeeded"
+        : result.code === "generation_failed"
+          ? "creation_refunded"
+          : result.code === "input_rejected"
+            ? "creation_rejected"
+            : null;
+      if (outcome) {
         await trackEvent({
-          eventType: "spell_creation_completed",
+          eventType: outcome,
           userId: ctx.user.id,
           sessionId: ctx.sessionId,
-          metadata: { spellId: result.spell.id, name: result.spell.name },
+          metadata: result.spell ? { spellId: result.spell.id, element: result.spell.element, category: result.spell.category } : { code: result.code },
         });
       }
 
@@ -90,18 +89,22 @@ export const spellsRouter = router({
     }),
 
   recordShareOpen: publicProcedure
-    .input(z.object({ spellId: z.string().min(1) }))
+    .input(z.object({ spellId: z.string().min(1).max(36), referrer: z.string().max(200).optional() }))
     .mutation(async ({ ctx, input }) => {
-      const ip = getClientIp(ctx);
+      const ip = ctx.ip ?? "unknown";
       if (isDuplicateShareOpen(ip, input.spellId)) {
         return { success: true, deduplicated: true };
       }
+      const spell = await getSpellPublic(input.spellId);
+      if (!spell) return { success: false, deduplicated: false };
+      // The owner opening their own link is not a share.
+      if (ctx.user?.id === spell.ownerId) return { success: true, deduplicated: true };
       await incrementShareCount(input.spellId);
       await trackEvent({
-        eventType: "share_page_viewed",
+        eventType: "preview_viewed",
         userId: ctx.user?.id ?? null,
         sessionId: ctx.sessionId,
-        metadata: { spellId: input.spellId },
+        metadata: { spellId: input.spellId, ownerId: spell.ownerId, referrer: input.referrer ?? null },
       });
       return { success: true, deduplicated: false };
     }),

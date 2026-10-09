@@ -31,18 +31,6 @@ export default function ReviewsPage() {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
   const latest = trpc.reviews.latest.useQuery();
-  const trackEvent = trpc.analytics.track.useMutation();
-  const trackedRef = useRef(false);
-
-  useEffect(() => {
-    if (!trackedRef.current) {
-      trackedRef.current = true;
-      trackEvent
-        .mutateAsync({ eventType: "reviews_page_viewed", metadata: {} })
-        .catch(() => {});
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const handleLogout = () => {
     logout();

@@ -1,82 +1,55 @@
-import { desc, count } from "drizzle-orm";
-import { router, publicProcedure } from "../_core/trpc";
-import { TrackEventSchema } from "../../shared/validation";
+import { TRPCError } from "@trpc/server";
+import { z } from "zod";
+import { desc } from "drizzle-orm";
+import { router, publicProcedure, adminProcedure } from "../_core/trpc";
 import { trackEvent, getDailyMetrics } from "../analytics";
 import { requireDb } from "../db";
-import { p0Spells, p0Users } from "../../drizzle/schema";
+import { p0Spells } from "../../drizzle/schema";
 import { totalSparkStats } from "../spark";
-import { ENV } from "../_core/env";
-import type { TrpcContext } from "../_core/context";
+import { checkRateLimit } from "../rate-limit";
+import { computeGateMetrics } from "../gate-metrics";
+import { ANONYMOUS_EVENTS, AUTHENTICATED_EVENTS, MAX_EVENT_PROPS_BYTES } from "../../shared/analytics-events";
 
-function canViewMetrics(ctx: TrpcContext): boolean {
-  if (ctx.user?.role === "admin") return true;
-  if (!ENV.isProduction) return true;
-  const key = ctx.req.headers["x-metrics-key"];
-  return ENV.metricsKey !== "" && key === ENV.metricsKey;
-}
+const TrackInput = z.object({
+  eventType: z.string().min(1).max(64),
+  metadata: z.record(z.string(), z.unknown()).default({}),
+});
 
 export const analyticsRouter = router({
-  track: publicProcedure.input(TrackEventSchema).mutation(async ({ ctx, input }) => {
-    await trackEvent({
-      eventType: input.eventType,
-      userId: ctx.user?.id ?? null,
-      sessionId: ctx.sessionId,
-      metadata: input.metadata,
-    });
+  /**
+   * Public tracking endpoint (Build Plan 12): allowlisted events only, props
+   * validated (unknown props dropped) and size-limited, rate-limited per IP and
+   * per anonymous id; the user always comes from the session.
+   */
+  track: publicProcedure.input(TrackInput).mutation(async ({ ctx, input }) => {
+    const allowed = (ctx.user ? AUTHENTICATED_EVENTS : ANONYMOUS_EVENTS) as Record<string, z.ZodTypeAny>;
+    const schema = allowed[input.eventType];
+    if (!schema) throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown event" });
+    if (JSON.stringify(input.metadata).length > MAX_EVENT_PROPS_BYTES) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE" });
+    const props = schema.safeParse(input.metadata);
+    if (!props.success) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid event props" });
+    const limits = [
+      checkRateLimit(`track:ip:${ctx.ip ?? "unknown"}`, 120, 3600),
+      ...(ctx.sessionId ? [checkRateLimit(`track:anon:${ctx.sessionId}`, 60, 3600)] : []),
+    ];
+    if (limits.some((l) => !l.allowed)) throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+    await trackEvent({ eventType: input.eventType, userId: ctx.user?.id ?? null, sessionId: ctx.sessionId, metadata: props.data as Record<string, unknown> });
     return { success: true };
   }),
 
-  dailyMetrics: publicProcedure.query(async ({ ctx }) => {
-    if (!canViewMetrics(ctx)) {
-      return null;
-    }
-    return getDailyMetrics(7);
-  }),
+  /** Gate 1a dashboard (Phase Plan v2.2 Section 5). */
+  gateMetrics: adminProcedure.input(z.object({ days: z.number().int().min(1).max(180).default(28) }).optional()).query(({ input }) =>
+    computeGateMetrics({ days: input?.days ?? 28 })
+  ),
 
-  weeklyMetrics: publicProcedure.query(async ({ ctx }) => {
-    if (!canViewMetrics(ctx)) {
-      return null;
-    }
-    const db = requireDb();
+  dailyMetrics: adminProcedure.query(() => getDailyMetrics(7)),
 
-    const topSpells = await db
-      .select({
-        id: p0Spells.id,
-        name: p0Spells.name,
-        element: p0Spells.element,
-        shareCount: p0Spells.shareCount,
-        createdAt: p0Spells.createdAt,
-      })
+  overview: adminProcedure.query(async () => {
+    const topSpells = await requireDb()
+      .select({ id: p0Spells.id, name: p0Spells.name, element: p0Spells.element, shareCount: p0Spells.shareCount, createdAt: p0Spells.createdAt })
       .from(p0Spells)
       .orderBy(desc(p0Spells.shareCount), desc(p0Spells.createdAt))
       .limit(5);
-
-    const [userCountRow] = await db.select({ value: count() }).from(p0Users);
-    const [creatorCountRow] = await db
-      .select({ value: count(p0Spells.ownerId) })
-      .from(db.selectDistinct({ ownerId: p0Spells.ownerId }).from(p0Spells).as("creators"));
-
-    const sparks = await totalSparkStats();
-
-    const daily = await getDailyMetrics(7);
-    const created = daily.reduce((sum, d) => sum + d.spellsCreated, 0);
-    const shared = daily.reduce((sum, d) => sum + d.spellsShared, 0);
-    const pageViews = daily.reduce((sum, d) => sum + d.sharePageViews, 0);
-    const ctaClicks = daily.reduce((sum, d) => sum + d.sharePageCtaClicks, 0);
-
-    const avgSharesPerUser = Math.max(0, shared) / Math.max(1, creatorCountRow?.value ?? 1);
-    const conversionPerShare = pageViews > 0 ? ctaClicks / pageViews : 0;
-    const kFactor = avgSharesPerUser * conversionPerShare;
-
-    return {
-      topSpells,
-      kFactor: Number(kFactor.toFixed(3)),
-      creationToShareRate: created > 0 ? Number((shared / created).toFixed(3)) : 0,
-      signupToFirstCreationRate:
-        (userCountRow?.value ?? 1) > 0
-          ? Number(((creatorCountRow?.value ?? 0) / (userCountRow?.value ?? 1)).toFixed(3))
-          : 0,
-      sparkStats: sparks,
-    };
+    return { topSpells, sparkStats: await totalSparkStats() };
   }),
 });

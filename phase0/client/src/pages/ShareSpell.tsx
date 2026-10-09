@@ -139,7 +139,7 @@ export default function ShareSpell() {
   useEffect(() => {
     if (spellQuery.data && !recordedRef.current) {
       recordedRef.current = true;
-      recordOpen.mutate({ spellId }, { onError: () => {} });
+      recordOpen.mutate({ spellId, referrer: document.referrer.slice(0, 200) || undefined }, { onError: () => {} });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spellQuery.data]);
@@ -147,7 +147,7 @@ export default function ShareSpell() {
   const handleCta = () => {
     trackEvent
       .mutateAsync({
-        eventType: "share_page_cta_clicked",
+        eventType: "preview_cta_clicked",
         metadata: { spellId },
       })
       .catch(() => {});

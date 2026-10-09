@@ -1,132 +1,125 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Panel } from "@/components/game/panel";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { elementAccent } from "@/lib/adapters";
-import { BarChart3, TrendingUp, ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle2, CircleDashed, XCircle } from "lucide-react";
+import { toast } from "sonner";
 
+const pct = (v: number | null) => (v === null ? "-" : `${(v * 100).toFixed(1)}%`);
+
+function formatMetric(key: string, value: number | null): string {
+  if (value === null) return "-";
+  if (key === "k_factor") return value.toFixed(2);
+  if (key === "cost_per_creation") return `$${value.toFixed(4)}`;
+  return pct(value);
+}
+
+/** Admin dashboard: Gate 1a metrics (Phase Plan v2.2 Section 5), spend breaker, daily counts. */
 export default function AdminMetrics() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
+  const { user, isLoading } = useAuth();
+  const isAdmin = user?.role === "admin";
+  const [days, setDays] = useState(28);
+  const gate = trpc.analytics.gateMetrics.useQuery({ days }, { enabled: isAdmin });
+  const daily = trpc.analytics.dailyMetrics.useQuery(undefined, { enabled: isAdmin });
+  const overview = trpc.analytics.overview.useQuery(undefined, { enabled: isAdmin });
+  const breaker = trpc.admin.breakerStatus.useQuery(undefined, { enabled: isAdmin, refetchInterval: 60_000 });
+  const reset = trpc.admin.breakerReset.useMutation();
+  const setLimits = trpc.admin.breakerSetLimits.useMutation();
+  const [creationLimit, setCreationLimit] = useState("");
 
-  const daily = trpc.analytics.dailyMetrics.useQuery();
-  const weekly = trpc.analytics.weeklyMetrics.useQuery();
-
-  if (daily.isLoading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-        <Spinner className="size-8 text-primary" />
-        <p className="text-sm text-muted-foreground">Loading metrics…</p>
-      </div>
-    );
-  }
-
-  if (daily.data === null) {
+  if (isLoading) return <div className="flex min-h-screen items-center justify-center"><Spinner /></div>;
+  if (!isAdmin) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
         <h1 className="font-serif text-2xl font-semibold">Restricted</h1>
-        <p className="text-sm text-muted-foreground">You do not have access to these metrics.</p>
-        <Button variant="outline" onClick={() => navigate("/")}>
-          <ArrowLeft /> Home
-        </Button>
+        <Link to="/"><Button variant="outline"><ArrowLeft /> Home</Button></Link>
       </div>
     );
   }
 
-  const rows = daily.data ?? [];
-
+  const b = breaker.data;
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60">
-        <div className="container flex h-14 items-center justify-between">
-          <span className="font-serif text-lg font-semibold tracking-[0.22em] text-primary uppercase">
-            Arcanis
-          </span>
-          <span className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-            Admin Metrics
-          </span>
-        </div>
-      </header>
-
-      <main className="container space-y-8 py-10">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="size-5 text-primary" />
-          <h1 className="font-serif text-2xl font-semibold">Share Metrics</h1>
+      <main className="container max-w-5xl space-y-6 py-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h1 className="font-serif text-2xl text-primary">Gate 1a dashboard</h1>
+          <div className="flex items-center gap-2">
+            {[7, 28, 90].map((d) => (
+              <Button key={d} size="sm" variant={days === d ? "default" : "outline"} onClick={() => setDays(d)}>{d}d</Button>
+            ))}
+            <Link to="/admin/moderation"><Button size="sm" variant="ghost">Moderation</Button></Link>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <Panel title="K-Factor (viral)" gold>
-            <p className="font-mono text-3xl font-bold text-primary">
-              {weekly.data?.kFactor.toFixed(3) ?? "—"}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              shares per user × share-page → signup conversion
-            </p>
-          </Panel>
-          <Panel title="Creation → Share">
-            <p className="font-mono text-3xl font-bold">
-              {weekly.data ? `${Math.round((weekly.data.creationToShareRate ?? 0) * 100)}%` : "—"}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              of created spells get shared
-            </p>
-          </Panel>
-          <Panel title="Signup → First Creation">
-            <p className="font-mono text-3xl font-bold">
-              {weekly.data ? `${Math.round((weekly.data.signupToFirstCreationRate ?? 0) * 100)}%` : "—"}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              of accounts that forge at least one spell
-            </p>
-          </Panel>
-        </div>
-
-        <Panel
-          title="Daily Metrics"
-          action={
-            weekly.data && (
-              <span className="text-xs text-muted-foreground">
-                Sparks consumed: {weekly.data.sparkStats.consumed} · remaining:{" "}
-                {weekly.data.sparkStats.remaining}
-              </span>
-            )
-          }
-        >
-          {daily.isLoading ? (
-            <div className="flex h-32 items-center justify-center">
-              <Spinner className="size-6" />
-            </div>
-          ) : (
+        <Panel title="Gate 1a" gold>
+          {gate.isLoading ? <Spinner /> : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <th className="py-2 pr-4">Date</th>
-                    <th className="py-2 pr-4">Signups</th>
-                    <th className="py-2 pr-4">Spells</th>
-                    <th className="py-2 pr-4">Shared</th>
-                    <th className="py-2 pr-4">Share Views</th>
-                    <th className="py-2 pr-4">CTA Clicks</th>
-                    <th className="py-2">Link Req → Verified</th>
-                  </tr>
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr><th className="py-2">Metric</th><th>Value</th><th>Target</th><th>Detail</th><th /></tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.date} className="border-t border-border/60">
-                      <td className="py-2 pr-4 font-mono text-xs">{row.date}</td>
-                      <td className="py-2 pr-4">{row.newSignups}</td>
-                      <td className="py-2 pr-4">{row.spellsCreated}</td>
-                      <td className="py-2 pr-4">{row.spellsShared}</td>
-                      <td className="py-2 pr-4">{row.sharePageViews}</td>
-                      <td className="py-2 pr-4">{row.sharePageCtaClicks}</td>
-                      <td className="py-2 font-mono text-xs">
-                        {row.magicLinksRequested > 0
-                          ? `${row.magicLinksVerified}/${row.magicLinksRequested}`
-                          : "—"}
+                  {gate.data?.metrics.map((m) => (
+                    <tr key={m.key} className="border-t border-border/40">
+                      <td className="py-2 pr-3">{m.label}</td>
+                      <td className="pr-3 font-semibold">{formatMetric(m.key, m.value)}</td>
+                      <td className="pr-3 text-muted-foreground">{m.target}</td>
+                      <td className="pr-3 text-xs text-muted-foreground">{m.detail}</td>
+                      <td>
+                        {m.pass === null ? <CircleDashed className="size-4 text-muted-foreground" /> : m.pass ? <CheckCircle2 className="size-4 text-emerald-500" /> : <XCircle className="size-4 text-destructive" />}
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {gate.data && (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Day-1 return {pct(gate.data.extra.day1_return as number | null)} · creations per active player{" "}
+                  {gate.data.extra.creations_per_active_user === null ? "-" : Number(gate.data.extra.creations_per_active_user).toFixed(2)} · fake-door intent at zero Spark{" "}
+                  {pct(gate.data.extra.fake_door_intent_at_zero_spark as number | null)} ({gate.data.extra.players_reached_zero_spark} players reached zero)
+                </p>
+              )}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Spend breaker (today, UTC)">
+          {!b ? <Spinner /> : (
+            <div className="space-y-3 text-sm">
+              <p>
+                Status: <span className={b.open ? "text-emerald-500" : "text-destructive"}>{b.open ? "open" : `refusing (${b.reason})`}</span>
+                {" · "}creations {b.creations} of {b.creationLimit}
+                {" · "}real spend ${b.realSpendUsd.toFixed(4)} of ${b.spendLimitUsd}
+                {" · "}shadow spend ${b.shadowSpendUsd.toFixed(4)}
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="outline" disabled={reset.isPending} onClick={async () => { await reset.mutateAsync(); breaker.refetch(); toast.success("Trip cleared"); }}>
+                  Clear trip
+                </Button>
+                <Input className="w-32" inputMode="numeric" placeholder="Creation limit" value={creationLimit} onChange={(e) => setCreationLimit(e.target.value.replace(/\D/g, ""))} />
+                <Button size="sm" variant="outline" disabled={!creationLimit || setLimits.isPending} onClick={async () => { await setLimits.mutateAsync({ creationLimit: Number(creationLimit) }); breaker.refetch(); toast.success("Limit set for today"); }}>
+                  Set today's limit
+                </Button>
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Last 7 days">
+          {daily.isLoading ? <Spinner /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr><th className="py-2">Day</th><th>Signups</th><th>Created</th><th>Shared</th><th>Previews</th><th>Preview CTA</th></tr>
+                </thead>
+                <tbody>
+                  {daily.data?.map((d) => (
+                    <tr key={d.date} className="border-t border-border/40">
+                      <td className="py-2">{d.date}</td><td>{d.newSignups}</td><td>{d.spellsCreated}</td><td>{d.spellsShared}</td><td>{d.sharePageViews}</td><td>{d.sharePageCtaClicks}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -135,34 +128,18 @@ export default function AdminMetrics() {
           )}
         </Panel>
 
-        <Panel title="Top Shared Spells" action={<TrendingUp className="size-4 text-primary" />}>
-          {weekly.data?.topSpells.length ? (
-            <ul className="space-y-2">
-              {weekly.data.topSpells.map((s, i) => (
-                <li key={s.id} className="flex items-center justify-between border-b border-border/40 pb-2 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono text-xs text-muted-foreground">#{i + 1}</span>
-                    <span
-                      className="size-2.5 rounded-full"
-                      style={{ backgroundColor: elementAccent(s.element) }}
-                    />
-                    <button
-                      className="font-serif text-sm font-semibold hover:text-primary"
-                      onClick={() => navigate(`/spell/${s.id}`)}
-                    >
-                      {s.name}
-                    </button>
-                  </div>
-                  <Badge variant="outline">{s.shareCount} shares</Badge>
-                </li>
+        {overview.data && (
+          <Panel title="Top spells and Spark">
+            <ul className="space-y-1 text-sm">
+              {overview.data.topSpells.map((s) => (
+                <li key={s.id}><Link to={`/spell/${s.id}`} className="text-primary underline">{s.name}</Link> ({s.element}) · {s.shareCount} views</li>
               ))}
             </ul>
-          ) : (
-            <p className="py-6 text-center text-sm text-muted-foreground">
-              No spells shared yet.
+            <p className="mt-3 text-xs text-muted-foreground">
+              Spark spent {overview.data.sparkStats.consumed} · outstanding {overview.data.sparkStats.remaining}
             </p>
-          )}
-        </Panel>
+          </Panel>
+        )}
       </main>
     </div>
   );

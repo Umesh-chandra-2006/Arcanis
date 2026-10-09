@@ -40,7 +40,7 @@ const FORGE_STEPS = [
 ];
 
 export default function Create() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -61,10 +61,16 @@ export default function Create() {
   const utils = trpc.useUtils();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Wait for the session check; a reload must not bounce a signed-in player.
+    if (!isLoading && !isAuthenticated) {
       navigate("/");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated) trackEvent.mutate({ eventType: "lab_opened", metadata: {} }, { onError: () => {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (phase !== "forging") return;
@@ -129,13 +135,13 @@ export default function Create() {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     trackEvent
-      .mutateAsync({ eventType: "share_link_copied", metadata: { spellId: created?.id } })
+      .mutateAsync({ eventType: "share_clicked", metadata: { spellId: created?.id, channel: "copy" } })
       .catch(() => {});
   };
 
   const tweet = () => {
     trackEvent
-      .mutateAsync({ eventType: "spell_shared", metadata: { spellId: created?.id, channel: "twitter" } })
+      .mutateAsync({ eventType: "share_clicked", metadata: { spellId: created?.id, channel: "twitter" } })
       .catch(() => {});
     window.open(
       `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I forged "${created?.name}" on Arcanis. The Tower made it real.`)}&url=${encodeURIComponent(shareUrl)}`,

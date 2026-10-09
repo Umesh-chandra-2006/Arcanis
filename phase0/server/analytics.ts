@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 import { gte } from "drizzle-orm";
 import { requireDb } from "./db";
+import { hitRateLimit } from "./db-rate-limit";
 import { p0AnalyticsEvents, p0Users } from "../drizzle/schema";
 
 export interface TrackEventInput {
@@ -24,6 +25,22 @@ export async function trackEvent(input: TrackEventInput): Promise<void> {
     });
   } catch (error) {
     console.warn("[Analytics] Failed to track event:", error);
+  }
+}
+
+/**
+ * session_day_n (Build Plan 12): once per player per UTC day, n = whole days
+ * since signup. Used for day-1 and day-7 retention.
+ */
+export async function recordSessionDay(user: { id: number; createdAt: Date }, sessionId: string | null, now = new Date()): Promise<void> {
+  const day = now.toISOString().slice(0, 10);
+  try {
+    const first = await hitRateLimit(`sessionday:${user.id}:${day}`, 1, 86_400, now.getTime());
+    if (!first.allowed) return;
+    const n = Math.floor((now.getTime() - user.createdAt.getTime()) / 86_400_000);
+    await trackEvent({ eventType: "session_day_n", userId: user.id, sessionId, metadata: { n } });
+  } catch (error) {
+    console.warn("[Analytics] session_day_n failed:", error);
   }
 }
 
@@ -80,22 +97,22 @@ export async function getDailyMetrics(days: number): Promise<DailyMetrics[]> {
     const row = byDay.get(key);
     if (!row) continue;
     switch (e.eventType) {
-      case "spell_creation_completed":
+      case "creation_succeeded":
         row.spellsCreated++;
         break;
-      case "spell_shared":
+      case "share_clicked":
         row.spellsShared++;
         break;
-      case "share_page_viewed":
+      case "preview_viewed":
         row.sharePageViews++;
         break;
-      case "share_page_cta_clicked":
+      case "preview_cta_clicked":
         row.sharePageCtaClicks++;
         break;
       case "magic_link_requested":
         row.magicLinksRequested++;
         break;
-      case "magic_link_verified":
+      case "signup_confirmed":
         row.magicLinksVerified++;
         break;
     }

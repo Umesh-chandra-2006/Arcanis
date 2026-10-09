@@ -11,7 +11,7 @@ import { mapSpellToCardProps } from "@/lib/adapters";
 import { Wand2, BookOpen, LogOut } from "lucide-react";
 
 export default function Library() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const navigate = useNavigate();
 
   const mySpells = trpc.spells.mySpells.useQuery(undefined, { enabled: isAuthenticated });
@@ -20,10 +20,11 @@ export default function Library() {
   });
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Wait for the session check; a reload must not bounce a signed-in player.
+    if (!isLoading && !isAuthenticated) {
       navigate("/");
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
 
   if (!isAuthenticated || !user) {
     return (

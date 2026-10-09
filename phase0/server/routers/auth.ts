@@ -10,7 +10,7 @@ import {
   type SignInResult,
 } from "../auth-service";
 import { SignInCodeSchema, SignInLinkSchema, SignInRequestSchema } from "../../shared/validation";
-import { trackEvent } from "../analytics";
+import { recordSessionDay, trackEvent } from "../analytics";
 import type { Phase0User } from "../../drizzle/schema";
 import type { TrpcContext } from "../_core/context";
 import { appendSetCookie, parseCookies, REFERRAL_COOKIE, serializeCookie, SESSION_COOKIE } from "../_core/cookies";
@@ -38,7 +38,7 @@ async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "lin
   appendSetCookie(ctx.res, serializeCookie(SESSION_COOKIE, result.sessionToken, { maxAgeSeconds: SESSION_TTL_MS / 1000 }));
   if (referralCodeOf(ctx)) appendSetCookie(ctx.res, serializeCookie(REFERRAL_COOKIE, "", { maxAgeSeconds: 0 }));
   await trackEvent({
-    eventType: result.isNewUser ? "signup_completed" : "signin_completed",
+    eventType: result.isNewUser ? "signup_confirmed" : "signin_completed",
     userId: result.user.id,
     sessionId: ctx.sessionId,
     metadata: { signup_method: method, referred: Boolean(referralCodeOf(ctx)) },
@@ -50,7 +50,7 @@ export const authRouter = router({
   /** Always the same response for a valid email: never reveals whether an account exists. */
   requestSignIn: publicProcedure.input(SignInRequestSchema).mutation(async ({ ctx, input }) => {
     const result = await requestSignIn(input.email, { ip: ctx.ip, deviceId: ctx.device.deviceId }).catch(toTrpcError);
-    await trackEvent({ eventType: "signin_requested", userId: null, sessionId: ctx.sessionId, metadata: {} });
+    await trackEvent({ eventType: "magic_link_requested", userId: null, sessionId: ctx.sessionId, metadata: {} });
     return { sent: true as const, devUrl: result.devUrl, devCode: result.devCode };
   }),
 
@@ -64,7 +64,11 @@ export const authRouter = router({
     return finishSignIn(ctx, result, "code");
   }),
 
-  me: publicProcedure.query(({ ctx }) => (ctx.user ? publicUser(ctx.user) : null)),
+  me: publicProcedure.query(async ({ ctx }) => {
+    if (!ctx.user) return null;
+    await recordSessionDay(ctx.user, ctx.sessionId);
+    return publicUser(ctx.user);
+  }),
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
     await revokeSession(parseCookies(ctx.req.headers.cookie)[SESSION_COOKIE]);

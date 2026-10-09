@@ -16,6 +16,12 @@ export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const featured = trpc.spells.featured.useQuery();
+  const track = trpc.analytics.track.useMutation();
+
+  useEffect(() => {
+    track.mutate({ eventType: "landing_view", metadata: { referrer: document.referrer.slice(0, 200) || undefined, path: "/" } }, { onError: () => {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && user) {

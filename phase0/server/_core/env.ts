@@ -17,7 +17,6 @@ export const ENV = {
   port: parseInt(process.env.PORT || "3100", 10),
   frontendUrl: process.env.FRONTEND_URL ?? "",
   corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ?? "",
-  metricsKey: process.env.METRICS_KEY ?? "",
 
   // Text (Layer 1 and Layer 2c). Lists are "provider" or "provider:model", in cascade order.
   spellLlmProvider: process.env.SPELL_LLM_PROVIDER ?? "groq",

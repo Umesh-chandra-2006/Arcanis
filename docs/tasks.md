@@ -109,10 +109,10 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** a share link on the public domain shows the right card on Discord, X and WhatsApp, and a referred signup pays the inviter once. Referral half met by tests. The platform OG check needs the deployed domain, so it moves to A16 (after `pnpm vercel:config` and the redeploy).
 
 ### A11 Analytics hardening and Gate 1a metrics (1)
-- [ ] Public track endpoint: anonymous events only from the allowlist (`landing_view`, `preview_viewed`, `preview_cta_clicked`, `share_clicked`), zod-validated props, size limit, rate limit per IP and anon ID; authenticated events take the user from the session.
-- [ ] Rename events to Build Plan Section 12; add `signup_method`, `spark_pack_intent`, `spark_waitlist_joined`, `creation_blocked_spend_cap`.
-- [ ] Admin page: Gate 1a metrics per Phase Plan v2.1 definitions, standard k-factor.
-- **Done when:** non-allowlisted anonymous events are rejected and every Gate 1a metric is computable from the admin page.
+- [x] Public track endpoint: anonymous events only from the allowlist (`landing_view`, `preview_viewed`, `preview_cta_clicked`, `share_clicked`); signed-in players may also send `lab_opened`, `spark_low_viewed`; zod schema per event (unknown props dropped), 1 KB limit, rate limit per IP and anonymous id; user always from the session (`shared/analytics-events.ts`). (2026-10-10)
+- [x] Events renamed to Build Plan 12 (`magic_link_requested`, `signup_confirmed` with `signup_method` and `referred`, `creation_started/succeeded/refunded/rejected`, `preview_viewed` with referrer, `share_clicked` with channel, `referral_paid`, `session_day_n`, `creation_blocked_spend_cap`); the owner opening their own link no longer counts as a preview. Events before 2026-10-10 use the old names (pre-launch test data). (2026-10-10)
+- [x] Admin page `/admin/metrics`: every Gate 1a metric per the Phase Plan v2.2 definitions (mature cohorts only, standard k-factor), pass/fail against the locked thresholds, day-1 return, creations per active player, fake-door intent; spend breaker status with clear-trip and today's limit (A4 UI). Metrics endpoints are admin-only (`METRICS_KEY` removed). (2026-10-10)
+- **Done when:** non-allowlisted anonymous events are rejected and every Gate 1a metric is computable from the admin page. Met (`server/analytics.test.ts`, including a seeded cohort checking signup conversion 2/4, day-7 retention 1/3 and k = 0.5). Also fixed: Create and Library bounced signed-in players to Home on reload while the cookie session was still loading (regression from A5).
 
 ### A12 Product copy and flow (1.5)
 - [ ] Replace "the Tower" narrative voice everywhere (about 27 places) with a neutral Arcanis voice.
