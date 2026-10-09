@@ -23,12 +23,43 @@ function toHex(r: number, g: number, b: number): string {
   return `#${[r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0")).join("")}`;
 }
 
-/** Dominant colour, lifted toward gold-friendly brightness so it reads as a border on black. */
+const GOLD = "#c9a24b";
+
+/**
+ * Accent colour for the card border: the most common vivid hue in the art.
+ * Dark-fantasy art is mostly near-black, so plain "dominant colour" picks a
+ * murky shadow; only saturated, mid-brightness pixels vote here. Gold when the
+ * art has no vivid colour.
+ */
 export async function dominantColor(bytes: Uint8Array): Promise<string> {
-  const { dominant } = await sharp(bytes).stats();
-  const lum = 0.2126 * dominant.r + 0.7152 * dominant.g + 0.0722 * dominant.b;
-  const lift = lum < 90 ? 90 / Math.max(lum, 1) : 1;
-  return toHex(dominant.r * lift, dominant.g * lift, dominant.b * lift);
+  const { data, info } = await sharp(bytes).resize(48, 48, { fit: "cover" }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const buckets = Array.from({ length: 12 }, () => ({ weight: 0, r: 0, g: 0, b: 0 }));
+  for (let i = 0; i < info.width * info.height * 3; i += 3) {
+    const r = data[i], g = data[i + 1], b = data[i + 2];
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const light = (max + min) / 2;
+    const sat = max === min ? 0 : (max - min) / (255 - Math.abs(max + min - 255));
+    if (sat < 0.35 || light < 45 || light > 225) continue;
+    let hue = 0;
+    if (max === r) hue = ((g - b) / (max - min)) % 6;
+    else if (max === g) hue = (b - r) / (max - min) + 2;
+    else hue = (r - g) / (max - min) + 4;
+    const bucket = buckets[Math.floor((((hue * 60) % 360) + 360) % 360 / 30)];
+    bucket.weight += sat;
+    bucket.r += r * sat;
+    bucket.g += g * sat;
+    bucket.b += b * sat;
+  }
+  const best = buckets.reduce((a, b) => (b.weight > a.weight ? b : a));
+  // Too few vivid pixels to be meaningful.
+  if (best.weight < 20) return GOLD;
+  let [r, g, b] = [best.r / best.weight, best.g / best.weight, best.b / best.weight];
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  if (lum < 100) {
+    const lift = 100 / Math.max(lum, 1);
+    [r, g, b] = [r * lift, g * lift, b * lift];
+  }
+  return toHex(r, g, b);
 }
 
 export async function cardVariant(bytes: Uint8Array): Promise<Buffer> {

@@ -14,6 +14,7 @@ import { ENV } from "./env";
 import { findProjectRoot } from "./paths";
 import { deviceCookieMiddleware } from "./cookies";
 import { checkTextModels } from "../providers/check";
+import { startImageRetryLoop } from "../image-retry";
 
 function renderOgTags(
   baseUrl: string,
@@ -176,6 +177,8 @@ export async function startApp(app: Express) {
   if (!db) {
     console.warn("[Database] Not initialized; DB-backed routes will fail. Check DATABASE_URL.");
   }
+
+  if (!ENV.isTest && db) startImageRetryLoop();
 
   if (!ENV.isProduction && !ENV.isTest) {
     // Non-blocking live check so a retired model ID shows up loudly in dev.

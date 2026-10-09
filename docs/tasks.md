@@ -98,8 +98,9 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] `STORAGE_PROVIDER=cloudinary`; new spells upload the original, a 768x1024 portrait card crop and a composed 1200x630 OG image (`server/spell-images.ts`, sharp); DB stores URLs only. (2026-10-10)
 - [x] OG variant is a composition (art on the right, spell name, element, Arcanis mark, black and gold frame), not a crop. (2026-10-10)
 - [x] Dominant colour stored for the card border. (2026-10-10)
-- [ ] One-off script migrating existing base64 rows.
-- **Done when:** no base64 image remains in the DB and the OG endpoint serves a 1200x630 image.
+- [x] One-off script `pnpm images:migrate [--dry-run|--refresh]`: moved the 3 base64 rows in production to Cloudinary (backup first); `--refresh` rebuilds variants after a design change. (2026-10-10)
+- [x] Background regeneration for placeholder spells (`server/image-retry.ts`, every 15 min, 4 attempts, stops on quota), per Build Plan 7.6. Accent colour picks the most common vivid hue (gold fallback); sharp's plain dominant colour picked murky shadows. (2026-10-10)
+- **Done when:** no base64 image remains in the DB and the OG endpoint serves a 1200x630 image. Met: 0 inline images remain; the OG image route redirects to the composed 1200x630 JPEG (verified by download). 13 older spells have no art at all (created while image generation failed); they regenerate once Cloudflare image keys are set.
 
 ### A10 Share path and referral (1)
 - [ ] `vercel.json`: rewrite `/api/*` and the share route (`/spell/:id` and its image route) to Render before the SPA catch-all.

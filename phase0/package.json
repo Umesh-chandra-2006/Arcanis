@@ -20,7 +20,8 @@
     "db:backup": "node scripts/db-backup.mjs",
     "db:restore-check": "node scripts/db-restore-check.mjs",
     "providers:check": "tsx scripts/providers-check.ts",
-    "creation:live": "tsx scripts/live-creation-check.ts"
+    "creation:live": "tsx scripts/live-creation-check.ts",
+    "images:migrate": "tsx scripts/migrate-images.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",
