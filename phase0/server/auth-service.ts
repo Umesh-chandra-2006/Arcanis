@@ -10,6 +10,7 @@ import {
   VALIDATION_MESSAGES,
 } from "../shared/constants";
 import { grantSignupSparks } from "./spark";
+import { emailProviders, sendEmail } from "./providers/email";
 import jwt from "jsonwebtoken";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
@@ -95,7 +96,7 @@ export async function requestMagicLink(
 
   const devUrl = `${getBaseUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
 
-  if (ENV.isProduction || process.env.RESEND_API_KEY) {
+  if (ENV.isProduction || emailProviders().length > 0) {
     await sendMagicLinkEmail(normalized, devUrl);
     return { devUrl: null };
   }
@@ -165,87 +166,16 @@ export async function signInWithPassword(
 }
 
 async function sendMagicLinkEmail(email: string, link: string): Promise<void> {
-  const provider = process.env.EMAIL_PROVIDER ?? "resend";
-  if (provider === "brevo") {
-    await sendBrevoEmail(email, link);
-    return;
-  }
-
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) {
-    if (ENV.isProduction) {
-      throw new Error("RESEND_API_KEY is not configured. Magic-link emails cannot be sent.");
+  await sendEmail(
+    { surface: "email" },
+    {
+      to: email,
+      subject: "Your Arcanis sign-in link",
+      html: `<p>Create your first spell:</p><p><a href="${link}">Sign in to Arcanis</a></p><p>This link expires in 15 minutes.</p>`,
+      text: `Sign in to Arcanis: ${link}
+This link expires in 15 minutes.`,
     }
-    return;
-  }
-
-  const from = process.env.RESEND_FROM ?? "Arcanis <no-reply@arcanis.app>";
-
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [email],
-        subject: "Your Arcanis sign-in link",
-        html: `<p>Create your first spell:</p><p><a href="${link}">Sign in to Arcanis</a></p><p>This link expires in 15 minutes.</p>`,
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Resend API error ${res.status}: ${body.slice(0, 300)}`);
-    }
-  } catch (error) {
-    console.error("[Magic Link] Email send failed:", error);
-    if (ENV.isProduction) throw error;
-  }
-}
-
-async function sendBrevoEmail(email: string, link: string): Promise<void> {
-  const apiKey = process.env.BREVO_API_KEY;
-  if (!apiKey) {
-    if (ENV.isProduction) {
-      throw new Error("BREVO_API_KEY is not configured. Magic-link emails cannot be sent.");
-    }
-    return;
-  }
-
-  const from = process.env.BREVO_FROM ?? "Arcanis";
-  const fromAddress = from.match(/<([^>]+)>/)?.[1] ?? from.trim();
-  const fromName = from.match(/^([^<]+)</)?.[1]?.trim() ?? "Arcanis";
-  if (!fromAddress || !fromAddress.includes("@")) {
-    throw new Error("BREVO_FROM must be an email address or 'Name <email>'");
-  }
-
-  try {
-    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "api-key": apiKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        sender: { name: fromName, email: fromAddress },
-        to: [{ email }],
-        subject: "Your Arcanis sign-in link",
-        htmlContent: `<p>Create your first spell:</p><p><a href="${link}">Sign in to Arcanis</a></p><p>This link expires in 15 minutes.</p>`,
-      }),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Brevo API error ${res.status}: ${body.slice(0, 300)}`);
-    }
-  } catch (error) {
-    console.error("[Magic Link] Email send failed:", error);
-    if (ENV.isProduction) throw error;
-  }
+  );
 }
 
 export async function verifyMagicLink(

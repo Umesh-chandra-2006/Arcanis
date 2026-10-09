@@ -43,12 +43,12 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** a verified restore exists and the dump script is documented. The host move itself is B0.
 
 ### A2 Provider interfaces and cost telemetry (2)
-- [ ] Interfaces in `phase0/shared/` for text, image, moderation, email, storage, each chosen by one env var (`SPELL_LLM_PROVIDER`, `IMAGE_PROVIDER`, `MODERATION_PROVIDER`, `EMAIL_PROVIDER`, `STORAGE_PROVIDER`).
-- [ ] `provider_calls` table; every wrapper logs surface, provider, model, units, latency, cost estimate, outcome. No call site can bypass it.
-- [ ] Live call to every configured model ID; replace retired IDs (Groq `llama-3.1-70b-versatile` and `gemini-1.5-flash` are suspected retired). A retired ID fails loudly instead of silently falling through. The OpenRouter fallback uses a paid model ID (`meta-llama/llama-3.1-70b-instruct`); on a free key switch to a `:free` model or drop it.
-- [ ] Free-tier quota audit (F1, F7): for Groq, Gemini, OpenRouter, Hugging Face (FLUX), OpenAI moderation, Brevo and Resend, record requests per minute and per day, monthly credits, and what happens at the limit; write it into the A14 cost sheet. Hugging Face free inference credits are the suspected tightest limit; if FLUX cannot cover the expected daily creations, raise it with the founder before A16.
-- [ ] Each wrapper records list-price `cost_estimate_usd` even on free keys (shadow cost).
-- **Done when:** no provider request or response shape exists outside `shared/` providers; one creation produces a full set of `provider_calls` rows.
+- [x] Interfaces in `phase0/shared/providers.ts`; implementations in `phase0/server/providers/` for text (Groq, Gemini, OpenRouter), image (Cloudflare Workers AI, Hugging Face), moderation (OpenAI, local dev list), email (Brevo, Resend), storage (Cloudinary, inline dev). Selected by `SPELL_LLM_PROVIDER`/`SPELL_LLM_FALLBACK_PROVIDERS`, `SEMANTIC_CHECK_PROVIDERS`, `IMAGE_PROVIDER`, `MODERATION_PROVIDER`, `EMAIL_PROVIDER`, `STORAGE_PROVIDER`. (2026-10-10)
+- [x] `p0_provider_calls` (migration 0003, applied to production after a backup); `withTelemetry` logs surface, provider, model, units, latency, cost estimate, outcome for every attempt, success or failure. A test fails if any file outside `server/providers/` calls an external API. (2026-10-10)
+- [x] Live model check: `pnpm providers:check [--images]`, plus a non-blocking check at dev startup; retired IDs log `[MODEL RETIRED]`. Replaced `llama-3.1-70b-versatile` with `openai/gpt-oss-120b` (Groq), `gemini-1.5-flash` with `gemini-flash-latest` and `gemini-flash-lite-latest`, OpenRouter Llama with `google/gemma-4-31b-it:free`. (2026-10-10)
+- [x] Free-tier quota audit: `docs/provider_quotas.md`. Findings: Hugging Face credits exhausted (images down); Cloudflare Workers AI added as primary image provider (needs founder keys); Brevo blocks unknown IPs; Resend has no verified domain. (2026-10-10)
+- [x] Each wrapper records list-price `cost_estimate_usd` (shadow cost, `server/providers/pricing.ts`). (2026-10-10)
+- **Done when:** no provider request or response shape exists outside `server/providers/`; one creation produces a full set of `provider_calls` rows. Met; the full per-creation set is exercised end to end in A15.
 
 ### A3 Spark ledger rewrite (2)
 - [ ] Append-only `spark_ledger` (pending, committed, reversed); balance = sum of non-reversed entries.

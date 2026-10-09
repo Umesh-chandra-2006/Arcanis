@@ -11,6 +11,7 @@ import {
   mysqlTable,
   text,
 } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm";
 
 export const p0Users = mysqlTable(
   "p0_users",
@@ -140,9 +141,34 @@ export const p0AnalyticsEvents = mysqlTable(
   })
 );
 
+// Every external provider call (Build Plan 7.7). Written only by
+// server/providers/telemetry.ts.
+export const p0ProviderCalls = mysqlTable(
+  "p0_provider_calls",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    surface: varchar("surface", { length: 32 }).notNull(),
+    provider: varchar("provider", { length: 32 }).notNull(),
+    model: varchar("model", { length: 128 }).notNull(),
+    units: json("units").notNull(),
+    latencyMs: int("latency_ms").notNull(),
+    costEstimateUsd: double("cost_estimate_usd").notNull().default(0),
+    outcome: varchar("outcome", { length: 24 }).notNull(),
+    errorMessage: varchar("error_message", { length: 500 }),
+    userId: int("user_id"),
+    runId: varchar("run_id", { length: 36 }),
+    createdAt: timestamp("created_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  },
+  (table) => ({
+    createdAtIdx: index("p0_provider_calls_created_at_idx").on(table.createdAt),
+    runIdx: index("p0_provider_calls_run_idx").on(table.runId),
+  })
+);
+
 export type Phase0User = typeof p0Users.$inferSelect;
 export type Phase0Spell = typeof p0Spells.$inferSelect;
 export type Phase0SparkBalance = typeof p0SparkBalances.$inferSelect;
 export type Phase0SparkTransaction = typeof p0SparkTransactions.$inferSelect;
 export type Phase0AnalyticsEvent = typeof p0AnalyticsEvents.$inferSelect;
 export type Phase0Review = typeof p0Reviews.$inferSelect;
+export type Phase0ProviderCall = typeof p0ProviderCalls.$inferSelect;

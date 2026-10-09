@@ -12,6 +12,7 @@ import { serveStatic, setupVite } from "./vite";
 import { getSpellPublic } from "../spell-pipeline";
 import { ENV } from "./env";
 import { findProjectRoot } from "./paths";
+import { checkTextModels } from "../providers/check";
 
 function renderOgTags(
   baseUrl: string,
@@ -165,7 +166,16 @@ export async function startApp(app: Express) {
 
   const db = await getDb();
   if (!db) {
-    console.warn("[Database] Not initialized — DB-backed routes will fail. Check DATABASE_URL.");
+    console.warn("[Database] Not initialized; DB-backed routes will fail. Check DATABASE_URL.");
+  }
+
+  if (!ENV.isProduction && !ENV.isTest) {
+    // Non-blocking live check so a retired model ID shows up loudly in dev.
+    void checkTextModels().then((results) => {
+      for (const r of results.filter((x) => x.outcome !== "success")) {
+        console.error(`[Model check] ${r.provider}:${r.model} ${r.outcome}: ${r.detail}`);
+      }
+    });
   }
 
   app.use(helmet({

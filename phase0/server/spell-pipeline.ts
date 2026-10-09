@@ -2,8 +2,8 @@ import { nanoid } from "nanoid";
 import { desc, eq, sql } from "drizzle-orm";
 import { requireDb } from "./db";
 import { p0Spells, type Phase0Spell } from "../drizzle/schema";
-import { callLLM } from "./llm";
-import { generateSpellCardImageWithRetry } from "./image-generation";
+import { generateText } from "./providers/text";
+import { generateImage } from "./providers/image";
 import {
   LLMSpellIdentitySchema,
   SpellCreationInputSchema,
@@ -63,7 +63,7 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
     return { success: false, error: VALIDATION_MESSAGES.NO_SPARKS, sparkBalance: spend.balance };
   }
 
-  const identity = await generateSpellIdentity(data);
+  const identity = await generateSpellIdentity(data, { userId, runId: spellId });
   if (!identity) {
     await refundSpark(userId, spellId);
     return { success: false, error: VALIDATION_MESSAGES.INVALID_LLM_OUTPUT, sparkBalance: spend.balance + SPARK_CREATION_COST };
@@ -77,7 +77,7 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
     }
   }
 
-  const imagePromise = generateSpellCardImageWithRetry(identity.image_prompt, data.name);
+  const imagePromise = generateSpellImage(identity.image_prompt, { userId, runId: spellId });
 
   const metadata = {
     llmProvider: "identity-llm",
@@ -139,7 +139,30 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
   return { success: true, spell, sparkBalance: spend.balance };
 }
 
-async function generateSpellIdentity(data: SpellCreationInput): Promise<LLMSpellIdentity | null> {
+const IMAGE_STYLE_ANCHOR =
+  "Dark fantasy digital painting, semi-realistic illustration style, dramatic chiaroscuro lighting, painterly brushwork with visible texture, atmospheric depth, cinematic single-subject composition, highly detailed";
+const IMAGE_EXCLUSIONS =
+  "no text, no letters, no words, no numbers, no UI elements, no borders, no frame, no watermark, no signature, isolated illustration only, no card layout";
+
+async function generateSpellImage(
+  prompt: string,
+  ids: { userId: number; runId: string }
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const image = await generateImage(
+      { surface: "image", ...ids },
+      { prompt: `${IMAGE_STYLE_ANCHOR}, ${prompt}, ${IMAGE_EXCLUSIONS}`, width: 1024, height: 1024 }
+    );
+    return { success: true, url: `data:${image.mime};base64,${Buffer.from(image.bytes).toString("base64")}` };
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+async function generateSpellIdentity(
+  data: SpellCreationInput,
+  ids: { userId: number; runId: string }
+): Promise<LLMSpellIdentity | null> {
   const userPrompt = `The spellcaster wishes to forge a spell:
 Name: ${data.name}
 Element: ${data.element}
@@ -150,7 +173,10 @@ Their description: ${data.description}
 Return the identity JSON now.`;
 
   try {
-    const response = await callLLM([{ role: "user", content: userPrompt }], IDENTITY_SYSTEM_PROMPT);
+    const response = await generateText(
+      { surface: "spell_identity", ...ids },
+      { system: IDENTITY_SYSTEM_PROMPT, user: userPrompt, json: true }
+    );
     const cleaned = response.text
       .trim()
       .replace(/^```(?:json)?\s*/i, "")
