@@ -75,7 +75,7 @@ A player has described a spell. Give it a voice and allocate its stats. Return O
   "research_complexity": 1 to 10 (how intricate the spell is),
   "stats": { ...the stat fields listed below... }
 }
-Write in a neutral narrator voice. Do not mention towers, levels, XP or game rules.`;
+Write in a neutral narrator voice. Do not mention levels, XP, ranks or game rules.`;
 
 function describeCategory(category: string): string {
   switch (category) {

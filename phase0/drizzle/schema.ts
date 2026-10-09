@@ -30,6 +30,8 @@ export const p0Users = mysqlTable(
     bannedAt: timestamp("banned_at"),
     /** Carried on share links as ?ref= (task A10). */
     referralCode: varchar("referral_code", { length: 16 }),
+    /** False until the player picks a mage name (asked when first needed, Master Doc 18.2). */
+    nameChosen: boolean("name_chosen").notNull().default(false),
   },
   (table) => ({
     emailIdx: uniqueIndex("p0_users_email_idx").on(table.email),

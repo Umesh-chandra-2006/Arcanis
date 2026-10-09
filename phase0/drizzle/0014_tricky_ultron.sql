@@ -1,0 +1,1 @@
+ALTER TABLE `p0_users` ADD `name_chosen` boolean DEFAULT false NOT NULL;

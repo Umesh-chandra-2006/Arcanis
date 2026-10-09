@@ -20,7 +20,7 @@ const SEED_SPELLS: SeedSpell[] = [
     element: "Fire",
     category: "Attack",
     flavorText: "A spear of molten fire erupts from the caster's palm and punches through the air.",
-    loreLine: "The first weapon the Tower ever forged, still smoldering.",
+    loreLine: "The first weapon ever forged in Arcanis, still smoldering.",
     shareCount: 12,
   },
   {
@@ -36,7 +36,7 @@ const SEED_SPELLS: SeedSpell[] = [
     element: "Fire",
     category: "Regen",
     flavorText: "Warm embers settle over wounds, sealing them with the patient heat of a hearth.",
-    loreLine: "The Tower's first mercy was made of coals.",
+    loreLine: "The first mercy was made of coals.",
     shareCount: 5,
   },
   {
@@ -134,7 +134,7 @@ async function main() {
       .insert(p0Users)
       .values({
         email: "archivist@arcanis.app",
-        username: "tower_archivist",
+        username: "arcanis_archivist",
         emailVerified: true,
         role: "admin",
       })

@@ -34,10 +34,9 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
-export function deriveUsername(email: string): string {
-  const prefix = email.split("@")[0].replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20);
-  const seed = prefix || "wanderer";
-  return `${seed}_${nanoid(6)}`;
+/** A neutral placeholder name; never derived from the email, which would leak it on public pages. */
+export function deriveUsername(_email?: string): string {
+  return `mage_${nanoid(8).toLowerCase().replace(/[^a-z0-9]/g, "x")}`;
 }
 
 function pepper(): string {

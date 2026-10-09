@@ -72,7 +72,7 @@ export default function Home() {
               transition={{ duration: 0.6, ease: "easeOut" }}
             >
               <p className="text-[11px] uppercase tracking-[0.35em] text-primary/80 mb-4">
-                The Magic Tower awaits
+                Describe it. Forge it. Share it.
               </p>
               <h1 className="text-4xl sm:text-6xl font-serif font-semibold leading-tight">
                 Create spells.
@@ -80,15 +80,15 @@ export default function Home() {
                 <span className="text-primary">Battle with them.</span>
               </h1>
               <p className="mx-auto mt-5 max-w-xl text-muted-foreground text-sm sm:text-base">
-                Describe a spell in your own words. The Tower forges its stats, lore, and
-                artwork — then you share it with the world. Five free Sparks on signup.
+                Describe a spell in your own words. Arcanis forges its stats, lore and
+                artwork, and gives it a page to share. Five free Spark on signup.
               </p>
 
               <div className="mt-8 flex items-center justify-center gap-3">
                 <a href="#signup" className="inline-block">
                   <Button size="lg">
                     <Sparkles />
-                    Create Your First Spell — Free
+                    Create your first spell, free
                   </Button>
                 </a>
                 <a href="#featured" className="hidden sm:inline-block">
@@ -99,7 +99,7 @@ export default function Home() {
               <div className="mx-auto mt-10 grid max-w-lg grid-cols-3 gap-4 text-left">
                 {[
                   { icon: Wand2, title: "Describe", text: "Name it, choose its element, write its story." },
-                  { icon: Sparkles, title: "Forge", text: "The Tower generates stats, lore, and art." },
+                  { icon: Sparkles, title: "Forge", text: "Stats, lore and art, balanced and checked." },
                   { icon: Share2, title: "Share", text: "A public page for every spell you create." },
                 ].map((step, i) => (
                   <div key={i} className="arc-panel p-3.5">
@@ -114,7 +114,7 @@ export default function Home() {
         </section>
 
         <section id="signup" className="container py-12">
-          <Panel title="Claim your Sparks" gold className="mx-auto max-w-lg">
+          <Panel title="Claim your free Spark" gold className="mx-auto max-w-lg">
             <SignInForm />
           </Panel>
         </section>
@@ -139,7 +139,7 @@ export default function Home() {
               </div>
             ) : (
               <p className="py-10 text-center text-sm text-muted-foreground">
-                The Tower is still forging its first legends. Be the first to create one.
+                No legends yet. Be the first to forge one.
               </p>
             )}
           </Panel>

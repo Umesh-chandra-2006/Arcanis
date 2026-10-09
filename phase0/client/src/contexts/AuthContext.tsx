@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   username: string;
   role: "user" | "admin";
+  nameChosen: boolean;
   createdAt: string;
 }
 

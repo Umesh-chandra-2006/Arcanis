@@ -44,8 +44,10 @@ describe("auth-service validators", () => {
     expect(isDisposableEmail("mage@gmail.com")).toBe(false);
   });
 
-  it("derives a username from email", () => {
-    expect(deriveUsername("ember.mage@arcanis.app").startsWith("embermage_")).toBe(true);
+  it("placeholder usernames never contain the email", () => {
+    const name = deriveUsername("ember.mage@arcanis.app");
+    expect(name).toMatch(/^mage_[a-z0-9]{8}$/);
+    expect(name).not.toContain("ember");
   });
 });
 

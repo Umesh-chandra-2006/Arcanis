@@ -13,6 +13,7 @@ import { mapSpellToCardProps, elementAccent } from "@/lib/adapters";
 import { Sparkles, Wand2, Star, LogOut } from "lucide-react";
 import { toast } from "sonner";
 import { ReportButton } from "@/components/ReportButton";
+import { useNameGate } from "@/components/NameDialog";
 
 function ReviewsSection({ spellId }: { spellId: string }) {
   const { isAuthenticated } = useAuth();
@@ -21,13 +22,19 @@ function ReviewsSection({ spellId }: { spellId: string }) {
   const submit = trpc.reviews.submit.useMutation();
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+  const { gate, dialog: nameDialog } = useNameGate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!rating) {
       toast.error("Pick a star rating first");
       return;
     }
+    // Reviews show the author's name, so a mage name is needed first.
+    gate(() => void postReview());
+  };
+
+  const postReview = async () => {
     try {
       await submit.mutateAsync({ spellId, rating, comment });
       toast.success("Review posted");
@@ -78,11 +85,12 @@ function ReviewsSection({ spellId }: { spellId: string }) {
           </div>
         ) : (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No reviews yet — be the first to review this spell.
+            No reviews yet. Be the first to review this spell.
           </p>
         )}
 
         <div className="mt-6 border-t border-border/40 pt-5">
+          {nameDialog}
           {isAuthenticated ? (
             <form onSubmit={handleSubmit} className="space-y-3">
               <div className="flex items-center justify-between">
@@ -174,7 +182,7 @@ export default function ShareSpell() {
   if (!spell) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-        <h1 className="font-serif text-2xl font-semibold">The Tower cannot find this spell</h1>
+        <h1 className="font-serif text-2xl font-semibold">This spell can't be found</h1>
         <p className="text-sm text-muted-foreground">
           It may have been lost to the void. Create your own instead.
         </p>
@@ -200,7 +208,7 @@ export default function ShareSpell() {
             Arcanis
           </Link>
           <span className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-            A spell forged by the Tower
+            A spell forged on Arcanis
           </span>
         </div>
       </header>
@@ -237,7 +245,7 @@ export default function ShareSpell() {
               Create Your Own Spell
             </Button>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Describe a spell. The Tower forges stats, lore, and artwork. 5 free Sparks on signup.
+              Describe a spell. Arcanis forges its stats, lore and artwork. 5 free Spark on signup.
             </p>
           </div>
 

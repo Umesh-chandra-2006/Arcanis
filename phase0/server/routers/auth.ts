@@ -21,6 +21,7 @@ export function publicUser(user: Phase0User) {
     email: user.email,
     username: user.username,
     role: user.role,
+    nameChosen: user.nameChosen,
     createdAt: user.createdAt.toISOString(),
   };
 }

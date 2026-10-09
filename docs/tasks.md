@@ -115,12 +115,12 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** non-allowlisted anonymous events are rejected and every Gate 1a metric is computable from the admin page. Met (`server/analytics.test.ts`, including a seeded cohort checking signup conversion 2/4, day-7 retention 1/3 and k = 0.5). Also fixed: Create and Library bounced signed-in players to Home on reload while the cookie session was still loading (regression from A5).
 
 ### A12 Product copy and flow (1.5)
-- [ ] Replace "the Tower" narrative voice everywhere (about 27 places) with a neutral Arcanis voice.
-- [ ] Remove `assessment_question` from prompt, schema and UI.
-- [ ] Remove the Will number from `SpellCard.tsx`; spell detail view shows Light / Moderate / Heavy only.
-- [ ] Onboarding straight to creation, share prompt after first card, name asked when first needed.
-- [ ] `research_ready_at` on spells; first 2 per account exempt; library shows "researching" without lock language.
-- **Done when:** DoD item 9 passes (no XP, circles, proficiency or Tower anywhere) and no Will number appears in any payload or screen.
+- [x] "The Tower" narrative voice replaced everywhere (client, OG copy, Layer 1 prompt, seed data, and 2 production lore lines plus the `tower_archivist` username); em dashes removed from phase0 sources. (2026-10-10)
+- [x] `assessment_question` removed from prompt, schema (migration 0011) and UI. (2026-10-10)
+- [x] No Will number in any payload or screen: spells leave the server only through `toPublicSpell`; the card shows no Will; the spell detail view shows Strain (Light, Moderate, Heavy). (2026-10-10)
+- [x] Onboarding straight to creation (sign-in lands on `/create`); share prompt on the finished card; "Name your mage" asked the first time a public name is needed (first share or first review), moderated and unique (`profile.setName`, migration 0014). New accounts get a neutral `mage_xxxxxxxx` name: names were derived from the email prefix and shown publicly on reviews. (2026-10-10)
+- [x] `research_ready_at`, first 2 exempt (A6/A7 pipeline); library shows a dimmed card with "Researching", no lock language, no time. (2026-10-10)
+- **Done when:** DoD item 9 passes (no XP, circles, proficiency or Tower anywhere) and no Will number appears in any payload or screen. Met (`server/leakage.test.ts`: every spell-returning endpoint checked through the real router; client source scan).
 
 ### A13 Fake door (0.5)
 - [ ] Spark pack tiles marked "coming soon" at zero Spark and from the Spark chip; `spark_pack_intent` with pack; waitlist opt-in (`spark_waitlist`); no grant.

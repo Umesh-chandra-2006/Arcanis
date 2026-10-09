@@ -16,6 +16,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { mapSpellToCardProps, type SpellCardProps } from "@/lib/adapters";
 import { shareUrlFor } from "@/lib/share";
+import { useNameGate } from "@/components/NameDialog";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
   Wand2,
@@ -33,7 +34,7 @@ const ELEMENTS = CREATION_ENABLED.elements;
 const CATEGORIES = CREATION_ENABLED.categories;
 
 const FORGE_STEPS = [
-  "The Tower weighs your words…",
+  "Reading your words…",
   "Forging flavor and lore…",
   "Calling the elemental flame…",
   "Sealing the card…",
@@ -56,6 +57,7 @@ export default function Create() {
     enabled: isAuthenticated,
   });
   const createSpell = trpc.spells.create.useMutation();
+  const { gate, dialog: nameDialog } = useNameGate();
   const myCode = trpc.referrals.myCode.useQuery(undefined, { enabled: isAuthenticated, staleTime: Infinity });
   const trackEvent = trpc.analytics.track.useMutation();
   const utils = trpc.useUtils();
@@ -89,7 +91,7 @@ export default function Create() {
       return;
     }
     if (balance < 1) {
-      toast.error("You're out of Sparks");
+      toast.error("You're out of Spark");
       return;
     }
 
@@ -114,11 +116,11 @@ export default function Create() {
         setPhase("done");
       } else {
         setPhase("form");
-        toast.error(result.error ?? "The Tower could not forge your spell");
+        toast.error(result.error ?? "The forge could not shape that spell. Please try again.");
       }
     } catch (error: any) {
       setPhase("form");
-      toast.error(error?.message ?? "The Tower is busy. Please try again.");
+      toast.error(error?.message ?? "The forge is busy. Please try again.");
     }
   };
 
@@ -144,13 +146,13 @@ export default function Create() {
       .mutateAsync({ eventType: "share_clicked", metadata: { spellId: created?.id, channel: "twitter" } })
       .catch(() => {});
     window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I forged "${created?.name}" on Arcanis. The Tower made it real.`)}&url=${encodeURIComponent(shareUrl)}`,
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I forged "${created?.name}" on Arcanis. Describe yours.`)}&url=${encodeURIComponent(shareUrl)}`,
       "_blank"
     );
   };
 
   const discordCopy = async () => {
-    const markdown = `**${created?.name}** — forged on Arcanis\n${shareUrl}`;
+    const markdown = `**${created?.name}**, forged on Arcanis\n${shareUrl}`;
     await navigator.clipboard.writeText(markdown);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -312,7 +314,7 @@ export default function Create() {
                 </div>
               </div>
               <div>
-                <h2 className="font-serif text-2xl font-semibold">The Tower is forging…</h2>
+                <h2 className="font-serif text-2xl font-semibold">Forging your spell…</h2>
                 <AnimatePresence mode="wait">
                   <motion.p
                     key={stepIndex}
@@ -348,14 +350,15 @@ export default function Create() {
                 <SpellCardWrapper spell={mapSpellToCardProps(created) as SpellCardProps} size="lg" />
               </div>
 
+              {nameDialog}
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button variant="outline" onClick={copyLink}>
+                <Button variant="outline" onClick={() => gate(copyLink)}>
                   <Copy /> {copied ? "Copied!" : "Copy Link"}
                 </Button>
-                <Button variant="outline" onClick={tweet}>
+                <Button variant="outline" onClick={() => gate(tweet)}>
                   <Twitter /> Tweet
                 </Button>
-                <Button variant="outline" onClick={discordCopy}>
+                <Button variant="outline" onClick={() => gate(discordCopy)}>
                   <MessageCircle /> {copied ? "Copied!" : "Discord"}
                 </Button>
               </div>
