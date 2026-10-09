@@ -40,8 +40,8 @@ export default function AdminModeration() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="container max-w-4xl py-10 space-y-6">
+    <div>
+      <main className="mx-auto max-w-4xl space-y-6 p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between">
           <h1 className="font-serif text-2xl text-primary">Moderation queue</h1>
           <div className="flex gap-2">

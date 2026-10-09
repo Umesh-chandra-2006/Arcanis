@@ -33,8 +33,6 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
     flavor: spell.flavor,
     element: spell.element,
     tier: spell.tier,
-    primaryCategory: spell.category,
-    castType: spell.castType,
     art: spell.art,
     artAccent: spell.artAccent,
   };

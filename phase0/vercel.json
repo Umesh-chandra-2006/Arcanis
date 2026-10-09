@@ -16,6 +16,13 @@
     },
     {
       "source": "/spell/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(bot|crawler|spider|facebookexternalhit|facebookcatalog|twitterbot|discordbot|slackbot|whatsapp|telegrambot|linkedinbot|embedly|pinterest|redditbot|skypeuripreview|vkshare|quora link preview|applebot|google-inspectiontool|iframely).*"
+        }
+      ],
       "destination": "https://RENDER_API_ORIGIN/spell/:id"
     },
     {

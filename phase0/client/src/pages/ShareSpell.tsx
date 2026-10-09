@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
+import { Page } from "@/components/layout/page";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -198,22 +199,9 @@ export default function ShareSpell() {
   const card = mapSpellToCardProps(spell);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60">
-        <div className="container flex h-14 items-center justify-between">
-          <Link
-            to="/"
-            className="font-serif text-lg font-semibold tracking-[0.22em] text-primary uppercase"
-          >
-            Arcanis
-          </Link>
-          <span className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground">
-            A spell forged on Arcanis
-          </span>
-        </div>
-      </header>
+    <div>
 
-      <main className="container py-12">
+      <Page width="narrow">
         <div className="mx-auto flex max-w-3xl flex-col items-center gap-8">
           <SpellCard spell={card} size="lg" />
 
@@ -251,7 +239,7 @@ export default function ShareSpell() {
 
           <ReviewsSection spellId={spell.id} />
         </div>
-      </main>
+      </Page>
     </div>
   );
 }

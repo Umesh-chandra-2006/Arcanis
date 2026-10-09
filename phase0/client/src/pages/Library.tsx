@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
+import { Page } from "@/components/layout/page";
 import { useAuth } from "@/contexts/AuthContext";
 import { Panel } from "@/components/game/panel";
 import { SpellCardWrapper } from "@/components/SpellCard";
@@ -35,35 +36,9 @@ export default function Library() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60">
-        <div className="container flex h-14 items-center justify-between">
-          <button
-            onClick={() => navigate("/")}
-            className="font-serif text-lg font-semibold tracking-[0.22em] text-primary uppercase"
-          >
-            Arcanis
-          </button>
-          <nav className="flex items-center gap-2">
-            <SparkDots balance={sparkBalance.data?.balance ?? 5} />
-            <Button size="sm" onClick={() => navigate("/create")}>
-              <Wand2 /> Create Spell
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                logout();
-                navigate("/");
-              }}
-            >
-              <LogOut /> Sign out
-            </Button>
-          </nav>
-        </div>
-      </header>
+    <div>
 
-      <main className="container py-10">
+      <Page title="Spellbook" subtitle="Every spell you have forged.">
         <Panel
           title="My Spellbook"
           gold
@@ -113,7 +88,7 @@ export default function Library() {
             </div>
           )}
         </Panel>
-      </main>
+      </Page>
     </div>
   );
 }

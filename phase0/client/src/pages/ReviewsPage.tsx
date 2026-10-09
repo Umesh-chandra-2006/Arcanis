@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
+import { Page } from "@/components/layout/page";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,40 +39,9 @@ export default function ReviewsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60">
-        <div className="container flex h-14 items-center justify-between">
-          <Link
-            to="/"
-            className="font-serif text-lg font-semibold tracking-[0.22em] text-primary uppercase"
-          >
-            Arcanis
-          </Link>
-          <nav className="flex items-center gap-2">
-            {isAuthenticated ? (
-              <>
-                <Button size="sm" onClick={() => navigate("/create")}>
-                  <Wand2 /> Create Spell
-                </Button>
-                <Button size="sm" variant="ghost" onClick={() => navigate("/library")}>
-                  My Spellbook
-                </Button>
-                <Button size="sm" variant="ghost" onClick={handleLogout}>
-                  <LogOut /> Sign out
-                </Button>
-              </>
-            ) : (
-              <Link to="/signin">
-                <Button size="sm" variant="outline">
-                  Sign in
-                </Button>
-              </Link>
-            )}
-          </nav>
-        </div>
-      </header>
+    <div>
 
-      <main className="container py-10">
+      <Page title="Reviews" subtitle="What mages think of each other's spells.">
         <Panel
           title="Tome of Reviews"
           gold
@@ -134,7 +104,7 @@ export default function ReviewsPage() {
             </p>
           )}
         </Panel>
-      </main>
+      </Page>
     </div>
   );
 }

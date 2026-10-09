@@ -8,6 +8,8 @@ import path from "node:path";
 
 const file = path.resolve(import.meta.dirname, "../vercel.json");
 export const PLACEHOLDER = "https://RENDER_API_ORIGIN";
+const BOT_UA =
+  "(?i).*(bot|crawler|spider|facebookexternalhit|facebookcatalog|twitterbot|discordbot|slackbot|whatsapp|telegrambot|linkedinbot|embedly|pinterest|redditbot|skypeuripreview|vkshare|quora link preview|applebot|google-inspectiontool|iframely).*";
 
 export function buildConfig(origin) {
   return {
@@ -18,7 +20,10 @@ export function buildConfig(origin) {
       { source: "/api/:path*", destination: `${origin}/api/:path*` },
       { source: "/health", destination: `${origin}/health` },
       { source: "/spell/:id/image", destination: `${origin}/spell/:id/image` },
-      { source: "/spell/:id", destination: `${origin}/spell/:id` },
+      // Only link-preview bots get Render's OG page; people get this deploy's SPA,
+      // so share pages never depend on Render's asset hashes matching Vercel's.
+      // Keep in sync with PREVIEW_BOT_UA in server/_core/app.ts.
+      { source: "/spell/:id", has: [{ type: "header", key: "user-agent", value: BOT_UA }], destination: `${origin}/spell/:id` },
       { source: "/(.*)", destination: "/index.html" },
     ],
   };

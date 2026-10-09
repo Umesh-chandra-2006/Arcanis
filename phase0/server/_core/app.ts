@@ -33,6 +33,9 @@ function renderOgTags(
     `<meta property="og:title" content="${escapeHtml(spell.name)} | Arcanis" />`,
     `<meta property="og:description" content="${escapeHtml(spell.flavorText.slice(0, 200))}" />`,
     `<meta property="og:image" content="${absoluteImage}" />`,
+    `<meta property="og:image:width" content="1200" />`,
+    `<meta property="og:image:height" content="630" />`,
+    `<meta property="og:site_name" content="Arcanis" />`,
     `<meta property="og:type" content="website" />`,
     `<meta property="og:url" content="${baseUrl}/spell/${spell.id}" />`,
     `<meta name="twitter:card" content="summary_large_image" />`,
@@ -55,13 +58,21 @@ async function getBaseUrl(req: express.Request): Promise<string> {
   return ENV.frontendUrl.replace(/\/+$/, "") || `${req.protocol}://${req.get("host") ?? `localhost:${ENV.port}`}`;
 }
 
+/**
+ * Link-preview crawlers. Vercel sends only these to Render for /spell/:id
+ * (scripts/vercel-config.mjs uses the same list); people get the SPA.
+ */
+export const PREVIEW_BOT_UA = /bot|crawler|spider|facebookexternalhit|facebookcatalog|twitterbot|discordbot|slackbot|whatsapp|telegrambot|linkedinbot|embedly|pinterest|redditbot|skypeuripreview|vkshare|quora link preview|applebot|google-inspectiontool|iframely/i;
+
 export async function registerOgRoutes(app: Express) {
-  const prodIndexPath = path.resolve(findProjectRoot(), "dist/public/index.html");
+  // Only production serves its own built index; in dev Vite serves the SPA.
   let prodIndexHtml: string | null = null;
-  try {
-    prodIndexHtml = fs.readFileSync(prodIndexPath, "utf-8");
-  } catch {
-    // not in production or dist not built yet
+  if (ENV.isProduction) {
+    try {
+      prodIndexHtml = fs.readFileSync(path.resolve(findProjectRoot(), "dist/public/index.html"), "utf-8");
+    } catch {
+      console.warn("[OG] dist/public/index.html missing; share pages fall back to bare OG HTML");
+    }
   }
 
   app.get("/spell/:spellId/image", async (req, res) => {
@@ -101,45 +112,34 @@ export async function registerOgRoutes(app: Express) {
     }
   });
 
-  app.get("/spell/:spellId", async (req, res) => {
+  app.get("/spell/:spellId", async (req, res, next) => {
+    const isBot = PREVIEW_BOT_UA.test(req.get("user-agent") ?? "");
+    // People in dev get the Vite SPA; it renders the page client-side.
+    if (!isBot && !prodIndexHtml) return next();
     try {
       const spell = await getSpellRow(req.params.spellId);
       const baseUrl = await getBaseUrl(req);
 
       if (!spell || isTakenDown(spell)) {
         const status = spell ? 410 : 404;
-        if (prodIndexHtml) return res.status(status).send(prodIndexHtml);
+        if (prodIndexHtml && !isBot) return res.status(status).send(prodIndexHtml);
         return res.status(status).send(spell ? "This spell was removed." : "Spell not found");
       }
 
-      const ogTags = renderOgTags(baseUrl, {
-        ...spell,
-        flavorText: spell.flavorText,
-        imageUrl: spell.imageUrl,
-      });
+      const ogTags = renderOgTags(baseUrl, spell);
 
-      if (prodIndexHtml) {
-        const page = prodIndexHtml
-          .replace(/<title>.*<\/title>/, "")
-          .replace("</head>", `${ogTags}\n  </head>`);
-        return res.status(200).set({ "Content-Type": "text/html" }).send(page);
+      if (isBot || !prodIndexHtml) {
+        // Crawlers need only the tags; no scripts or assets that could 404.
+        return res
+          .status(200)
+          .set({ "Content-Type": "text/html; charset=utf-8", "Cache-Control": "public, max-age=300" })
+          .send(`<!doctype html><html lang="en"><head><meta charset="utf-8" />
+    ${ogTags}
+  </head><body><a href="${baseUrl}/s/${spell.id}">${escapeHtml(spell.name)} on Arcanis</a><script>location.replace("/s/${spell.id}" + location.search)</script></body></html>`);
       }
 
-      const page = `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    ${ogTags}
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>`;
+      const page = prodIndexHtml.replace(/<title>.*<\/title>/, "").replace("</head>", `${ogTags}
+  </head>`);
       return res.status(200).set({ "Content-Type": "text/html" }).send(page);
     } catch (error) {
       console.error("[OG Page] error:", error);

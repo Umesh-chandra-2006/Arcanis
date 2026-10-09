@@ -30,37 +30,7 @@ export default function Home() {
   }, [isAuthenticated, user, navigate]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60">
-        <div className="container flex h-14 items-center justify-between">
-          <span className="font-serif text-lg font-semibold tracking-[0.22em] text-primary uppercase">
-            Arcanis
-          </span>
-          <nav className="flex items-center gap-2">
-            <Link to="/reviews" className="inline-block">
-              <Button size="sm" variant="ghost">
-                <MessageSquareMore />
-                Reviews
-              </Button>
-            </Link>
-            {isAuthenticated ? (
-              <Button size="sm" onClick={() => navigate("/create")}>
-                <Wand2 />
-                Create Spell
-              </Button>
-            ) : (
-              <Link to="/signin">
-                <Button size="sm" variant="outline">Sign in</Button>
-              </Link>
-            )}
-            {isAuthenticated && (
-              <Button size="sm" variant="ghost" onClick={() => navigate("/library")}>
-                My Spellbook
-              </Button>
-            )}
-          </nav>
-        </div>
-      </header>
+    <div>
 
       <main>
         <section className="relative overflow-hidden">
@@ -77,7 +47,7 @@ export default function Home() {
               <h1 className="text-4xl sm:text-6xl font-serif font-semibold leading-tight">
                 Create spells.
                 <br />
-                <span className="text-primary">Battle with them.</span>
+                <span className="text-primary">Share them.</span>
               </h1>
               <p className="mx-auto mt-5 max-w-xl text-muted-foreground text-sm sm:text-base">
                 Describe a spell in your own words. Arcanis forges its stats, lore and

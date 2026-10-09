@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AppShell } from "@/components/layout/app-shell";
 
 const Home = lazy(() => import("./pages/Home"));
 const AuthVerify = lazy(() => import("./pages/AuthVerify"));
@@ -28,16 +29,20 @@ function App() {
       <Toaster />
       <Suspense fallback={<LoadingFallback />}>
         <Routes>
-          <Route path="/" element={<Home />} />
           <Route path="/auth/verify" element={<AuthVerify />} />
           <Route path="/signin" element={<SignIn />} />
-          <Route path="/create" element={<Create />} />
-          <Route path="/library" element={<Library />} />
-          <Route path="/spell/:spellId" element={<ShareSpell />} />
-          <Route path="/reviews" element={<ReviewsPage />} />
-          <Route path="/admin/metrics" element={<AdminMetrics />} />
-          <Route path="/admin/moderation" element={<AdminModeration />} />
-          <Route path="*" element={<NotFound />} />
+          <Route element={<AppShell />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/create" element={<Create />} />
+            <Route path="/library" element={<Library />} />
+            <Route path="/spell/:spellId" element={<ShareSpell />} />
+            {/* Alias never rewritten to the OG renderer (see vercel.json). */}
+            <Route path="/s/:spellId" element={<ShareSpell />} />
+            <Route path="/reviews" element={<ReviewsPage />} />
+            <Route path="/admin/metrics" element={<AdminMetrics />} />
+            <Route path="/admin/moderation" element={<AdminModeration />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Routes>
       </Suspense>
     </TooltipProvider>

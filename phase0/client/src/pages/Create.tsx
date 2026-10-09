@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
+import { Page } from "@/components/layout/page";
 import { useAuth } from "@/contexts/AuthContext";
 import { Panel } from "@/components/game/panel";
 import { SpellCardWrapper } from "@/components/SpellCard";
@@ -180,38 +181,10 @@ export default function Create() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border/60">
-        <div className="container flex h-14 items-center justify-between">
-          <button
-            onClick={() => navigate("/")}
-            className="font-serif text-lg font-semibold tracking-[0.22em] text-primary uppercase"
-          >
-            Arcanis
-          </button>
-          <nav className="flex items-center gap-2">
-            <SparkDots balance={balance} />
-            <SparkPacksDialog open={zeroOpen} onOpenChange={setZeroOpen} source="zero_spark" balance={0} />
-            <Button size="sm" variant="ghost" onClick={() => navigate("/library")}>
-              <BookOpen />
-              Spellbook
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                logout();
-                navigate("/");
-              }}
-            >
-              <LogOut />
-              Sign out
-            </Button>
-          </nav>
-        </div>
-      </header>
+    <div>
 
-      <main className="container py-10">
+      <SparkPacksDialog open={zeroOpen} onOpenChange={setZeroOpen} source="zero_spark" balance={0} />
+      <Page title="Lab" subtitle="Describe a spell. The forge balances it, writes its lore and paints its card.">
         <AnimatePresence mode="wait">
           {phase === "form" && (
             <motion.div
@@ -395,7 +368,7 @@ export default function Create() {
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
+      </Page>
     </div>
   );
 }

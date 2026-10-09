@@ -24,7 +24,8 @@
     "images:migrate": "tsx scripts/migrate-images.ts",
     "harness": "tsx tools/balance-harness/harness.ts",
     "cost-report": "tsx tools/cost-report/cost-report.ts",
-    "vercel:config": "node scripts/vercel-config.mjs"
+    "vercel:config": "node scripts/vercel-config.mjs",
+    "corpus:run": "tsx tools/balance-harness/corpus-run.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.15",

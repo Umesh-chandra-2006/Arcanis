@@ -74,7 +74,8 @@ export function mapSpellToCardProps(spell: Phase0Spell) {
     shareCount: spell.shareCount,
     imageUrl: artUrl,
     art: artUrl,
-    artAccent: ELEMENT_ACCENTS[elementKey] || "#6d5aa8",
+    // The card border takes the artwork's own colour (A9); element tint only without art.
+    artAccent: spell.dominantColor || ELEMENT_ACCENTS[elementKey] || "#c9a24b",
   };
 }
 
