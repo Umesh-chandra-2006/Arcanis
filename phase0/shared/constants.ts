@@ -24,7 +24,9 @@ export const SPARK = {
 export const SPARK_SIGNUP_GRANT = SPARK.signupGrant;
 export const SPARK_CREATION_COST = SPARK.creationCost;
 
-export const MAGIC_LINK_TTL_MS = 15 * 60 * 1000; // 15 minutes
+/** Sign-in link and code lifetime (Build Plan 5). */
+export const LOGIN_TOKEN_TTL_MS = 10 * 60 * 1000;
+export const LOGIN_CODE_MAX_ATTEMPTS = 5;
 
 export const SPELL_CAPS: Record<
   Phase0Tier,
@@ -119,24 +121,16 @@ export const VALIDATION_MESSAGES = {
   EMAIL_REQUIRED: "Email is required",
   EMAIL_INVALID: "Please enter a valid email address",
   EMAIL_DISPOSABLE: "Disposable email addresses are not allowed",
-  EMAIL_RATE_LIMITED: "Please wait a minute before requesting another link",
-  SIGNUP_IP_LIMITED: "Too many signups from this network today. Please try again tomorrow.",
-  EMAIL_HAS_PASSWORD: "That account signs in with a password. Enter your password instead.",
-  PASSWORD_REQUIRED: "Please enter your password",
-  PASSWORD_TOO_SHORT: "Password must be at least 8 characters",
-  PASSWORD_TOO_LONG: "Password must be at most 72 characters",
-  PASSWORD_INVALID: "Incorrect email or password",
-  PASSWORD_LOGIN_LIMITED: "Too many attempts. Please try again in a few minutes.",
-  NO_PASSWORD_SET: "This account has no password yet. Request a magic link to sign in.",
+  SIGNIN_RATE_LIMITED: "Too many sign-in attempts. Please wait a few minutes and try again.",
+  CODE_INVALID: "That code is not valid. Check the newest email, or request a new code.",
   SPELL_NOT_FOUND: "Spell not found",
-  TOKEN_INVALID: "This link is invalid or has expired. Please request a new one.",
-  TOKEN_USED: "This link has already been used.",
+  TOKEN_INVALID: "This link is invalid, expired or already used. Request a new one.",
   SPELL_NAME_REQUIRED: "Give your spell a name",
   SPELL_DESCRIPTION_REQUIRED: "Describe your spell",
-  NO_SPARKS: "You're out of Sparks. New accounts receive 5 free Sparks.",
-  INVALID_LLM_OUTPUT: "The Tower could not interpret your request. Please try again.",
-  CONTENT_MODERATED: "That content was flagged by the Tower. Please rephrase.",
-  GENERATION_FAILED: "The Tower is busy. Please try again in a moment.",
+  NO_SPARKS: "You're out of Spark. Your free Spark refills every Monday.",
+  INVALID_LLM_OUTPUT: "The forge could not shape that spell. Your Spark was returned; please try again.",
+  CONTENT_MODERATED: "That description can't be forged. Please rephrase it.",
+  GENERATION_FAILED: "The forge is busy. Please try again in a moment.",
 } as const;
 
 export const ANALYTICS_EVENT_TYPES = [

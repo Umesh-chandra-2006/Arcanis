@@ -1,8 +1,8 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
-import { verifyTokenAndGetUser } from "../auth-service";
+import { userForSession } from "../auth-service";
 import type { Phase0User } from "../../drizzle/schema";
 import type { DeviceSignals } from "../spark";
-import { DEVICE_COOKIE, parseCookies } from "./cookies";
+import { DEVICE_COOKIE, SESSION_COOKIE, parseCookies } from "./cookies";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -15,20 +15,14 @@ export type TrpcContext = {
 };
 
 export async function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
+  const cookies = parseCookies(opts.req.headers.cookie);
   let user: Phase0User | null = null;
-
-  const authHeader = opts.req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    const token = authHeader.substring(7);
-    try {
-      user = await verifyTokenAndGetUser(token);
-    } catch (error) {
-      console.warn("[Context] Authentication failed:", error);
-      user = null;
-    }
+  try {
+    user = await userForSession(cookies[SESSION_COOKIE]);
+  } catch (error) {
+    console.warn("[Context] session lookup failed:", error);
   }
 
-  const cookies = parseCookies(opts.req.headers.cookie);
   const deviceId = cookies[DEVICE_COOKIE] ?? null;
   // Express resolves req.ip through TRUST_PROXY_HOPS (set in app.ts).
   const ip = opts.req.ip ?? opts.req.socket.remoteAddress ?? null;

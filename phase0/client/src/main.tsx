@@ -6,7 +6,8 @@ import { BrowserRouter } from "react-router-dom";
 import superjson from "superjson";
 import App from "./App";
 import "./index.css";
-import { AuthProvider, getStoredToken } from "./contexts/AuthContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import { getFingerprint } from "./lib/fingerprint";
 
 const queryClient = new QueryClient();
 
@@ -17,9 +18,10 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: apiUrl,
       transformer: superjson,
-      headers() {
-        const token = getStoredToken();
-        return token ? { Authorization: `Bearer ${token}` } : {};
+      // The session is an httpOnly cookie; the fingerprint feeds the signup-grant check.
+      async headers() {
+        const fp = await getFingerprint();
+        return fp ? { "x-arc-fp": fp } : {};
       },
       fetch(input, init) {
         return globalThis.fetch(input, {

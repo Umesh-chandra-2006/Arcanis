@@ -19,7 +19,6 @@ export const p0Users = mysqlTable(
     id: int("id").autoincrement().primaryKey(),
     email: varchar("email", { length: 320 }).notNull(),
     username: varchar("username", { length: 64 }).notNull(),
-    passwordHash: varchar("password_hash", { length: 255 }),
     emailVerified: boolean("email_verified").notNull().default(true),
     role: mysqlEnum("role", ["user", "admin"]).notNull().default("user"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -28,22 +27,6 @@ export const p0Users = mysqlTable(
   (table) => ({
     emailIdx: uniqueIndex("p0_users_email_idx").on(table.email),
     usernameIdx: uniqueIndex("p0_users_username_idx").on(table.username),
-  })
-);
-
-export const p0MagicLinks = mysqlTable(
-  "p0_magic_links",
-  {
-    id: varchar("id", { length: 36 }).primaryKey(),
-    token: varchar("token", { length: 128 }).notNull(),
-    email: varchar("email", { length: 320 }).notNull(),
-    used: boolean("used").notNull().default(false),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
-  },
-  (table) => ({
-    tokenIdx: uniqueIndex("p0_magic_links_token_idx").on(table.token),
-    emailIdx: index("p0_magic_links_email_idx").on(table.email),
   })
 );
 
@@ -197,6 +180,49 @@ export const p0BreakerDays = mysqlTable("p0_breaker_days", {
   spendLimitOverrideUsd: double("spend_limit_override_usd"),
   creationLimitOverride: int("creation_limit_override"),
   alertedAt: timestamp("alerted_at"),
+});
+
+// Sign-in by link or 6-digit code, one row per email sent (Build Plan 5, task A5).
+// Only hashes are stored; consuming the link or the code consumes both.
+export const p0LoginTokens = mysqlTable(
+  "p0_login_tokens",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    email: varchar("email", { length: 320 }).notNull(),
+    linkHash: varchar("link_hash", { length: 64 }).notNull(),
+    codeHash: varchar("code_hash", { length: 64 }).notNull(),
+    attempts: int("attempts").notNull().default(0),
+    expiresAt: timestamp("expires_at").notNull(),
+    consumedAt: timestamp("consumed_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    linkIdx: uniqueIndex("p0_login_tokens_link_idx").on(table.linkHash),
+    emailIdx: index("p0_login_tokens_email_idx").on(table.email, table.createdAt),
+  })
+);
+
+// Server-side sessions behind an httpOnly cookie; revocable.
+export const p0Sessions = mysqlTable(
+  "p0_sessions",
+  {
+    tokenHash: varchar("token_hash", { length: 64 }).primaryKey(),
+    userId: int("user_id").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    revokedAt: timestamp("revoked_at"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index("p0_sessions_user_idx").on(table.userId),
+  })
+);
+
+// Fixed-window counters that survive a restart (auth and abuse limits).
+export const p0RateLimits = mysqlTable("p0_rate_limits", {
+  bucket: varchar("bucket", { length: 191 }).primaryKey(), // key + window start
+  count: int("count").notNull().default(0),
+  expiresAt: timestamp("expires_at").notNull(),
 });
 
 export type Phase0User = typeof p0Users.$inferSelect;

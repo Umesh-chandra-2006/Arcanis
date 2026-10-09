@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { trpc } from "@/lib/trpc";
@@ -6,55 +6,22 @@ import { Panel } from "@/components/game/panel";
 import { SpellCardWrapper } from "@/components/SpellCard";
 import { ElementIcon } from "@/components/game/element-icon";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { toast } from "sonner";
+import { SignInForm } from "@/components/SignInForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapSpellToCardProps } from "@/lib/adapters";
-import { Wand2, Sparkles, Share2, MailCheck, ArrowRight, MessageSquareMore } from "lucide-react";
+import { Wand2, Sparkles, Share2, MessageSquareMore } from "lucide-react";
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [devUrl, setDevUrl] = useState<string | null>(null);
-
   const featured = trpc.spells.featured.useQuery();
-  const requestLink = trpc.auth.requestMagicLink.useMutation();
-  const accountStatus = trpc.auth.accountStatus.useQuery({ email }, { enabled: false });
 
   useEffect(() => {
     if (isAuthenticated && user) {
       navigate("/create");
     }
   }, [isAuthenticated, user, navigate]);
-
-  const handleContinue = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-
-    const params = new URLSearchParams();
-    params.set("email", email);
-
-    try {
-      const res = await accountStatus.refetch();
-      if (res.data?.hasPassword) {
-        navigate(`/signin?${params.toString()}`);
-        return;
-      }
-      const result = await requestLink.mutateAsync({ email });
-      if (result.devUrl) {
-        setDevUrl(result.devUrl);
-        toast.success("Magic link generated", { description: "Dev mode: use the link below." });
-      } else {
-        toast.success("Check your inbox", { description: "Your magic sign-in link is on its way." });
-      }
-      setEmail("");
-    } catch (error: any) {
-      toast.error(error?.message ?? "Something went wrong");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,48 +109,7 @@ export default function Home() {
 
         <section id="signup" className="container py-12">
           <Panel title="Claim your Sparks" gold className="mx-auto max-w-lg">
-            {devUrl ? (
-              <div className="space-y-3 text-center">
-                <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/15">
-                  <MailCheck className="size-6 text-primary" />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  <span className="text-foreground font-medium">Dev mode.</span> No email is sent —
-                  open your magic link to continue:
-                </p>
-                <a href={devUrl} className="inline-block">
-                  <Button>Open magic link</Button>
-                </a>
-                <p className="text-[11px] text-muted-foreground break-all">{devUrl}</p>
-              </div>
-            ) : (
-              <form onSubmit={handleContinue} className="space-y-3">
-                <Label htmlFor="home-email">Email address</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="home-email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <Button type="submit" disabled={requestLink.isPending}>
-                    {requestLink.isPending ? <Spinner /> : <ArrowRight />}
-                    Continue
-                  </Button>
-                </div>
-
-                <p className="text-[11px] text-muted-foreground">
-                  New here? We'll email a sign-in link and you'll set a password on first login.
-                  Returning mage? Head to the{" "}
-                  <Link to="/signin" className="underline text-primary">
-                    sign-in page
-                  </Link>
-                  .
-                </p>
-              </form>
-            )}
+            <SignInForm />
           </Panel>
         </section>
 

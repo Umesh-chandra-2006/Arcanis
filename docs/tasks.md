@@ -65,12 +65,12 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** a test proves generation is refused at either limit with no Spark reserved. Met (`server/spend-breaker.test.ts`).
 
 ### A5 Identity (1.5)
-- [ ] 6-digit code in the same email as the link: hashed, 10 minute expiry, single use, 5 attempts, rate-limited per email and IP. Using link or code consumes both.
-- [ ] Magic-link tokens stored hashed; redemption is a single conditional update.
-- [ ] Remove password sign-up, sign-in, `set_password` step, `/signin` password UI, `EMAIL_HAS_PASSWORD`; delete password hashes in a migration (existing users sign in by link or code).
-- [ ] Session in httpOnly, Secure, SameSite=Lax cookie; remove JWT from localStorage.
-- [ ] Remove the public `accountStatus` endpoint; request-link always returns the same response.
-- **Done when:** Build Plan Section 16 identity tests pass (brute force stopped, single redemption under concurrency, no enumeration).
+- [x] 6-digit code in the same email as the link: HMAC-hashed with a server pepper, 10 minute expiry, single use, 5 attempts claimed atomically before comparison, DB-backed rate limits per email, IP and device (`p0_rate_limits`, survives restarts). Using link or code consumes both. (2026-10-10)
+- [x] Link tokens stored as SHA-256; redemption is a single conditional update (`p0_login_tokens`). (2026-10-10)
+- [x] Passwords removed: sign-up, sign-in, `setPassword`, password UI, `EMAIL_HAS_PASSWORD`; `password_hash` column and `p0_magic_links` dropped (migrations 0008, 0009, applied to production after a backup). One `SignInForm` (email, then code) on Home and `/signin`. (2026-10-10)
+- [x] Session: random token in an httpOnly, SameSite=Lax (Secure in production) `arc_session` cookie, hashed in `p0_sessions`, 30 days, revocable on logout; no token in localStorage; `jsonwebtoken` removed. (2026-10-10)
+- [x] `accountStatus` removed; `requestSignIn` returns the same response for any valid email. (2026-10-10)
+- **Done when:** Build Plan Section 16 identity tests pass. Met (`server/auth-service.test.ts`: 12 parallel wrong guesses stop at 5 attempts; link and code each redeem once under concurrency; identical response for new and existing emails), plus an HTTP smoke test of request, code, session, `me` and logout. Production note: the client must call the API same-origin (Vercel `/api` rewrite, A10) or the cookie is not sent.
 
 ### A6 Moderation and Layer 2c (3) (after A2; OpenAI `omni-moderation`, needs `OPENAI_API_KEY`)
 - [ ] Layer 2b on user input (before any generation), generated text, generated images, and reviews (before display).

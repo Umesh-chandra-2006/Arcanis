@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { ENV } from "./env";
 
 export const DEVICE_COOKIE = "arc_did";
+export const SESSION_COOKIE = "arc_session";
 const TWO_YEARS_S = 2 * 365 * 24 * 3600;
 
 export function parseCookies(header: string | undefined): Record<string, string> {

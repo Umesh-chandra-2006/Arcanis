@@ -1,25 +1,21 @@
-import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { router, publicProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import {
-  requestMagicLink,
-  verifyMagicLink,
-  getAccountStatus,
-  setPasswordForUser,
-  signInWithPassword,
+  AuthError,
+  requestSignIn,
+  revokeSession,
+  SESSION_TTL_MS,
+  verifySignInCode,
+  verifySignInLink,
+  type SignInResult,
 } from "../auth-service";
-import {
-  MagicLinkRequestSchema,
-  MagicLinkVerifySchema,
-  PasswordSetSchema,
-  SignInWithPasswordSchema,
-  AccountStatusQuerySchema,
-} from "../../shared/validation";
+import { SignInCodeSchema, SignInLinkSchema, SignInRequestSchema } from "../../shared/validation";
 import { trackEvent } from "../analytics";
-import { VALIDATION_MESSAGES } from "../../shared/constants";
 import type { Phase0User } from "../../drizzle/schema";
 import type { TrpcContext } from "../_core/context";
+import { appendSetCookie, parseCookies, serializeCookie, SESSION_COOKIE } from "../_core/cookies";
 
-function publicUser(user: Phase0User) {
+export function publicUser(user: Phase0User) {
   return {
     id: user.id,
     email: user.email,
@@ -29,82 +25,47 @@ function publicUser(user: Phase0User) {
   };
 }
 
-function getClientIp(ctx: TrpcContext): string | undefined {
-  const forwarded = ctx.req.headers["x-forwarded-for"];
-  return (
-    (typeof forwarded === "string" ? forwarded.split(",")[0]?.trim() : undefined) ??
-    ctx.req.socket.remoteAddress
-  );
+function toTrpcError(error: unknown): never {
+  if (error instanceof AuthError) {
+    throw new TRPCError({ code: error.code === "rate_limited" ? "TOO_MANY_REQUESTS" : "BAD_REQUEST", message: error.message });
+  }
+  throw error;
+}
+
+async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "link" | "code") {
+  appendSetCookie(ctx.res, serializeCookie(SESSION_COOKIE, result.sessionToken, { maxAgeSeconds: SESSION_TTL_MS / 1000 }));
+  await trackEvent({
+    eventType: result.isNewUser ? "signup_completed" : "signin_completed",
+    userId: result.user.id,
+    sessionId: ctx.sessionId,
+    metadata: { signup_method: method },
+  });
+  return { user: publicUser(result.user), isNewUser: result.isNewUser };
 }
 
 export const authRouter = router({
-  accountStatus: publicProcedure
-    .input(AccountStatusQuerySchema)
-    .query(async ({ input }) => {
-      return getAccountStatus(input.email);
-    }),
-
-  requestMagicLink: publicProcedure
-    .input(MagicLinkRequestSchema)
-    .mutation(async ({ ctx, input }) => {
-      const result = await requestMagicLink(input.email, getClientIp(ctx));
-
-      await trackEvent({
-        eventType: "magic_link_requested",
-        userId: null,
-        sessionId: ctx.sessionId,
-        metadata: { email: input.email.toLowerCase().trim() },
-      });
-
-      return result;
-    }),
-
-  verifyMagicLink: publicProcedure
-    .input(MagicLinkVerifySchema)
-    .mutation(async ({ ctx, input }) => {
-      let result: { token: string; user: Phase0User; isNewUser: boolean };
-      try {
-        result = await verifyMagicLink(input.token, ctx.device);
-      } catch {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: VALIDATION_MESSAGES.TOKEN_INVALID,
-        });
-      }
-
-      await trackEvent({
-        eventType: "magic_link_verified",
-        userId: result.user.id,
-        sessionId: ctx.sessionId,
-        metadata: { isNewUser: result.isNewUser },
-      });
-
-      return { token: result.token, user: publicUser(result.user), isNewUser: result.isNewUser };
-    }),
-
-  signInWithPassword: publicProcedure
-    .input(SignInWithPasswordSchema)
-    .mutation(async ({ ctx, input }) => {
-      const result = await signInWithPassword(input.email, input.password, getClientIp(ctx));
-
-      await trackEvent({
-        eventType: "magic_link_verified",
-        userId: result.user.id,
-        sessionId: ctx.sessionId,
-        metadata: { isNewUser: false, method: "password" },
-      });
-
-      return { token: result.token, user: publicUser(result.user), isNewUser: false };
-    }),
-
-  setPassword: protectedProcedure.input(PasswordSetSchema).mutation(async ({ ctx, input }) => {
-    await setPasswordForUser(ctx.user.id, input.password);
-    return publicUser(ctx.user);
+  /** Always the same response for a valid email: never reveals whether an account exists. */
+  requestSignIn: publicProcedure.input(SignInRequestSchema).mutation(async ({ ctx, input }) => {
+    const result = await requestSignIn(input.email, { ip: ctx.ip, deviceId: ctx.device.deviceId }).catch(toTrpcError);
+    await trackEvent({ eventType: "signin_requested", userId: null, sessionId: ctx.sessionId, metadata: {} });
+    return { sent: true as const, devUrl: result.devUrl, devCode: result.devCode };
   }),
 
-  me: publicProcedure.query(async ({ ctx }) => {
-    return ctx.user ? publicUser(ctx.user) : null;
+  verifyLink: publicProcedure.input(SignInLinkSchema).mutation(async ({ ctx, input }) => {
+    const result = await verifySignInLink(input.token, ctx.device).catch(toTrpcError);
+    return finishSignIn(ctx, result, "link");
   }),
 
-  logout: publicProcedure.mutation(async () => ({ success: true })),
+  verifyCode: publicProcedure.input(SignInCodeSchema).mutation(async ({ ctx, input }) => {
+    const result = await verifySignInCode(input.email, input.code, ctx.device, ctx.ip).catch(toTrpcError);
+    return finishSignIn(ctx, result, "code");
+  }),
+
+  me: publicProcedure.query(({ ctx }) => (ctx.user ? publicUser(ctx.user) : null)),
+
+  logout: publicProcedure.mutation(async ({ ctx }) => {
+    await revokeSession(parseCookies(ctx.req.headers.cookie)[SESSION_COOKIE]);
+    appendSetCookie(ctx.res, serializeCookie(SESSION_COOKIE, "", { maxAgeSeconds: 0 }));
+    return { success: true };
+  }),
 });
