@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 import path from "node:path";
 import { findProjectRoot } from "./paths";
 
-dotenv.config({ path: path.resolve(findProjectRoot(), "../.env") });
+dotenv.config({ path: path.resolve(findProjectRoot(), "../.env"), quiet: true });
 
 export const ENV = {
   databaseUrl: process.env.DATABASE_URL ?? "",

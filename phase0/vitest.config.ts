@@ -10,7 +10,13 @@ export default defineConfig({
   },
   test: {
     root: ".",
-    include: ["server/**/*.test.ts"],
+    include: ["server/**/*.test.ts", "shared/**/*.test.ts"],
     environment: "node",
+    setupFiles: ["server/test/setup-env.ts"],
+    globalSetup: ["server/test/global-setup.ts"],
+    testTimeout: 30_000,
+    hookTimeout: 120_000,
+    // DB tests share one test database; run files one at a time.
+    fileParallelism: false,
   },
 });

@@ -29,11 +29,11 @@
 Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 
 ### A0 Housekeeping (1)
-- [ ] Archive the root app on branch `archive/root-prototype`, then remove from `main`: root `client/`, `server/`, `shared/`, `drizzle/`, root package files, Manus template leftovers (`references/`, `template.json`, root `README.md`), `arcanis-ui/`, `scratch/`, Hearth.
-- [ ] Remove stray logs in `phase0/` (`server.log`, `server.err.log`, `smoke-*.log`) and gitignore them.
-- [ ] Add `.env.example` with key names only.
-- [ ] Separate test database: tests read `TEST_DATABASE_URL` and refuse to run against the production URL.
-- [ ] GitHub Actions: install, type-check, test on every push and PR.
+- [x] Archive the root app on branch `archive/root-prototype`, then remove it: root `client/`, `server/`, `shared/`, `drizzle/`, root package files, Manus template leftovers (`references/`, `template.json`, root `README.md` replaced by a short one), `scratch/`, Hearth. (2026-10-10) `arcanis-ui/` is kept as the A17 design reference and deleted when A17 is done.
+- [x] Remove stray logs in `phase0/` (`server.log`, `server.err.log`, `smoke-*.log`); `*.log` was already gitignored. (2026-10-10)
+- [x] Add `.env.example` with key names only. (2026-10-10)
+- [x] Separate test database: `arcanis_test` on the same cluster locally (`TEST_DATABASE_URL`), MySQL 8.4 container in CI; `server/test/setup-env.ts` swaps the URL and refuses production; global setup migrates it. (2026-10-10)
+- [x] GitHub Actions (`.github/workflows/ci.yml`): install, type-check, test, build on every push and PR. (2026-10-10; green once pushed, not yet run)
 - **Done when:** `main` contains only the canonical app plus docs; CI is green; tests cannot touch production data.
 
 ### A1 Database backup (0.5)
@@ -182,6 +182,13 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 ### B8 Balance and Will tuning (2.5)
 - [ ] Harness battle simulation: win rates by category, cast type, element, terrain; Will band dwell time per avatar; tune band edges and strain descriptor cut points.
 - [ ] Will leakage tests on every battle payload.
+
+### A17 UI port from `arcanis-ui` (after A12, before A16)
+- [ ] Port the `arcanis-ui` visual system (black and gold tokens, fonts, panels, element icons, bars, spell card, app shell) into `phase0/client`.
+- [ ] Restyle every phase0 page (Home, SignIn, Create, Library, ShareSpell, Reviews, AdminMetrics, fake-door tiles) on that system, keeping the A12 copy rules (no Will numbers, no Tower, no XP).
+- [ ] Mobile at 375px with no horizontal scroll; light/dark not required (black and gold default).
+- [ ] Delete `arcanis-ui/` once ported.
+- **Done when:** every phase0 screen uses the arcanis-ui components and tokens, `pnpm check` is clean, and the creation flow still passes the A15 end-to-end test.
 
 ### B9 Battle release (1)
 - [ ] Re-enable Trap and Charged in creation; battle analytics events; full Gate 1 tracking.

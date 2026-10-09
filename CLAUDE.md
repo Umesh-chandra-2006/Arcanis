@@ -44,40 +44,37 @@ When a decision changes: update the Master Doc first, then the Phase Plan, then 
 
 ## Repo specifics
 
-Current state and decisions live in `PROGRESS.md` (read it at session start). The full audit is `docs/status_report.md` (2026-10-09). The ordered task list is Build Plan v2.1 Section 15 (Track A soft-launch blockers, Track B battles); the working checklist with acceptance checks is `docs/tasks.md` (tick tasks there and in PROGRESS.md).
+Current state and decisions live in `PROGRESS.md` (read it at session start). The full audit is `docs/status_report.md` (2026-10-09). The ordered task list is Build Plan v2.2 Section 15 (Track A soft-launch blockers, Track B battles); the working checklist with acceptance checks is `docs/tasks.md` (tick tasks there and in PROGRESS.md).
 
-### Layout (as of 2026-10-09)
+### Layout (as of 2026-10-10, after task A0)
 
-Architecture is a modular monolith (Build Plan v2.1 Section 3): one deployable with gateway, lab and game modules. `tools/balance-harness` and `tools/cost-report` are planned (tasks A8, A14) and do not exist yet.
+Architecture is a modular monolith (Build Plan v2.2 Section 3): one deployable with gateway, lab and game modules. `tools/balance-harness` and `tools/cost-report` are planned (tasks A8, A14) and do not exist yet.
 
 | Path | What it is |
 |---|---|
 | `phase0/` | **Canonical app (decision H1). Stays at `phase0/` permanently (F9); never promote it to the root.** Express + tRPC 11 + React 19 + Vite 8 + Tailwind 4, Drizzle on MySQL, tables prefixed `p0_`. Magic link (plus a password step that is being removed), Spark balance, Power Budget stat engine, LLM writes flavor text only, FLUX art, public share page with OG tags, reviews, admin metrics. All work lands here. |
-| `client/`, `server/`, `shared/`, `drizzle/` (root) | Older full-game prototype on a Manus web template. **To be archived on a branch and removed from `main` (task A0).** Never extend it; mine it for ideas only. |
-| `arcanis-ui/` | Orphaned UI component prototype. |
-| `references/`, root `README.md`, `template.json`, `server/_core/{map,voiceTranscription,dataApi,notification,heartbeat}.ts` | Manus template docs and helpers, not project docs. |
-| `scratch/` | Throwaway FLUX test scripts. |
+| `arcanis-ui/` | UI design reference (black and gold dashboard, game components). Task A17 ports its look into `phase0/client`; delete the folder once A17 is done. |
+| branch `archive/root-prototype` | The old root full-game prototype (Manus template, Hearth, socket battles). Removed from the working tree in A0. Never extend it; mine it for ideas only. |
+| `.github/workflows/ci.yml` | CI: install, type-check, tests (against a MySQL service container), build, for `phase0/`. |
 | `docs/` | Project docs (see Source of truth). `docs/status_report.md` is the latest audit; `docs/tasks.md` is the Phase 0 to 1 task checklist. |
 
 ### Install
 
-pnpm 10 (`packageManager` field). The two apps have separate lockfiles; install each:
+pnpm 10 (`packageManager` field). There is no root package; install inside `phase0/`:
 
 ```
-pnpm install                 # root app
-cd phase0 && pnpm install    # phase0 app
+cd phase0 && pnpm install
 ```
 
 ### Environment
 
-One `.env` at the repo root, used by both apps. `phase0/server/_core/env.ts` loads `../.env`, and phase0 tests load it too (real keys and the real `DATABASE_URL`, so never write DB-touching tests until the separate test DB from task A0 exists). The database is MySQL on TiDB Cloud (us-east-1); kept through the soft launch with logical backups (task A1), migrated to a new founder-owned host in Phase 1b (task B0). There is no `.env.example` yet. Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (image storage for the soft launch; R2 in Phase 1b). `OPENAI_API_KEY` (for `omni-moderation`) is still to be added. All providers run on free-tier keys with no payment method attached. phase0 also reads `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `METRICS_KEY`, and client-side `VITE_API_URL` (API base) and `VITE_PUBLIC_URL` (share link base). None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). Root also reads optional `UPSTASH_REDIS_URL` / `UPSTASH_REDIS_TOKEN` and Manus `BUILT_IN_FORGE_*` keys.
+One `.env` at the repo root; `.env.example` lists every key. `phase0/server/_core/env.ts` loads `../.env`. Tests load it too, but `server/test/setup-env.ts` replaces `DATABASE_URL` with `TEST_DATABASE_URL` (database `arcanis_test` on the same cluster locally, a MySQL container in CI) and refuses any URL that points at production; DB tests use `describeDb` from `server/test/db.ts` and skip when no test DB is configured. The database is MySQL on TiDB Cloud (us-east-1); kept through the soft launch with logical backups (task A1), migrated to a new founder-owned host in Phase 1b (task B0). Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (image storage for the soft launch; R2 in Phase 1b). `OPENAI_API_KEY` (for `omni-moderation`), `TEST_DATABASE_URL`. All providers run on free-tier keys with no payment method attached. phase0 also reads `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `METRICS_KEY`, and client-side `VITE_API_URL` (API base) and `VITE_PUBLIC_URL` (share link base). None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). The `.env` still holds leftover keys from the archived root app (`BUILT_IN_FORGE_*`, `OAUTH_SERVER_URL`, `OWNER_*`, `VITE_APP_*`, `VITE_OAUTH_PORTAL_URL`, `VITE_ANALYTICS_*`); nothing reads them.
 
 ### Run
 
 ```
 cd phase0 && pnpm dev        # http://localhost:3100, Vite middleware in dev
 cd phase0 && pnpm build && pnpm start
-pnpm dev                     # root app, http://localhost:3000 (auto-increments if busy)
 ```
 
 Deploy (phase0): client on Vercel (`phase0/vercel.json`, `pnpm build:client`, output `dist/public`), API on Render (configured in the dashboard, no `render.yaml`; free instance kept awake by an external `/health` ping, decision F3). OG tags are injected only by the Express route `/spell/:spellId`. Today `vercel.json` rewrites every path to `index.html`, so share links on the Vercel domain get no OG tags; task A10 adds rewrites for `/api/*` and the share route to Render ahead of the SPA catch-all.
@@ -85,21 +82,18 @@ Deploy (phase0): client on Vercel (`phase0/vercel.json`, `pnpm build:client`, ou
 ### Tests and type-check
 
 ```
-pnpm test && pnpm check                  # root: 9 tests pass; check FAILS (5 known errors)
-cd phase0 && pnpm test && pnpm check     # phase0: 19 tests pass; check clean
+cd phase0 && pnpm test && pnpm check
 ```
 
-Vitest, `server/**/*.test.ts`. No CI exists yet.
+Vitest, `server/**/*.test.ts` and `shared/**/*.test.ts`, files run serially (they share the test DB). Global setup runs Drizzle migrations on the test DB. Set `REQUIRE_TEST_DB=1` to fail instead of skipping DB tests (CI does). Test files are excluded from `tsc`.
 
 ### Migrations and seed
 
-Drizzle Kit against `DATABASE_URL` (MySQL). Both apps share one database; phase0 tables are prefixed `p0_` to coexist.
+Drizzle Kit against `DATABASE_URL` (MySQL). Tables are prefixed `p0_`; the production database also still holds the archived root app's tables. Back up (task A1) before migrating production.
 
 ```
 cd phase0 && pnpm db:generate && pnpm db:migrate   # migrations in phase0/drizzle/
 cd phase0 && pnpm seed                              # 12 platform spells + archivist user
-pnpm db:push                                        # root: generate + migrate, drizzle/
-node server/seed-platform-spells.mjs                # root seed (off-spec spell list)
 ```
 
 ### Balance harness and cost report
@@ -112,5 +106,5 @@ Neither exists yet (Build Plan Sections 7.7 and 11; tasks A8 and A14). The harne
 - Zod input schemas in `shared/validation.ts`; game constants and stat caps in `shared/constants.ts`. Path aliases `@/` (client src) and `@shared/`.
 - phase0 stats come from `phase0/server/power-budget.ts` (deterministic today; becoming the hybrid budget in task A7); the LLM returns identity text validated by `LLMSpellIdentitySchema`.
 - Spark operations go through `phase0/server/spark.ts` only (being rewritten as an append-only ledger in task A3; the current version has a double-spend race); analytics through `trackEvent()` in `phase0/server/analytics.ts`.
-- Drizzle: camelCase in TS; snake_case column names in phase0, camelCase in root.
+- Drizzle: camelCase in TS; snake_case column names.
 - Prettier config at root (`.prettierrc`).
