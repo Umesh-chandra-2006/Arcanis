@@ -3,7 +3,7 @@ import { router, publicProcedure } from "../_core/trpc";
 import { TrackEventSchema } from "../../shared/validation";
 import { trackEvent, getDailyMetrics } from "../analytics";
 import { requireDb } from "../db";
-import { p0Spells, p0SparkBalances, p0Users } from "../../drizzle/schema";
+import { p0Spells, p0Users } from "../../drizzle/schema";
 import { totalSparkStats } from "../spark";
 import { ENV } from "../_core/env";
 import type { TrpcContext } from "../_core/context";

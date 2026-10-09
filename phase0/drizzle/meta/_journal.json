@@ -29,6 +29,27 @@
       "when": 1791574888879,
       "tag": "0003_watery_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1791575221462,
+      "tag": "0004_wakeful_mandroid",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1791575233758,
+      "tag": "0005_spark_opening_balances",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1791575236670,
+      "tag": "0006_daily_manta",
+      "breakpoints": true
     }
   ]
 }

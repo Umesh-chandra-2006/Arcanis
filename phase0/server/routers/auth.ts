@@ -64,7 +64,7 @@ export const authRouter = router({
     .mutation(async ({ ctx, input }) => {
       let result: { token: string; user: Phase0User; isNewUser: boolean };
       try {
-        result = await verifyMagicLink(input.token);
+        result = await verifyMagicLink(input.token, ctx.device);
       } catch {
         throw new TRPCError({
           code: "BAD_REQUEST",

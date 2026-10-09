@@ -12,8 +12,8 @@ import {
 } from "../shared/validation";
 import { validateSpellIdentityText } from "../shared/profanity";
 import { computeStatProfile } from "./power-budget";
-import { getSparkBalance, refundSpark, spendSpark } from "./spark";
-import { SPARK_CREATION_COST, VALIDATION_MESSAGES } from "../shared/constants";
+import { commitSpark, refundSpark, reserveSpark } from "./spark";
+import { VALIDATION_MESSAGES } from "../shared/constants";
 
 export interface SpellCreationResult {
   success: boolean;
@@ -42,11 +42,6 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
 
   const data = parseResult.data;
 
-  const balanceBefore = await getSparkBalance(userId);
-  if (balanceBefore.balance < 1) {
-    return { success: false, error: VALIDATION_MESSAGES.NO_SPARKS };
-  }
-
   const startedAt = Date.now();
   const stats = computeStatProfile({
     element: data.element,
@@ -58,22 +53,24 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
   const db = requireDb();
   const spellId = nanoid(36);
 
-  const spend = await spendSpark(userId, spellId);
-  if (!spend.success) {
+  const spend = await reserveSpark(userId, spellId);
+  if (!spend.ok) {
     return { success: false, error: VALIDATION_MESSAGES.NO_SPARKS, sparkBalance: spend.balance };
   }
+  const refund = async () => {
+    await refundSpark(spend.entryId);
+    return spend.balance + 1;
+  };
 
   const identity = await generateSpellIdentity(data, { userId, runId: spellId });
   if (!identity) {
-    await refundSpark(userId, spellId);
-    return { success: false, error: VALIDATION_MESSAGES.INVALID_LLM_OUTPUT, sparkBalance: spend.balance + SPARK_CREATION_COST };
+    return { success: false, error: VALIDATION_MESSAGES.INVALID_LLM_OUTPUT, sparkBalance: await refund() };
   }
 
   for (const field of [identity.flavor_text, identity.lore_line, identity.assessment_question ?? ""]) {
     const check = validateSpellIdentityText(field);
     if (!check.valid) {
-      await refundSpark(userId, spellId);
-      return { success: false, error: VALIDATION_MESSAGES.CONTENT_MODERATED, sparkBalance: spend.balance + SPARK_CREATION_COST };
+      return { success: false, error: VALIDATION_MESSAGES.CONTENT_MODERATED, sparkBalance: await refund() };
     }
   }
 
@@ -121,8 +118,9 @@ export async function createSpell(userId: number, input: unknown): Promise<Spell
     .limit(1);
 
   if (!spell) {
-    return { success: false, error: "Failed to save spell", sparkBalance: spend.balance };
+    return { success: false, error: "Failed to save spell", sparkBalance: await refund() };
   }
+  await commitSpark(spend.entryId);
 
   try {
     const imageResult = await imagePromise;

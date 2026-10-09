@@ -10,8 +10,19 @@ export type Phase0Category = (typeof PHASE0_CATEGORIES)[number];
 export type Phase0CastType = (typeof PHASE0_CAST_TYPES)[number];
 export type Phase0Tier = (typeof PHASE0_TIERS)[number];
 
-export const SPARK_SIGNUP_GRANT = 5;
-export const SPARK_CREATION_COST = 1;
+// Spark economy, Phase 1a values (Master Doc v7.2 22.1, founder decision F7).
+export const SPARK = {
+  creationCost: 1,
+  signupGrant: 5,
+  weeklyAllowance: 3,
+  /** The weekly allowance never raises a balance above this. */
+  rolloverCap: 10,
+  referralInviter: 3,
+  referralInvitee: 0,
+} as const;
+
+export const SPARK_SIGNUP_GRANT = SPARK.signupGrant;
+export const SPARK_CREATION_COST = SPARK.creationCost;
 
 export const MAGIC_LINK_TTL_MS = 15 * 60 * 1000; // 15 minutes
 

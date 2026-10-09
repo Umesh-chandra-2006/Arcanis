@@ -51,12 +51,12 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** no provider request or response shape exists outside `server/providers/`; one creation produces a full set of `provider_calls` rows. Met; the full per-creation set is exercised end to end in A15.
 
 ### A3 Spark ledger rewrite (2)
-- [ ] Append-only `spark_ledger` (pending, committed, reversed); balance = sum of non-reversed entries.
-- [ ] Reserve in one transaction with `SELECT ... FOR UPDATE`; commit and refund are conditional updates (no double refund).
-- [ ] Signup grant once per device fingerprint; weekly free allowance with rollover cap. Config values (F7): creation costs 1, signup 5, weekly 3, rollover cap 10, referral inviter 3, referral invitee 0.
-- [ ] Migrate existing `p0_spark_balances` into ledger entries.
-- [ ] Concurrency tests: parallel creates never overspend; parallel refunds never double-refund.
-- **Done when:** the double-spend race in `phase0/server/spark.ts` is gone and tests prove it.
+- [x] Append-only `p0_spark_ledger` (pending, committed, reversed); balance = sum of non-reversed entries; amounts never change. (2026-10-10)
+- [x] Reserve in one READ COMMITTED transaction holding the user's row lock (`SELECT ... FOR UPDATE`); commit and refund are conditional updates (no double refund). Stale pending spends (over 10 minutes) are released on the next reserve. (2026-10-10)
+- [x] Signup grant once per device: server-issued `arc_did` cookie, plus fingerprint and network prefix (`p0_device_grants`); weekly allowance lazily from the week after signup, capped at 10; values in `SPARK` (`shared/constants.ts`). (2026-10-10)
+- [x] Migrated `p0_spark_balances` into opening ledger entries (migrations 0004 to 0006, applied to production after a backup; all 7 balances matched) and dropped the old tables. (2026-10-10)
+- [x] Concurrency tests (`server/spark.test.ts`): 8 parallel creates against a balance of 2 succeed exactly twice; 6 parallel refunds refund once. (2026-10-10)
+- **Done when:** the double-spend race in `phase0/server/spark.ts` is gone and tests prove it. Met. The tests first failed: TiDB's REPEATABLE READ snapshot hid concurrent spends after the lock; fixed with READ COMMITTED.
 
 ### A4 Daily spend circuit breaker (0.5) (after A2)
 - [ ] Before reserving Spark, sum today's UTC `cost_estimate_usd`; at or above `DAILY_SPEND_LIMIT_USD`, refuse with "The forge is cooling", reserve nothing, log `creation_blocked_spend_cap`, email the founder.

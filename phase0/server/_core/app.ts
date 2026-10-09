@@ -12,6 +12,7 @@ import { serveStatic, setupVite } from "./vite";
 import { getSpellPublic } from "../spell-pipeline";
 import { ENV } from "./env";
 import { findProjectRoot } from "./paths";
+import { deviceCookieMiddleware } from "./cookies";
 import { checkTextModels } from "../providers/check";
 
 function renderOgTags(
@@ -196,7 +197,11 @@ export async function startApp(app: Express) {
   ].filter(Boolean);
   app.use(cors({ origin: allowedOrigins, credentials: true }));
 
+  // Hops of trusted proxies in front of the app (Render = 1; Vercel rewrite then Render = 2).
+  app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
+
   app.get("/health", (_req, res) => res.send("OK"));
+  app.use(deviceCookieMiddleware);
 
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ limit: "10mb", extended: true }));

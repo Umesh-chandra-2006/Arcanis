@@ -82,29 +82,52 @@ export const p0Spells = mysqlTable(
   })
 );
 
-export const p0SparkBalances = mysqlTable(
-  "p0_spark_balances",
-  {
-    userId: int("user_id").primaryKey(),
-    balance: int("balance").notNull().default(5),
-    totalEarned: int("total_earned").notNull().default(5),
-    totalSpent: int("total_spent").notNull().default(0),
-    updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-  }
-);
+// Append-only Spark ledger (Build Plan 6). Balance = sum of amounts whose status
+// is not "reversed". Amounts never change; only status moves
+// pending -> committed or pending -> reversed. Written only by server/spark.ts.
+export const SPARK_ENTRY_TYPES = [
+  "grant_signup",
+  "grant_referral_inviter",
+  "grant_referral_invitee",
+  "grant_weekly_allowance",
+  "spend_creation",
+  "refund_creation",
+  "admin_adjust",
+  "migration_opening_balance",
+] as const;
 
-export const p0SparkTransactions = mysqlTable(
-  "p0_spark_transactions",
+export const p0SparkLedger = mysqlTable(
+  "p0_spark_ledger",
   {
     id: varchar("id", { length: 36 }).primaryKey(),
     userId: int("user_id").notNull(),
     amount: int("amount").notNull(),
-    type: mysqlEnum("type", ["signup_grant", "creation_spend", "creation_refund", "referral_bonus"]).notNull(),
-    spellId: varchar("spell_id", { length: 36 }),
+    type: mysqlEnum("type", SPARK_ENTRY_TYPES).notNull(),
+    status: mysqlEnum("status", ["pending", "committed", "reversed"]).notNull(),
+    refId: varchar("ref_id", { length: 64 }),
+    /** Unique key that makes grants and refunds idempotent (e.g. "weekly:12:2026-10-05"). */
+    idempotencyKey: varchar("idempotency_key", { length: 128 }),
+    note: varchar("note", { length: 255 }),
+    createdAt: timestamp("created_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+    updatedAt: timestamp("updated_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  },
+  (table) => ({
+    userIdx: index("p0_spark_ledger_user_idx").on(table.userId),
+    idempotencyIdx: uniqueIndex("p0_spark_ledger_idem_idx").on(table.idempotencyKey),
+  })
+);
+
+// Devices that already received a signup grant (F7: once per device).
+export const p0DeviceGrants = mysqlTable(
+  "p0_device_grants",
+  {
+    deviceKey: varchar("device_key", { length: 128 }).primaryKey(),
+    userId: int("user_id").notNull(),
+    ipPrefix: varchar("ip_prefix", { length: 64 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({
-    userIdx: index("p0_spark_tx_user_idx").on(table.userId),
+    ipIdx: index("p0_device_grants_ip_idx").on(table.ipPrefix),
   })
 );
 
@@ -167,8 +190,7 @@ export const p0ProviderCalls = mysqlTable(
 
 export type Phase0User = typeof p0Users.$inferSelect;
 export type Phase0Spell = typeof p0Spells.$inferSelect;
-export type Phase0SparkBalance = typeof p0SparkBalances.$inferSelect;
-export type Phase0SparkTransaction = typeof p0SparkTransactions.$inferSelect;
+export type Phase0SparkLedgerEntry = typeof p0SparkLedger.$inferSelect;
 export type Phase0AnalyticsEvent = typeof p0AnalyticsEvents.$inferSelect;
 export type Phase0Review = typeof p0Reviews.$inferSelect;
 export type Phase0ProviderCall = typeof p0ProviderCalls.$inferSelect;

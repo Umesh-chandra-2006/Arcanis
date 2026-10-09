@@ -8,7 +8,7 @@ import {
   getSpellPublic,
   incrementShareCount,
 } from "../spell-pipeline";
-import { getSparkBalance, recentSparkTransactions } from "../spark";
+import { getSparkBalance, recentSparkEntries } from "../spark";
 import { trackEvent } from "../analytics";
 
 const SHARE_DEDUP_WINDOW_MS = 60 * 60 * 1000;
@@ -76,7 +76,7 @@ export const spellsRouter = router({
   }),
 
   sparkTransactions: protectedProcedure.query(async ({ ctx }) => {
-    return recentSparkTransactions(ctx.user.id);
+    return recentSparkEntries(ctx.user.id);
   }),
 
   featured: publicProcedure.query(async () => {

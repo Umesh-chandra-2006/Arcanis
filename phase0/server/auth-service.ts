@@ -9,7 +9,7 @@ import {
   MAGIC_LINK_TTL_MS,
   VALIDATION_MESSAGES,
 } from "../shared/constants";
-import { grantSignupSparks } from "./spark";
+import { grantSignupSpark, type DeviceSignals } from "./spark";
 import { emailProviders, sendEmail } from "./providers/email";
 import jwt from "jsonwebtoken";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
@@ -179,7 +179,8 @@ This link expires in 15 minutes.`,
 }
 
 export async function verifyMagicLink(
-  token: string
+  token: string,
+  device: DeviceSignals
 ): Promise<{ token: string; user: Phase0User; isNewUser: boolean }> {
   const db = requireDb();
 
@@ -226,7 +227,7 @@ export async function verifyMagicLink(
     if (!row) throw new Error(VALIDATION_MESSAGES.TOKEN_INVALID);
     user = row;
     isNewUser = true;
-    await grantSignupSparks(user.id);
+    await grantSignupSpark(user.id, device);
   }
 
   await db
