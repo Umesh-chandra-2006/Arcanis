@@ -6,7 +6,7 @@ Everything in code is done and tested on branch `track-a` (A0 to A15, A17). Thes
 
 - [x] **Images:** not needed. Phase 0/1a uses element art as the card face (founder decision 2026-10-10, `CARD_ART=element`).
 - [x] **Email:** Brevo IPs authorised by the founder and verified for local use. For production, also add Render's outbound IPs (service, Connect, Outbound). Alternatively, turn off "Authorised IPs" in Brevo (Settings, Security), or verify a sending domain in Resend and set `RESEND_FROM` to an address on it. Without one of these, sign-in emails reach only the founder's own inbox.
-- [ ] `FOUNDER_ALERT_EMAIL`: where breaker alerts go.
+- [ ] `FOUNDER_ALERT_EMAIL`: where the app emails the founder, once a day at most, when the daily breaker pauses creation. Value: the founder's own email (decided 2026-10-11). Set it in Render only; in the local `.env` it would send a real email from a dev server.
 - [ ] `JWT_SECRET`: a long random value (it peppers sign-in code hashes). Keep the current one if already set.
 
 ## 2. Render (API)
@@ -17,15 +17,16 @@ Everything in code is done and tested on branch `track-a` (A0 to A15, A17). Thes
 
 ## 3. Vercel (client)
 
-- [ ] Root directory `phase0`. In the repo: `cd phase0 && pnpm vercel:config https://<render service>.onrender.com`, commit, push. Vercel builds refuse to run until this is done.
-- [ ] Environment: `VITE_PUBLIC_URL=https://<public domain>`. Remove `VITE_API_URL` if it exists (the client always calls `/api` on its own origin).
+- [x] `vercel.json` points at `https://arcanis-jpm1.onrender.com` (2026-10-11, committed; goes live with the push).
+- [ ] Root directory `phase0` in the Vercel project settings.
+- [ ] Environment: `VITE_PUBLIC_URL=https://<public domain>`. There is no custom domain yet (founder, 2026-10-11), so the public domain is the Vercel project's own `https://<project>.vercel.app` address, here and in Render's `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS`. Remove `VITE_API_URL` if it exists (the client always calls `/api` on its own origin).
 
 ## 4. Database
 
-- [ ] Production is at migration 0016; `track-a` needs **0017** (forge queue table, session method column) and **0018** (Refinement Stone ledger, `p0_spells.refined_from_id`, `p0_generation_runs.kind`). Both are additive. Before deploy: `cd phase0 && pnpm db:backup`, then `pnpm db:migrate` (uses `DATABASE_URL`, production; applies both).
+- [x] Production migrated to **0018** on 2026-10-11 (0017: forge queue table, session method column; 0018: Refinement Stone ledger, `p0_spells.refined_from_id`, `p0_generation_runs.kind`), after a backup that passed `db:restore-check` (`D:\Arcanis-backups\arcanis-...-2026-10-10T21-00-56-850Z.sql`). Any later migration: `cd phase0 && pnpm db:backup`, then `pnpm db:migrate`.
 - [x] Spells forged before 0018 minted no Refinement Stone, and there is no retroactive grant (founder, 2026-10-11). Existing players earn their first stone with their next spell.
 - [x] The 36 base spells are seeded in production (2026-10-11). `pnpm seed` is idempotent if it needs re-running.
-- [ ] Make the founder's account an admin: `UPDATE p0_users SET role = 'admin' WHERE email = '<founder email>';` (the admin pages are `/admin/metrics` and `/admin/moderation`).
+- [x] The founder's account is an admin in production (2026-10-11; the admin pages are `/admin/metrics` and `/admin/moderation`). It has no password yet, so its next sign-in is by emailed code and then asks for one.
 
 ## 5. Deploy and verify
 

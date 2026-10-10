@@ -16,7 +16,7 @@
 | Phase 0 (measure) | **Done** (A14): about $0.001 to $0.003 per creation at list price; 2c 1.7%; moderation false positives 0 of 120. |
 | Phase 1a (creation soft launch) | **Code complete** (A0 to A15, A17) plus two local test rounds (T1 to T16 in `docs/tasks.md`) and T8 (mending with Refinement Stones, example prompts). Waiting on the founder: a test of T9 to T16 (T13) and of T8 (T17), then the deploy (A16). |
 | Phase 1b (battles) | Not started (Track B). |
-| Production database | Migrated to **0016** (`track-a` now needs **0017 and 0018**: back up, then `pnpm db:migrate`, at the deploy); the 36 base spells are seeded there; backups in `D:\Arcanis-backups`. **The currently deployed app is incompatible with it until `track-a` is redeployed.** |
+| Production database | Migrated to **0018** on 2026-10-11 after a verified backup; the founder's account is admin there; the 36 base spells are seeded there; backups in `D:\Arcanis-backups`. **The currently deployed app is incompatible with it until `track-a` is redeployed.** |
 | Test database | `arcanis_test` on the same cluster, at **0018** with the 36 base spells. It is shared by the test suite and local dev, so test runs use up the daily creation cap: local dev shows "the forge is cooling" unless today's limit is raised (admin page, or `DAILY_CREATION_LIMIT` in the shell). |
 | Tests | phase0: **140 tests across 18 files, all passing**, type-check clean (full run 2026-10-11, after T8). |
 | Providers | All free tier. Text: Groq `openai/gpt-oss-120b`, Gemini flash-lite fallback. Moderation: OpenAI omni. Email: Brevo (IPs authorised for the founder's machine; Render's outbound IPs still to add). Storage: Cloudinary. **No image generation**: card faces are element art (`CARD_ART=element`). |
@@ -125,7 +125,7 @@
 3. **Spark pack sizes:** 10, 30 and 90 are placeholders in `SPARK_PACKS`; prices are hidden by founder decision, so this can wait.
 4. **Brevo authorised IPs:** this machine sends over IPv6 and the address rotates, so local sign-in emails keep failing with 401 until the current IPv6 address is authorised or "Authorised IPs" is turned off (recommended; Render needs the same).
 5. **Forge queue details** (see the decisions table): Spark timing, the cap of 3, in-app notice only, the name "the Arcanum".
-6. **Deploy inputs:** the Render service URL (for `pnpm vercel:config`), Render's outbound IPs added to Brevo, `FOUNDER_ALERT_EMAIL`, and which email should be made admin.
+6. **Deploy inputs:** given on 2026-10-11 (Render URL `https://arcanis-jpm1.onrender.com`, now in `vercel.json`; Render's IPs already authorised in Brevo; alert email and admin are the founder's own email). Still needed: the Vercel project's `.vercel.app` address, which stands in for the public domain until there is a custom one. Push `track-a` only after the founder's local test.
 7. Fusion Spark cost listed in Phase 0 scope while Fusion is V2 (low priority, doc-only).
 
 ## 3. Task List
