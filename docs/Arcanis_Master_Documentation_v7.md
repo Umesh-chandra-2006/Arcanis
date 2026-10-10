@@ -20,7 +20,13 @@ Founder decisions on refining spells. The first changes the "two currencies, nev
 - **Ascension (new Section 6.7; design only, built in Phase 1b).** The higher refinement: a spell becomes a new spell one tier up that tops it. It costs Spark, runs full research, and is open only to a player who already meets the target tier's requirements, so it never buys progression. Tier is set by code, never the model.
 - **Example prompts in the Lab (Section 18.2).** The creation form offers a few ready-made spell ideas that fill the form when clicked. They are fixed text: no AI call and no Spark.
 
-**Flagged, not resolved:** Section 3 says Advanced spells unlock at Circle 4 to 5; Section 6.1 says Circle 3. Ascension depends on whichever is right. Founder to decide before Phase 1b.
+**Resolved by the founder (2026-10-11, same day):**
+- Advanced spells need Circle 4 to 5, as Section 3 says. The Section 6.1 table said Circle 3 and is corrected.
+- Spells forged before Refinement Stones existed mint no stone after the fact. There is no retroactive grant.
+- The mending details first chosen during the build are confirmed: a mend of a spell still in research waits for the original; a mend counts toward the daily creation limit and is refused, not queued, while the forge cools; a mend is never a creation in a gate metric; the mended spell keeps the original's art and sealed-potential grade.
+- Refinement is a Phase 1 feature: mending in 1a, ascension in 1b.
+
+**Flagged, not resolved:** with Advanced at Circle 4 to 5, the Section 6.1 requirement for Mega (Circle 5) now sits inside the Advanced band. Founder to confirm Mega's Circle before Phase 1b.
 
 ---
 
@@ -549,7 +555,7 @@ Validation layer caps for summon stats per spell tier. Prevents LLM generating b
 | Tier | MP Cost | Circle Required | Will Range | Notes |
 |---|---|---|---|---|
 | Basic | 8-20 MP | Circle 1 | 10-25 | One platform spell per element in base pool |
-| Advanced | 20-45 MP | Circle 3 | 30-60 | Craftable from Channeler affinity (Threshold 3) |
+| Advanced | 20-45 MP | Circle 4 to 5 (v7.6, founder; was Circle 3, which contradicted Section 3) | 30-60 | Craftable from Channeler affinity (Threshold 3) |
 | Mega | 40-80 MP | Circle 5 | 70-120 | Craftable from Element Mage affinity (Threshold 5) |
 | Freestyle | 13-17 MP | None | 15-30 | User types any move. No LLM in battle. |
 
@@ -1205,6 +1211,7 @@ The currency of mending (Section 6.7). Working name.
 - **Never purchasable, never granted free, never earned from play that did not spend Spark.** If a second source is ever added (battle wins were discussed for Phase 1b), it needs a founder decision and a cap, because it would put an earnable currency onto a generation call.
 - **Spent only on mending:** 1 stone per mend. Reserved before generation, committed on success or on a player-caused rejection, returned on our failure, on the same append-only ledger rules as Spark.
 - **No holding cap in Phase 1a.** Supply is already bounded by Spark spent.
+- **No retroactive grant.** A spell forged before stones existed mints nothing later (founder, 2026-10-11).
 - Never converted to or from Spark or Aether Shards.
 
 **Phase 1a values (v7.6, founder):** 1 stone per forged spell; 1 stone per mend.
@@ -1518,7 +1525,7 @@ Architecture is complete and reflects the commercial pivot. All major structural
 - Whether Lemon Squeezy can onboard and pay out to an India-based seller (founder verifying; Paddle is the fallback). Prerequisite for Phase 2.
 - Exact Will band edges and the strain descriptor cut points (starting values in Section 2.1, tuned through the balance harness)
 - Reconciling Section 2.1 Will cost ranges with Section 6.2 Will floors/caps (they disagree; flagged in v7.1)
-- Ascension (Section 6.7): its Spark cost, and whether Advanced unlocks at Circle 3 (Section 6.1) or Circle 4 to 5 (Section 3)
+- Ascension (Section 6.7): its Spark cost, and Mega's Circle requirement now that Advanced is Circle 4 to 5 (Section 6.1 still says Circle 5 for Mega)
 - Refinement Stones: the final name, whether battles become a second source in Phase 1b, and whether a holding cap is needed
 
 ## 29.5 Key Terminology Quick Reference (Updated)

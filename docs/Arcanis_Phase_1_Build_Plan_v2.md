@@ -630,7 +630,7 @@ Track A total: roughly 20 to 23 working days. v2.2: founder actions F1 to F11 ar
 | B7 | Persistence, rematch notifications (in-app inbox plus email digest) | 1.5 |
 | B8 | Balance harness battle simulation; tune Will bands and strain descriptor cut points; Will leakage tests | 2.5 |
 | B9 | Re-enable Trap and Charged in creation; battle analytics events | 1 |
-| B10 | v2.6: ascension (Master Doc 6.7): one tier up, Spark cost, full research, gated by the target tier's Circle, affinity and Will capacity requirements; tier from code only. Needs the founder's Spark cost and the Circle 3 versus 4 to 5 answer first | 2 |
+| B10 | v2.6: ascension (Master Doc 6.7): one tier up, Spark cost, full research, gated by the target tier's Circle, affinity and Will capacity requirements; tier from code only. Advanced needs Circle 4 to 5 (founder, 2026-10-11). Needs the founder's Spark cost and Mega's Circle first | 2 |
 
 Track B total: roughly 27 to 30 working days.
 
