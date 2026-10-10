@@ -9,73 +9,122 @@ import { SPARK } from "@shared/constants";
 import { toast } from "sonner";
 
 /**
- * The one-step welcome shown once after the first sign-in (Master Doc v7.4).
- * Every field is optional and "Skip" works, so the first spell is still a
- * minute away.
+ * The dialogs that follow a sign-in (Master Doc v7.5).
+ * - Welcome: shown once after the first sign-in. A password is required (it
+ *   saves an email on every later sign-in); the name and update emails are
+ *   optional.
+ * - Set a password: an older account that has none yet.
+ * - New password: offered after an emailed sign-in to an account that already
+ *   has one, which is the forgot-password path. This one can be dismissed.
  */
 export function Onboarding() {
-  const { user, login } = useAuth();
+  const { user, login, resetOffer, dismissResetOffer } = useAuth();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [updates, setUpdates] = useState(true);
   const complete = trpc.profile.completeOnboarding.useMutation();
+  const setNew = trpc.profile.setPassword.useMutation();
 
-  if (!user || user.onboarded) return null;
+  if (!user) return null;
+  const mode = !user.onboarded ? "welcome" : !user.hasPassword ? "password" : resetOffer ? "reset" : null;
+  if (!mode) return null;
 
-  const finish = async (skip: boolean) => {
+  const busy = complete.isPending || setNew.isPending;
+  const passwordOk = password.length >= 8;
+  const nameOk = name.trim().length === 0 || name.trim().length >= 3;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const next = await complete.mutateAsync(
-        skip
-          ? { updatesOptIn: false }
-          : { name: name.trim() || undefined, password: password || undefined, updatesOptIn: updates }
-      );
-      login(next);
+      if (mode === "welcome") {
+        login(await complete.mutateAsync({ name: name.trim() || undefined, password, updatesOptIn: updates }));
+      } else {
+        login(await setNew.mutateAsync({ password }));
+        if (mode === "reset") {
+          dismissResetOffer();
+          toast.success("Password changed");
+        }
+      }
+      setPassword("");
     } catch (error: any) {
       toast.error(error?.message ?? "Could not save that");
     }
   };
 
+  const copy = {
+    welcome: {
+      title: "Welcome to Arcanis",
+      description: `You have ${SPARK.signupGrant} Spark to forge your first spells. Choose a password first, so you can return without waiting for an email.`,
+      action: "Enter Arcanis",
+    },
+    password: {
+      title: "Choose a password",
+      description: "Arcanis now opens with a password, so you can return without waiting for an email.",
+      action: "Save password",
+    },
+    reset: {
+      title: "Set a new password?",
+      description: "You came in with an emailed sigil. If you forgot your password, choose a new one now.",
+      action: "Save new password",
+    },
+  }[mode];
+
   return (
-    <Dialog open onOpenChange={(open) => !open && finish(true)}>
-      <DialogContent className="max-w-md">
+    <Dialog open onOpenChange={(open) => !open && mode === "reset" && dismissResetOffer()}>
+      <DialogContent
+        className="max-w-md"
+        showCloseButton={mode === "reset"}
+        onEscapeKeyDown={(e) => mode !== "reset" && e.preventDefault()}
+        onPointerDownOutside={(e) => mode !== "reset" && e.preventDefault()}
+        onInteractOutside={(e) => mode !== "reset" && e.preventDefault()}
+      >
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl">Welcome to Arcanis</DialogTitle>
-          <DialogDescription>
-            You have {SPARK.signupGrant} Spark to forge your first spells. Two quick things first, both optional.
-          </DialogDescription>
+          <DialogTitle className="font-serif text-2xl">{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
-        <form
-          className="space-y-4"
-          onSubmit={(e) => {
-            e.preventDefault();
-            void finish(false);
-          }}
-        >
+        <form className="space-y-4" onSubmit={submit}>
+          {mode === "welcome" && (
+            <div className="space-y-1.5">
+              <Label htmlFor="onb-name">
+                Name your mage <span className="font-normal text-muted-foreground">(optional)</span>
+              </Label>
+              <Input id="onb-name" autoFocus maxLength={24} placeholder="Ember of the Vale" value={name} onChange={(e) => setName(e.target.value)} />
+              <p className="text-[11px] text-muted-foreground">Shown on your spells and reviews. You can change it later.</p>
+            </div>
+          )}
           <div className="space-y-1.5">
-            <Label htmlFor="onb-name">Name your mage</Label>
-            <Input id="onb-name" autoFocus maxLength={24} placeholder="Ember of the Vale" value={name} onChange={(e) => setName(e.target.value)} />
-            <p className="text-[11px] text-muted-foreground">Shown on your spells and reviews. You can change it later.</p>
+            <Label htmlFor="onb-password">{mode === "reset" ? "New password" : "Password"}</Label>
+            <Input
+              id="onb-password"
+              type="password"
+              autoComplete="new-password"
+              autoFocus={mode !== "welcome"}
+              required
+              minLength={8}
+              maxLength={72}
+              placeholder="At least 8 characters"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            {mode !== "reset" && <p className="text-[11px] text-muted-foreground">If you ever forget it, an emailed sigil lets you choose a new one.</p>}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="onb-password">
-              Password <span className="font-normal text-muted-foreground">(optional)</span>
-            </Label>
-            <Input id="onb-password" type="password" autoComplete="new-password" minLength={8} maxLength={72} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
-            <p className="text-[11px] text-muted-foreground">Set one to sign in next time without waiting for an email.</p>
-          </div>
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" className="mt-1" checked={updates} onChange={(e) => setUpdates(e.target.checked)} />
-            <span>
-              Email me Arcanis updates
-              <span className="block text-[11px] text-muted-foreground">New features like battles, and nothing else. Unsubscribe any time in your profile.</span>
-            </span>
-          </label>
+          {mode === "welcome" && (
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" className="mt-1" checked={updates} onChange={(e) => setUpdates(e.target.checked)} />
+              <span>
+                Email me Arcanis updates
+                <span className="block text-[11px] text-muted-foreground">New features like battles, and nothing else. Unsubscribe any time in your profile.</span>
+              </span>
+            </label>
+          )}
           <div className="flex gap-2">
-            <Button type="button" variant="ghost" className="flex-1" disabled={complete.isPending} onClick={() => finish(true)}>
-              Skip
-            </Button>
-            <Button type="submit" className="flex-1" disabled={complete.isPending || (name.trim().length > 0 && name.trim().length < 3) || (password.length > 0 && password.length < 8)}>
-              Enter Arcanis
+            {mode === "reset" && (
+              <Button type="button" variant="ghost" className="flex-1" disabled={busy} onClick={dismissResetOffer}>
+                Keep my current one
+              </Button>
+            )}
+            <Button type="submit" className="flex-1" disabled={busy || !passwordOk || !nameOk}>
+              {copy.action}
             </Button>
           </div>
         </form>

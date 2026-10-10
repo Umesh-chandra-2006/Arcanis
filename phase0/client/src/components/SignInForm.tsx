@@ -10,12 +10,12 @@ import { ArrowRight, KeyRound, Mail } from "lucide-react";
 import { toast } from "sonner";
 
 /**
- * One sign-in flow (Master Doc v7.4). New mages, and anyone without a
- * password, get a 6-digit code and a link by email. Returning mages who set a
- * password can use it instead, which sends no email. The form never reveals
- * whether an account exists.
+ * One sign-in flow (Master Doc v7.5). Returning mages enter their password,
+ * which sends no email. New mages, and anyone who forgot their password, get a
+ * 6-digit code and a link by email. The form never reveals whether an account
+ * exists.
  */
-export function SignInForm({ initialEmail = "", redirectTo = "/create" }: { initialEmail?: string; redirectTo?: string }) {
+export function SignInForm({ initialEmail = "", redirectTo = "/" }: { initialEmail?: string; redirectTo?: string }) {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState(initialEmail);
@@ -30,12 +30,15 @@ export function SignInForm({ initialEmail = "", redirectTo = "/create" }: { init
   const busy = request.isPending || withPassword.isPending;
 
   const sendCode = async () => {
-    if (!email.trim()) return;
+    if (!email.trim()) {
+      toast.error("Enter your email first");
+      return;
+    }
     try {
       const result = await request.mutateAsync({ email });
       setSentTo(email.trim().toLowerCase());
       setDev(result.devUrl && result.devCode ? { url: result.devUrl, code: result.devCode } : null);
-      toast.success("Check your inbox", { description: "We sent a 6-digit code and a sign-in link." });
+      toast.success("Your sigil is on its way", { description: "Check your inbox for a 6-digit code and a sign-in link." });
     } catch (error: any) {
       toast.error(error?.message ?? "Something went wrong");
     }
@@ -58,7 +61,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/create" }: { init
     if (!sentTo) return;
     try {
       const result = await verify.mutateAsync({ email: sentTo, code: code.replace(/\s/g, "") });
-      login(result.user);
+      login(result.user, { viaEmail: true });
       navigate(redirectTo, { replace: true });
     } catch (error: any) {
       toast.error(error?.message ?? "That code did not work");
@@ -73,17 +76,29 @@ export function SignInForm({ initialEmail = "", redirectTo = "/create" }: { init
           <Input id="signin-email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="signin-password">
-            Password <span className="font-normal text-muted-foreground">(only if you set one)</span>
-          </Label>
-          <Input id="signin-password" type="password" autoComplete="current-password" placeholder="Leave blank to get a code by email" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={72} />
+          <div className="flex items-baseline justify-between">
+            <Label htmlFor="signin-password">Password</Label>
+            <button type="button" className="text-[11px] text-muted-foreground underline hover:text-primary" onClick={() => sendCode()} disabled={busy}>
+              Forgot it?
+            </button>
+          </div>
+          <Input id="signin-password" type="password" autoComplete="current-password" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={72} />
         </div>
         <Button type="submit" className="w-full" disabled={busy}>
-          {busy ? <Spinner /> : password ? <KeyRound /> : <ArrowRight />}
-          {password ? "Sign in" : "Email me a code"}
+          {withPassword.isPending ? <Spinner /> : <KeyRound />}
+          Enter Arcanis
+        </Button>
+        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          new to Arcanis?
+          <span className="h-px flex-1 bg-border" />
+        </div>
+        <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={() => sendCode()}>
+          {request.isPending ? <Spinner /> : <ArrowRight />}
+          Summon my sigil
         </Button>
         <p className="text-[11px] text-muted-foreground">
-          New here? Just enter your email. You can add a password later so signing in needs no email.
+          Enter your email and we send a sigil (a 6-digit code). You choose your password once inside.
         </p>
       </form>
     );
@@ -97,7 +112,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/create" }: { init
           Sent to <span className="text-foreground">{sentTo}</span>
         </span>
       </div>
-      <Label htmlFor="signin-code">6-digit code</Label>
+      <Label htmlFor="signin-code">Your sigil (6-digit code)</Label>
       <div className="flex gap-2">
         <Input
           id="signin-code"
@@ -126,7 +141,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/create" }: { init
       )}
       <div className="flex justify-between text-[11px] text-muted-foreground">
         <button type="button" className="underline hover:text-primary" onClick={() => sendCode()} disabled={request.isPending}>
-          Send a new code
+          Summon a new sigil
         </button>
         <button
           type="button"

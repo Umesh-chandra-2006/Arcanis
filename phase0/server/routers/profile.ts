@@ -6,8 +6,10 @@ import { requireDb } from "../db";
 import { p0Referrals, p0Spells, p0Users } from "../../drizzle/schema";
 import { moderate } from "../moderation";
 import { containsProfanity } from "../../shared/profanity";
-import { publicUser } from "./auth";
-import { PASSWORD_MAX, PASSWORD_MIN, removePassword, setPassword } from "../auth-service";
+import { publicUser, sessionTokenOf } from "./auth";
+import { AuthError, changePassword, PASSWORD_MAX, PASSWORD_MIN, sessionAllowsPasswordReset } from "../auth-service";
+import { VALIDATION_MESSAGES } from "../../shared/constants";
+import type { TrpcContext } from "../_core/context";
 import { trackEvent } from "../analytics";
 import { getSparkBalance, recentSparkEntries, weekStartUtc } from "../spark";
 import { ensureReferralCode } from "../referrals";
@@ -43,47 +45,57 @@ async function saveName(userId: number, raw: string): Promise<string> {
 
 const PasswordSchema = z.string().min(PASSWORD_MIN, `At least ${PASSWORD_MIN} characters`).max(PASSWORD_MAX);
 
-async function fresh(userId: number) {
+async function fresh(ctx: TrpcContext, userId: number) {
   const [user] = await requireDb().select().from(p0Users).where(eq(p0Users.id, userId)).limit(1);
-  return publicUser(user);
+  return publicUser(user, await sessionAllowsPasswordReset(sessionTokenOf(ctx)));
+}
+
+async function savePassword(ctx: TrpcContext, userId: number, input: { password: string; currentPassword?: string }) {
+  try {
+    await changePassword(userId, sessionTokenOf(ctx), input);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      throw new TRPCError({ code: error.code === "rate_limited" ? "TOO_MANY_REQUESTS" : "BAD_REQUEST", message: error.message });
+    }
+    throw error;
+  }
 }
 
 export const profileRouter = router({
   /** "Name your mage": asked the first time a public name is needed (Master Doc 18.2). */
   setName: protectedProcedure.input(z.object({ name: MageNameSchema })).mutation(async ({ ctx, input }) => {
     await saveName(ctx.user.id, input.name);
-    return fresh(ctx.user.id);
+    return fresh(ctx, ctx.user.id);
   }),
 
   /**
-   * The one-step welcome (v7.4): optional name, update emails and password.
-   * Everything is optional; "skip" just marks it done.
+   * The one-step welcome (v7.5): a password (required until the account has
+   * one), plus an optional name and update emails.
    */
   completeOnboarding: protectedProcedure
     .input(z.object({ name: MageNameSchema.optional(), updatesOptIn: z.boolean().default(false), password: PasswordSchema.optional() }))
     .mutation(async ({ ctx, input }) => {
+      if (!input.password && !ctx.user.passwordHash) throw new TRPCError({ code: "BAD_REQUEST", message: VALIDATION_MESSAGES.PASSWORD_REQUIRED });
       if (input.name) await saveName(ctx.user.id, input.name);
-      if (input.password) await setPassword(ctx.user.id, input.password);
+      if (input.password && !ctx.user.passwordHash) await savePassword(ctx, ctx.user.id, { password: input.password });
       await requireDb().update(p0Users).set({ updatesOptIn: input.updatesOptIn, onboardedAt: new Date() }).where(eq(p0Users.id, ctx.user.id));
       if (input.updatesOptIn) await trackEvent({ eventType: "updates_subscribed", userId: ctx.user.id, sessionId: ctx.sessionId, metadata: { source: "welcome" } });
-      return fresh(ctx.user.id);
+      return fresh(ctx, ctx.user.id);
     }),
 
   setUpdates: protectedProcedure.input(z.object({ optIn: z.boolean() })).mutation(async ({ ctx, input }) => {
     await requireDb().update(p0Users).set({ updatesOptIn: input.optIn }).where(eq(p0Users.id, ctx.user.id));
     await trackEvent({ eventType: input.optIn ? "updates_subscribed" : "updates_unsubscribed", userId: ctx.user.id, sessionId: ctx.sessionId, metadata: { source: "profile" } });
-    return fresh(ctx.user.id);
+    return fresh(ctx, ctx.user.id);
   }),
 
-  setPassword: protectedProcedure.input(z.object({ password: PasswordSchema })).mutation(async ({ ctx, input }) => {
-    await setPassword(ctx.user.id, input.password);
-    return fresh(ctx.user.id);
-  }),
-
-  removePassword: protectedProcedure.mutation(async ({ ctx }) => {
-    await removePassword(ctx.user.id);
-    return fresh(ctx.user.id);
-  }),
+  /** Needs the current password, unless the session was just opened by an emailed code or link (forgot password). */
+  setPassword: protectedProcedure
+    .input(z.object({ password: PasswordSchema, currentPassword: z.string().max(PASSWORD_MAX).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      await savePassword(ctx, ctx.user.id, input);
+      return fresh(ctx, ctx.user.id);
+    }),
 
   /** Everything the profile window shows. */
   overview: protectedProcedure.query(async ({ ctx }) => {

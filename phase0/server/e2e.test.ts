@@ -119,7 +119,8 @@ describeDb("end to end: sign up, create, share, preview", () => {
     await stranger.mutation("auth.verifyCode", { email: email2, code: sent2.devCode });
     expect(stranger.jar.has("arc_ref")).toBe(false); // consumed at signup
 
-    // The one-step welcome: opt in to updates and set a password.
+    // The one-step welcome: a password is required (v7.5); updates are optional.
+    await expect(player.mutation("profile.completeOnboarding", { updatesOptIn: true })).rejects.toThrow();
     const welcomed = await player.mutation("profile.completeOnboarding", { updatesOptIn: true, password: "correct horse battery" });
     expect(welcomed).toMatchObject({ onboarded: true, updatesOptIn: true, hasPassword: true });
     const overview = await player.query("profile.overview");

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useMemo } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 
 export interface AuthUser {
@@ -8,6 +8,8 @@ export interface AuthUser {
   role: "user" | "admin";
   nameChosen: boolean;
   hasPassword: boolean;
+  /** This session was just opened by an emailed code or link: a new password needs no current one. */
+  canResetPassword: boolean;
   updatesOptIn: boolean;
   onboarded: boolean;
   createdAt: string;
@@ -18,9 +20,16 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   /** True until the first session check returns. */
   isLoading: boolean;
-  /** Call after a successful sign-in; the session cookie is already set. */
-  login: (user: AuthUser) => void;
+  /**
+   * Call after a successful sign-in; the session cookie is already set.
+   * `viaEmail` marks a sign-in by emailed code or link, which is also the
+   * forgot-password path, so the player is offered a new password.
+   */
+  login: (user: AuthUser, options?: { viaEmail?: boolean }) => void;
   logout: () => Promise<void>;
+  /** True right after an emailed sign-in to an account that already has a password. */
+  resetOffer: boolean;
+  dismissResetOffer: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -30,24 +39,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const utils = trpc.useUtils();
   const me = trpc.auth.me.useQuery(undefined, { staleTime: 5 * 60_000, retry: false });
   const logoutMutation = trpc.auth.logout.useMutation();
+  const [resetOffer, setResetOffer] = useState(false);
 
   const login = useCallback(
-    (user: AuthUser) => {
+    (user: AuthUser, options?: { viaEmail?: boolean }) => {
       utils.auth.me.setData(undefined, user);
+      if (options?.viaEmail && user.hasPassword && user.canResetPassword) setResetOffer(true);
     },
     [utils]
   );
 
+  const dismissResetOffer = useCallback(() => setResetOffer(false), []);
+
   const logout = useCallback(async () => {
     await logoutMutation.mutateAsync().catch(() => {});
+    setResetOffer(false);
     utils.auth.me.setData(undefined, null);
     await utils.invalidate();
   }, [logoutMutation, utils]);
 
   const user = (me.data ?? null) as AuthUser | null;
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, isLoading: me.isLoading, login, logout }),
-    [user, me.isLoading, login, logout]
+    () => ({ user, isAuthenticated: user !== null, isLoading: me.isLoading, login, logout, resetOffer, dismissResetOffer }),
+    [user, me.isLoading, login, logout, resetOffer, dismissResetOffer]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

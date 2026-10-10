@@ -1,7 +1,8 @@
-// Identity (Build Plan 5, task A5): magic link plus a 6-digit code in the same
-// email; no passwords; server-side sessions behind an httpOnly cookie.
+// Identity (Build Plan 5, task A5): accounts are created through a magic link
+// plus a 6-digit code in the same email; every account then sets a password
+// (v7.5); server-side sessions behind an httpOnly cookie.
 import { nanoid } from "nanoid";
-import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { createHash, createHmac, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { getDb, requireDb } from "./db";
@@ -10,7 +11,7 @@ import { ENV } from "./_core/env";
 import { DISPOSABLE_EMAIL_DOMAINS, LOGIN_CODE_MAX_ATTEMPTS, LOGIN_TOKEN_TTL_MS, VALIDATION_MESSAGES } from "../shared/constants";
 import { grantSignupSpark, type DeviceSignals } from "./spark";
 import { emailProviders, sendEmail } from "./providers/email";
-import { hitRateLimit, peekRateLimit, sweepRateLimits } from "./db-rate-limit";
+import { hitRateLimit, peekRateLimit, releaseRateLimit, sweepRateLimits } from "./db-rate-limit";
 import { attachReferral } from "./referrals";
 
 export const SESSION_TTL_MS = 30 * 24 * 3600 * 1000;
@@ -73,7 +74,7 @@ function signInEmail(link: string, code: string) {
 <p style="letter-spacing:4px;color:#c9a24b;margin:0 0 16px">ARCANIS</p>
 <p style="margin:0 0 8px">Your sign-in code</p>
 <p style="font-size:32px;letter-spacing:8px;color:#f0d78c;margin:0 0 24px"><b>${spaced}</b></p>
-<p style="margin:0 0 24px"><a href="${link}" style="background:#c9a24b;color:#0b0a08;padding:12px 24px;text-decoration:none;border-radius:6px">Open Arcanis</a></p>
+<p style="margin:0 0 24px"><a href="${link}" style="background:#c9a24b;color:#0b0a08;padding:12px 24px;text-decoration:none;border-radius:6px">Enter Arcanis</a></p>
 <p style="font-size:12px;color:#9a8f78">Both expire in 10 minutes and work once. If you did not ask for this, ignore this email.</p>
 </div>`,
   };
@@ -100,8 +101,9 @@ export async function requestSignIn(email: string, req: RequestContext): Promise
   ];
   if (req.ip) limits.push([`signin:ip:${req.ip}`, 20, 3_600]);
   if (req.deviceId) limits.push([`signin:device:${req.deviceId}`, 10, 86_400]);
+  const now = Date.now();
   for (const [key, limit, windowSeconds] of limits) {
-    const result = await hitRateLimit(key, limit, windowSeconds);
+    const result = await hitRateLimit(key, limit, windowSeconds, now);
     if (!result.allowed) throw new AuthError(VALIDATION_MESSAGES.SIGNIN_RATE_LIMITED, "rate_limited");
   }
   if (Math.random() < 0.02) void sweepRateLimits().catch(() => {});
@@ -123,7 +125,16 @@ export async function requestSignIn(email: string, req: RequestContext): Promise
     console.log(`[Sign-in] dev mode for ${normalized}: code ${code}, link ${link}`);
     return { devUrl: link, devCode: code };
   }
-  await sendEmail({ surface: "email" }, { to: normalized, ...signInEmail(link, code) });
+  try {
+    await sendEmail({ surface: "email" }, { to: normalized, ...signInEmail(link, code) });
+  } catch (error) {
+    // No email went out, so the per-email limits must not make the player wait
+    // before retrying. The IP and device hits stay, which bounds retries.
+    await Promise.all(
+      limits.filter(([key]) => key.startsWith("signin:email")).map(([key, , windowSeconds]) => releaseRateLimit(key, windowSeconds, now))
+    ).catch(() => {});
+    throw error;
+  }
   return { devUrl: null, devCode: null };
 }
 
@@ -146,7 +157,7 @@ export async function verifySignInLink(linkToken: string, device: DeviceSignals,
   const db = requireDb();
   const [token] = await db.select().from(p0LoginTokens).where(eq(p0LoginTokens.linkHash, sha256(linkToken))).limit(1);
   if (!token || !(await consume(token.id))) throw new AuthError(VALIDATION_MESSAGES.TOKEN_INVALID, "invalid");
-  return completeSignIn(token.email, device, referralCode);
+  return completeSignIn(token.email, device, referralCode, "link");
 }
 
 /**
@@ -186,7 +197,7 @@ export async function verifySignInCode(
   if (!safeEqualHex(hashCode(token.id, code), token.codeHash) || !(await consume(token.id))) {
     throw new AuthError(VALIDATION_MESSAGES.CODE_INVALID, "invalid");
   }
-  return completeSignIn(normalized, device, referralCode);
+  return completeSignIn(normalized, device, referralCode, "code");
 }
 
 async function findAvailableUsername(email: string): Promise<string> {
@@ -199,7 +210,12 @@ async function findAvailableUsername(email: string): Promise<string> {
   return `wanderer_${nanoid(8)}`;
 }
 
-async function completeSignIn(email: string, device: DeviceSignals, referralCode?: string | null): Promise<SignInResult> {
+async function completeSignIn(
+  email: string,
+  device: DeviceSignals,
+  referralCode: string | null | undefined,
+  method: "code" | "link"
+): Promise<SignInResult> {
   const db = requireDb();
   let isNewUser = false;
   let [user] = await db.select().from(p0Users).where(eq(p0Users.email, email)).limit(1);
@@ -222,15 +238,36 @@ async function completeSignIn(email: string, device: DeviceSignals, referralCode
     }
   }
   await db.update(p0Users).set({ lastSignedInAt: new Date() }).where(eq(p0Users.id, user.id));
-  return { user, isNewUser, sessionToken: await createSession(user.id) };
+  return { user, isNewUser, sessionToken: await createSession(user.id, method) };
 }
 
-export async function createSession(userId: number): Promise<string> {
+export type SessionMethod = "code" | "link" | "password";
+
+export async function createSession(userId: number, method: SessionMethod): Promise<string> {
   const token = randomBytes(32).toString("base64url");
   await requireDb()
     .insert(p0Sessions)
-    .values({ tokenHash: sha256(token), userId, expiresAt: new Date(Date.now() + SESSION_TTL_MS) });
+    // createdAt is written from this clock (not the database default) because the reset window compares it with Date.now().
+    .values({ tokenHash: sha256(token), userId, method, createdAt: new Date(), expiresAt: new Date(Date.now() + SESSION_TTL_MS) });
   return token;
+}
+
+/** How long after an emailed code or link sign-in a new password may be set without the old one. */
+export const PASSWORD_RESET_WINDOW_MS = 15 * 60_000;
+
+/**
+ * True when this session was just opened by an emailed code or link. That is
+ * the "forgot password" proof: the player controls the inbox right now.
+ */
+export async function sessionAllowsPasswordReset(token: string | null | undefined, now = Date.now()): Promise<boolean> {
+  if (!token || token.length > 128) return false;
+  const [row] = await requireDb()
+    .select({ method: p0Sessions.method, createdAt: p0Sessions.createdAt, revokedAt: p0Sessions.revokedAt })
+    .from(p0Sessions)
+    .where(eq(p0Sessions.tokenHash, sha256(token)))
+    .limit(1);
+  if (!row || row.revokedAt || row.method === "password") return false;
+  return now - row.createdAt.getTime() < PASSWORD_RESET_WINDOW_MS;
 }
 
 /** Resolves a session cookie to its user; null when missing, expired or revoked. */
@@ -257,10 +294,11 @@ export async function revokeSession(token: string | null | undefined): Promise<v
   await requireDb().update(p0Sessions).set({ revokedAt: new Date() }).where(eq(p0Sessions.tokenHash, sha256(token)));
 }
 
-// ---- Optional passwords (Master Doc v7.4) ----
-// A returning player may set a password so signing in does not need an email.
-// New accounts are always created through the emailed code or link, which is
-// what verifies the address. Every failure returns the same error, and a dummy
+// ---- Passwords (Master Doc v7.5: required for every account) ----
+// Returning players sign in with a password, which sends no email. New
+// accounts are always created through the emailed code or link, which is what
+// verifies the address, and the same code is the "forgot password" path.
+// Every failure returns the same error, and a dummy
 // hash runs when the account or password is missing, so the endpoint cannot be
 // used to discover which emails have accounts.
 
@@ -302,7 +340,7 @@ export async function signInWithPassword(email: string, password: string, ip: st
     throw new AuthError(VALIDATION_MESSAGES.PASSWORD_INVALID, "invalid");
   }
   await db.update(p0Users).set({ lastSignedInAt: new Date() }).where(eq(p0Users.id, user.id));
-  return { user, isNewUser: false, sessionToken: await createSession(user.id) };
+  return { user, isNewUser: false, sessionToken: await createSession(user.id, "password") };
 }
 
 export async function setPassword(userId: number, password: string): Promise<void> {
@@ -312,6 +350,33 @@ export async function setPassword(userId: number, password: string): Promise<voi
   await requireDb().update(p0Users).set({ passwordHash: await hashPassword(password) }).where(eq(p0Users.id, userId));
 }
 
-export async function removePassword(userId: number): Promise<void> {
-  await requireDb().update(p0Users).set({ passwordHash: null }).where(eq(p0Users.id, userId));
+/**
+ * Sets or changes the password from a signed-in session. An account that
+ * already has one must prove it: the current password, or a session opened by
+ * an emailed code or link in the last few minutes (forgot password). Every
+ * other session of the account is signed out afterwards.
+ */
+export async function changePassword(
+  userId: number,
+  sessionToken: string | null | undefined,
+  input: { password: string; currentPassword?: string }
+): Promise<void> {
+  const db = requireDb();
+  const [user] = await db.select().from(p0Users).where(eq(p0Users.id, userId)).limit(1);
+  if (!user) throw new AuthError(VALIDATION_MESSAGES.CURRENT_PASSWORD_INVALID, "invalid");
+  if (user.passwordHash && !(await sessionAllowsPasswordReset(sessionToken))) {
+    const key = `pwchange:user:${userId}`;
+    if (!(await peekRateLimit(key, 5, 900)).allowed) throw new AuthError(VALIDATION_MESSAGES.SIGNIN_RATE_LIMITED, "rate_limited");
+    if (!input.currentPassword || !(await verifyPassword(input.currentPassword, user.passwordHash))) {
+      await hitRateLimit(key, 5, 900);
+      throw new AuthError(VALIDATION_MESSAGES.CURRENT_PASSWORD_INVALID, "invalid");
+    }
+  }
+  await setPassword(userId, input.password);
+  if (sessionToken) {
+    await db
+      .update(p0Sessions)
+      .set({ revokedAt: new Date() })
+      .where(and(eq(p0Sessions.userId, userId), ne(p0Sessions.tokenHash, sha256(sessionToken)), isNull(p0Sessions.revokedAt)));
+  }
 }

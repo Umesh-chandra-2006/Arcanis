@@ -245,53 +245,102 @@ function UpdatesTab() {
 
 function SecurityTab() {
   const { user, login } = useAuth();
+  const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
+  const [forgot, setForgot] = useState(false);
+  const [code, setCode] = useState("");
   const set = trpc.profile.setPassword.useMutation();
-  const remove = trpc.profile.removePassword.useMutation();
+  const request = trpc.auth.requestSignIn.useMutation();
+  const verify = trpc.auth.verifyCode.useMutation();
   if (!user) return null;
+  // No current password is asked right after an emailed sigil (forgot password), or when none is set yet.
+  const needsCurrent = user.hasPassword && !user.canResetPassword;
+
+  const sendSigil = async () => {
+    try {
+      await request.mutateAsync({ email: user.email });
+      setForgot(true);
+      toast.success("Your sigil is on its way", { description: `Check ${user.email} for a 6-digit code.` });
+    } catch (error: any) {
+      toast.error(error?.message ?? "Could not send that");
+    }
+  };
+
   return (
     <div className="space-y-5">
       <Heading title="Security" subtitle="How you sign in." />
       <p className="text-sm text-muted-foreground">
-        {user.hasPassword
-          ? "You can sign in with your password, or with a code sent to your email."
-          : "You sign in with a code sent to your email. Add a password to sign in without waiting for one."}
+        You sign in with your email and password. If you forget it, an emailed sigil lets you choose a new one.
       </p>
-      <form
-        className="space-y-1.5"
-        onSubmit={async (e) => {
-          e.preventDefault();
-          try {
-            login(await set.mutateAsync({ password }));
-            setPassword("");
-            toast.success(user.hasPassword ? "Password changed" : "Password set");
-          } catch (error: any) {
-            toast.error(error?.message ?? "Could not save that password");
-          }
-        }}
-      >
-        <Label htmlFor="pf-password">{user.hasPassword ? "New password" : "Password"}</Label>
-        <div className="flex gap-2">
-          <Input id="pf-password" type="password" autoComplete="new-password" minLength={8} maxLength={72} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Button type="submit" disabled={set.isPending || password.length < 8}>
-            {user.hasPassword ? "Change" : "Set"}
-          </Button>
-        </div>
-      </form>
-      {user.hasPassword && (
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={remove.isPending}
-          onClick={async () => {
-            login(await remove.mutateAsync());
-            toast.success("Password removed. You'll sign in by email code.");
+
+      {needsCurrent && forgot ? (
+        <form
+          className="space-y-1.5"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              const result = await verify.mutateAsync({ email: user.email, code: code.replace(/\s/g, "") });
+              login(result.user);
+              setForgot(false);
+              setCode("");
+            } catch (error: any) {
+              toast.error(error?.message ?? "That code did not work");
+            }
           }}
         >
-          Remove password
-        </Button>
+          <Label htmlFor="pf-code">Your sigil (6-digit code)</Label>
+          <div className="flex gap-2">
+            <Input id="pf-code" inputMode="numeric" autoComplete="one-time-code" placeholder="123 456" maxLength={7} autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, ""))} />
+            <Button type="submit" disabled={verify.isPending || code.replace(/\s/g, "").length !== 6}>
+              Confirm
+            </Button>
+          </div>
+          <button type="button" className="text-[11px] text-muted-foreground underline hover:text-primary" onClick={() => setForgot(false)}>
+            I remember it after all
+          </button>
+        </form>
+      ) : (
+        <form
+          className="space-y-3"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            try {
+              login(await set.mutateAsync({ password, currentPassword: needsCurrent ? current : undefined }));
+              setCurrent("");
+              setPassword("");
+              toast.success(user.hasPassword ? "Password changed" : "Password set", {
+                description: user.hasPassword ? "Other devices were signed out." : undefined,
+              });
+            } catch (error: any) {
+              toast.error(error?.message ?? "Could not save that password");
+            }
+          }}
+        >
+          {needsCurrent && (
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between">
+                <Label htmlFor="pf-current">Current password</Label>
+                <button type="button" className="text-[11px] text-muted-foreground underline hover:text-primary" disabled={request.isPending} onClick={sendSigil}>
+                  Forgot it? Email me a sigil
+                </button>
+              </div>
+              <Input id="pf-current" type="password" autoComplete="current-password" maxLength={72} value={current} onChange={(e) => setCurrent(e.target.value)} />
+            </div>
+          )}
+          {user.hasPassword && user.canResetPassword && (
+            <p className="text-[11px] text-primary">Sigil confirmed. Choose your new password.</p>
+          )}
+          <div className="space-y-1.5">
+            <Label htmlFor="pf-password">{user.hasPassword ? "New password" : "Password"}</Label>
+            <div className="flex gap-2">
+              <Input id="pf-password" type="password" autoComplete="new-password" minLength={8} maxLength={72} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Button type="submit" disabled={set.isPending || password.length < 8 || (needsCurrent && !current)}>
+                {user.hasPassword ? "Change" : "Set"}
+              </Button>
+            </div>
+          </div>
+        </form>
       )}
-      <p className="text-[11px] text-muted-foreground">Forgot it? Sign in with an email code, then set a new one here.</p>
     </div>
   );
 }

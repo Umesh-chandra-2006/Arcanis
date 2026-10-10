@@ -1,10 +1,14 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { checkRateLimit } from "./rate-limit";
 import {
   AuthError,
+  changePassword,
+  createSession,
   deriveUsername,
+  PASSWORD_RESET_WINDOW_MS,
+  sessionAllowsPasswordReset,
   isDisposableEmail,
   requestSignIn,
   setPassword,
@@ -16,6 +20,7 @@ import {
   verifySignInLink,
 } from "./auth-service";
 import { getDb } from "./db";
+import { ENV } from "./_core/env";
 import { p0LoginTokens, p0SparkLedger, p0Users } from "../drizzle/schema";
 import { describeDb } from "./test/db";
 import { createTestUser } from "./test/factories";
@@ -139,7 +144,28 @@ describeDb("identity (Build Plan 16)", () => {
     await expect(requestSignIn(email, req())).rejects.toMatchObject({ code: "rate_limited" });
   });
 
-  it("optional password: signs in without an email, and failures never reveal accounts", async () => {
+  it("a failed send does not make the player wait: the next request is not rate-limited", async () => {
+    const env = ENV as { emailProviders: string; resendApiKey: string };
+    const saved = { ...env };
+    const email = freshEmail();
+    const from = req();
+    env.emailProviders = "resend";
+    env.resendApiKey = "test-key";
+    vi.stubGlobal("fetch", async () => new Response("unauthorized", { status: 401 }));
+    try {
+      await expect(requestSignIn(email, from)).rejects.not.toBeInstanceOf(AuthError);
+      await expect(requestSignIn(email, from)).rejects.not.toBeInstanceOf(AuthError);
+    } finally {
+      vi.unstubAllGlobals();
+      env.emailProviders = saved.emailProviders;
+      env.resendApiKey = saved.resendApiKey;
+    }
+    // Once a send works the one-per-minute limit applies again.
+    await requestSignIn(email, from);
+    await expect(requestSignIn(email, from)).rejects.toMatchObject({ code: "rate_limited" });
+  });
+
+  it("password: signs in without an email, and failures never reveal accounts", async () => {
     const email = freshEmail();
     const sent = await requestSignIn(email, req());
     const { user } = await verifySignInCode(email, sent.devCode!, device(), null);
@@ -169,6 +195,50 @@ describeDb("identity (Build Plan 16)", () => {
     for (let i = 0; i < 7; i++) await signInWithPassword(email, "a strong passphrase", null);
     for (let i = 0; i < 5; i++) await signInWithPassword(email, "wrong", null).catch(() => {});
     await expect(signInWithPassword(email, "a strong passphrase", null)).rejects.toMatchObject({ code: "rate_limited" });
+  });
+
+  it("changing a password needs the current one, and signs out other devices", async () => {
+    const user = await createTestUser();
+    await setPassword(user.id, "the first passphrase");
+    const here = await createSession(user.id, "password");
+    const elsewhere = await createSession(user.id, "password");
+
+    await expect(changePassword(user.id, here, { password: "a second passphrase" })).rejects.toMatchObject({ code: "invalid" });
+    await expect(changePassword(user.id, here, { password: "a second passphrase", currentPassword: "not it" })).rejects.toMatchObject({ code: "invalid" });
+    await signInWithPassword(user.email, "the first passphrase", null); // unchanged so far
+
+    await changePassword(user.id, here, { password: "a second passphrase", currentPassword: "the first passphrase" });
+    await signInWithPassword(user.email, "a second passphrase", null);
+    await expect(signInWithPassword(user.email, "the first passphrase", null)).rejects.toMatchObject({ code: "invalid" });
+    expect((await userForSession(here))?.id).toBe(user.id);
+    expect(await userForSession(elsewhere)).toBeNull();
+  });
+
+  it("forgot password: only a fresh emailed sign-in may set a new password without the old one", async () => {
+    const email = freshEmail();
+    const first = await requestSignIn(email, req());
+    const signup = await verifySignInCode(email, first.devCode!, device(), null);
+    // A new account has no password yet, so none is asked.
+    await changePassword(signup.user.id, signup.sessionToken, { password: "the first passphrase" });
+
+    const byPassword = await signInWithPassword(email, "the first passphrase", null);
+    expect(await sessionAllowsPasswordReset(byPassword.sessionToken)).toBe(false);
+    await expect(changePassword(signup.user.id, byPassword.sessionToken, { password: "stolen session pw" })).rejects.toMatchObject({ code: "invalid" });
+
+    const byCode = await createSession(signup.user.id, "code");
+    expect(await sessionAllowsPasswordReset(byCode)).toBe(true);
+    // The window closes: an old emailed session is no longer proof.
+    expect(await sessionAllowsPasswordReset(byCode, Date.now() + PASSWORD_RESET_WINDOW_MS + 1000)).toBe(false);
+    await changePassword(signup.user.id, byCode, { password: "a brand new passphrase" });
+    await signInWithPassword(email, "a brand new passphrase", null);
+  });
+
+  it("locks out repeated wrong current passwords", async () => {
+    const user = await createTestUser();
+    await setPassword(user.id, "the first passphrase");
+    const here = await createSession(user.id, "password");
+    for (let i = 0; i < 5; i++) await changePassword(user.id, here, { password: "another passphrase", currentPassword: "wrong" }).catch(() => {});
+    await expect(changePassword(user.id, here, { password: "another passphrase", currentPassword: "the first passphrase" })).rejects.toMatchObject({ code: "rate_limited" });
   });
 
   it("logout revokes the session", async () => {

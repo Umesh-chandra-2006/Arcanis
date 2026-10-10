@@ -41,6 +41,19 @@ export async function peekRateLimit(key: string, limit: number, windowSeconds: n
   return { allowed: count < limit, count, retryAfterSeconds: Math.max(1, Math.ceil(windowStart + windowSeconds - now / 1000)) };
 }
 
+/**
+ * Gives back one hit taken by `hitRateLimit` with the same `now`, for when the
+ * counted action failed on our side (the player should not wait out our error).
+ */
+export async function releaseRateLimit(key: string, windowSeconds: number, now = Date.now()): Promise<void> {
+  const windowStart = Math.floor(now / 1000 / windowSeconds) * windowSeconds;
+  const bucket = `${key}@${windowStart}`.slice(0, 191);
+  await requireDb()
+    .update(p0RateLimits)
+    .set({ count: sql`${p0RateLimits.count} - 1` })
+    .where(sql`${p0RateLimits.bucket} = ${bucket} and ${p0RateLimits.count} > 0`);
+}
+
 /** Deletes expired buckets; called opportunistically. */
 export async function sweepRateLimits(now = new Date()): Promise<void> {
   await requireDb().delete(p0RateLimits).where(lt(p0RateLimits.expiresAt, now));

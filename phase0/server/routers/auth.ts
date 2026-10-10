@@ -4,6 +4,7 @@ import {
   AuthError,
   requestSignIn,
   revokeSession,
+  sessionAllowsPasswordReset,
   SESSION_TTL_MS,
   signInWithPassword,
   verifySignInCode,
@@ -16,7 +17,8 @@ import type { Phase0User } from "../../drizzle/schema";
 import type { TrpcContext } from "../_core/context";
 import { appendSetCookie, parseCookies, REFERRAL_COOKIE, serializeCookie, SESSION_COOKIE } from "../_core/cookies";
 
-export function publicUser(user: Phase0User) {
+/** `canResetPassword`: this session was just opened by an emailed code or link, so no current password is needed. */
+export function publicUser(user: Phase0User, canResetPassword = false) {
   return {
     id: user.id,
     email: user.email,
@@ -24,6 +26,7 @@ export function publicUser(user: Phase0User) {
     role: user.role,
     nameChosen: user.nameChosen,
     hasPassword: Boolean(user.passwordHash),
+    canResetPassword,
     updatesOptIn: user.updatesOptIn,
     onboarded: user.onboardedAt !== null,
     createdAt: user.createdAt.toISOString(),
@@ -37,6 +40,7 @@ function toTrpcError(error: unknown): never {
   throw error;
 }
 
+export const sessionTokenOf = (ctx: TrpcContext) => parseCookies(ctx.req.headers.cookie)[SESSION_COOKIE] ?? null;
 const referralCodeOf = (ctx: TrpcContext) => parseCookies(ctx.req.headers.cookie)[REFERRAL_COOKIE] ?? null;
 
 async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "link" | "code" | "password") {
@@ -48,7 +52,7 @@ async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "lin
     sessionId: ctx.sessionId,
     metadata: { signup_method: method, referred: Boolean(referralCodeOf(ctx)) },
   });
-  return { user: publicUser(result.user), isNewUser: result.isNewUser };
+  return { user: publicUser(result.user, method !== "password"), isNewUser: result.isNewUser };
 }
 
 export const authRouter = router({
@@ -69,7 +73,7 @@ export const authRouter = router({
     return finishSignIn(ctx, result, "code");
   }),
 
-  /** Returning players who set a password: no email is sent. Same error for every failure. */
+  /** Returning players: no email is sent. Same error for every failure. */
   signInWithPassword: publicProcedure.input(SignInPasswordSchema).mutation(async ({ ctx, input }) => {
     const result = await signInWithPassword(input.email, input.password, ctx.ip).catch(toTrpcError);
     return finishSignIn(ctx, result, "password");
@@ -78,7 +82,7 @@ export const authRouter = router({
   me: publicProcedure.query(async ({ ctx }) => {
     if (!ctx.user) return null;
     await recordSessionDay(ctx.user, ctx.sessionId);
-    return publicUser(ctx.user);
+    return publicUser(ctx.user, await sessionAllowsPasswordReset(sessionTokenOf(ctx)));
   }),
 
   logout: publicProcedure.mutation(async ({ ctx }) => {
