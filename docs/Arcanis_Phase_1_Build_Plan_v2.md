@@ -1,7 +1,12 @@
-# Arcanis: Phase 1 Build Plan v2.4
+# Arcanis: Phase 1 Build Plan v2.5
 
-**Agent-facing implementation document. Companion to Master Documentation v7.4 (the bible) and Phase Plan v2.2.**
+**Agent-facing implementation document. Companion to Master Documentation v7.5 (the bible) and Phase Plan v2.2.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.5 (2026-10-11)
+
+- **Identity (Section 5):** a password is required for every account (set at the welcome step, which cannot be skipped; `profile.removePassword` is gone). `profile.setPassword` needs `currentPassword`, unless the session was opened by an emailed code or link in the last 15 minutes (`p0_sessions.method`, migration 0017), which is the forgot-password path. A password change revokes the account's other sessions. Sign-in lands on Home.
+- **Forge queue (Section 5, breaker):** a creation refused by the daily breaker is stored in `p0_forge_queue` (migration 0017) and forged by an in-process loop (`server/forge-queue.ts`, every 2 minutes) once the breaker is open, through `createSpell` unchanged. No Spark is reserved while waiting. Endpoints: `spells.forgeQueue`, `spells.ackForgeQueue`, `spells.withdrawQueued`. Event: `creation_queued`.
 
 ## What changed in v2.4 (2026-10-11)
 
@@ -162,7 +167,8 @@ Rules from Master Doc Section 18. Implementation requirements:
 
 - **Magic link:** email only, single-use token, 15 minute expiry, signed, stored hashed. Link click creates the account if new and issues a session (httpOnly cookie plus short-lived JWT).
 - **6-digit code (v2.1):** the same email carries a 6-digit code for players whose mail app opens the link in an in-app browser. The code is entered in the tab that requested it. Stored hashed, 10 minute expiry, single use, 5 wrong attempts invalidate it, and requests are rate-limited per email and per IP. Using either the link or the code consumes both. Token and code redemption must be atomic (a single conditional update), so a token cannot be redeemed twice.
-- **No passwords (v2.1):** password sign-up, sign-in and the forced "set password" step are removed. Existing accounts that have a password simply sign in by link or code; their password hashes are deleted in the migration.
+- **Passwords (v2.5, replaces the v2.1 line that follows):** accounts are created by emailed code or link only; every account then sets a password at the welcome step and returning players sign in with it (no email sent). Changing it needs the current password or a session opened by code or link in the last 15 minutes. Same error for every sign-in failure.
+- **No passwords (v2.1, superseded):** password sign-up, sign-in and the forced "set password" step are removed. Existing accounts that have a password simply sign in by link or code; their password hashes are deleted in the migration.
 - **Session (v2.1):** httpOnly, Secure, SameSite=Lax cookie. The client never stores a token in localStorage. Because the client is on Vercel and the API on Render, the API is reached through a Vercel rewrite (`/api/*`) so the cookie is first-party; otherwise Safari and in-app browsers drop it.
 - **No account enumeration (v2.1):** no endpoint reveals whether an email has an account. The request-link endpoint always returns the same response.
 - **Viewing is anonymous. Generation requires a session.** Every generation endpoint rejects unauthenticated calls at the gateway before any provider is touched.
@@ -260,7 +266,7 @@ Every provider call logs: surface, provider, model, tokens or image units, laten
 
 v2.1 additions:
 - Logging happens inside the provider interface wrappers, so no call site can skip it. Rows go to a `provider_calls` table.
-- **Daily spend circuit breaker:** before reserving Spark, sum today's (UTC) `cost_estimate_usd` from `provider_calls`. At or above `DAILY_SPEND_LIMIT_USD`, refuse new generations with a friendly message ("The forge is cooling. Try again soon."), log `creation_blocked_spend_cap`, and alert the founder (email). Nothing is reserved, so nothing needs refunding. Admin can reset or raise the limit. This complements, never replaces, the hard caps the founder sets at each provider.
+- **Daily spend circuit breaker:** before reserving Spark, sum today's (UTC) `cost_estimate_usd` from `provider_calls`. At or above `DAILY_SPEND_LIMIT_USD`, refuse new generations with a friendly message ("The forge is cooling. Try again soon."), log `creation_blocked_spend_cap`, and alert the founder (email). Nothing is reserved, so nothing needs refunding. Admin can reset or raise the limit. **v2.5:** the refused request joins the forge queue and is forged when the breaker reopens (Master Doc 25); at most 3 waiting designs per player and never more than their Spark; in-app notice when done. This complements, never replaces, the hard caps the founder sets at each provider.
 - v2.2, free tiers: providers run on free-tier keys with no payment method attached. `cost_estimate_usd` records list-price (shadow) cost, so the breaker uses a second limit, `DAILY_CREATION_LIMIT`, set to about 80 percent of the tightest provider daily quota (text, image, moderation, or email for magic links), found by the A2 quota audit. A provider 429 or quota error counts as a provider failure: refund, and trip the breaker for that day.
 - Verify every configured model ID with a live call at startup in non-production and in CI smoke tests; a retired model ID must fail loudly, not silently fall through the cascade.
 

@@ -10,6 +10,38 @@
 
 ---
 
+## Status as of 2026-10-11 (supersedes the headline below)
+
+The audit findings below describe the repo on 2026-10-09. This section is the current picture; `PROGRESS.md` stays the live source.
+
+| Area | State |
+|---|---|
+| Codebase | One app, `phase0/`, on branch `track-a`. The root prototype is archived on `archive/root-prototype`. Not pushed, not merged. The work of 2026-10-11 (second test round) is uncommitted. |
+| Phase 0 (measure) | Done: about $0.001 to $0.003 per creation at list price (`docs/cost_sheet.md`). |
+| Phase 1a (creation soft launch) | Code complete: Track A (A0 to A15, A17) and two founder test rounds (T1 to T7, T9 to T12, T14 to T16). 128 tests pass, type-check clean. |
+| Phase 1b (battles) | Not started. |
+| Docs | Master Doc v7.5, Phase Plan v2.2, Build Plan v2.5. |
+| Database | Production at migration 0016; `track-a` needs 0017 (forge queue table, session method column). Test database at 0017. |
+
+What the 2026-10-09 violations became:
+
+- Will numbers in client payloads: fixed. Spells leave the server only through `toPublicSpell`; a leakage test covers every endpoint.
+- Identity: accounts are created by emailed code or link; since v7.5 every account then sets a password (founder decision, to save email quota); no account enumeration; httpOnly cookie sessions.
+- Unmoderated AI output: fixed. Two-Step Verification on every AI surface; card faces are element art, so there is no image generation in Phase 1a.
+- Client-trusted minigames: belongs to the battle track (B3), not started.
+- Spark: append-only ledger with atomic reserve, commit and refund; concurrency tests.
+
+Open before the soft launch:
+
+1. Founder tests the second-round changes (T13).
+2. Founder decides the refine-this-spell rules (new linked spell or replace in place; research or not); then T8 (refine, example prompts in the Lab).
+3. Brevo rejects the founder machine's IPv6 address, so local sign-in emails reach only the founder's own inbox (through Resend). Turning off Brevo's "Authorised IPs" fixes this and the same problem on Render.
+4. Deploy (A16, `docs/launch_checklist.md`): backup, migration 0017 on production, Render and Vercel settings, admin role, OG check on Discord, X and WhatsApp.
+
+Known weak spots, not blockers: the one-email-per-minute limit uses fixed clock minutes, so two requests that straddle a minute boundary both pass (and its test can fail for that reason); the test suite and local dev share one database, so test runs use up the local daily creation cap.
+
+---
+
 ## 0. Headline (read this if nothing else)
 
 1. **Phase 1 is not nearly complete.** Measured against the Definition of Done (Build Plan Section 1), **zero of nine items are fully met** in either codebase. The creation and share half is roughly 50 to 60 percent of spec. The battle half is roughly 10 to 15 percent of spec, and the code that exists should be rewritten rather than extended.

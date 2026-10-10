@@ -1,6 +1,6 @@
 # Arcanis: Phase 0 to Phase 1 Tasks
 
-**Source:** Build Plan v2.4 Section 15, decisions of 2026-10-09 to 2026-10-11 (see `PROGRESS.md`). If this file and the Build Plan disagree, the Build Plan wins; flag the conflict.
+**Source:** Build Plan v2.5 Section 15, decisions of 2026-10-09 to 2026-10-11 (see `PROGRESS.md`). If this file and the Build Plan disagree, the Build Plan wins; flag the conflict.
 
 **How to use:** work top to bottom within a track. Tick `[x]` when every acceptance check passes, and note the date and commit in the task line. Estimates are working days. Every task keeps the engineering rules in `CLAUDE.md` (Two-Step Verification and a Spark path on any AI call, auth on any spend path, Will never reaches the client, no em dashes, no secrets in git).
 
@@ -45,7 +45,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 ### A2 Provider interfaces and cost telemetry (2)
 - [x] Interfaces in `phase0/shared/providers.ts`; implementations in `phase0/server/providers/` for text (Groq, Gemini, OpenRouter), image (Cloudflare Workers AI, Hugging Face), moderation (OpenAI, local dev list), email (Brevo, Resend), storage (Cloudinary, inline dev). Selected by `SPELL_LLM_PROVIDER`/`SPELL_LLM_FALLBACK_PROVIDERS`, `SEMANTIC_CHECK_PROVIDERS`, `IMAGE_PROVIDER`, `MODERATION_PROVIDER`, `EMAIL_PROVIDER`, `STORAGE_PROVIDER`. (2026-10-10)
 - [x] `p0_provider_calls` (migration 0003, applied to production after a backup); `withTelemetry` logs surface, provider, model, units, latency, cost estimate, outcome for every attempt, success or failure. A test fails if any file outside `server/providers/` calls an external API. (2026-10-10)
-- [x] Live model check: `pnpm providers:check [--images]`, plus a non-blocking check at dev startup; retired IDs log `[MODEL RETIRED]`. Replaced `llama-3.1-70b-versatile` with `openai/gpt-oss-120b` (Groq), `gemini-1.5-flash` with `gemini-flash-latest` and `gemini-flash-lite-latest`, OpenRouter Llama with `google/gemma-4-31b-it:free`. (2026-10-10)
+- [x] Live model check: `pnpm providers:check [--images]`, plus a non-blocking check at dev startup (opt-in since 2026-10-11, `MODEL_CHECK_ON_START=1`); retired IDs log `[MODEL RETIRED]`. Replaced `llama-3.1-70b-versatile` with `openai/gpt-oss-120b` (Groq), `gemini-1.5-flash` with `gemini-flash-latest` and `gemini-flash-lite-latest`, OpenRouter Llama with `google/gemma-4-31b-it:free`. (2026-10-10)
 - [x] Free-tier quota audit: `docs/provider_quotas.md`. Findings: Hugging Face credits exhausted (images down); Cloudflare Workers AI added as primary image provider (needs founder keys); Brevo blocks unknown IPs; Resend has no verified domain. (2026-10-10)
 - [x] Each wrapper records list-price `cost_estimate_usd` (shadow cost, `server/providers/pricing.ts`). (2026-10-10)
 - **Done when:** no provider request or response shape exists outside `server/providers/`; one creation produces a full set of `provider_calls` rows. Met; the full per-creation set is exercised end to end in A15.
@@ -161,7 +161,16 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] T5 Weak-feeling results: Layer 1 commits stats to the described identity (founder's "legendary black dragon flame" prompt went from damage 20 to 30 to 40 to 40, heavy strain); display-only sealed potential (`potential_tier`, never affects stats or tier); stat bars against the tier ceiling; lore and full flavor on the reveal and share pages. (2026-10-11)
 - [x] T6 One-step skippable welcome (mage name, optional password, update emails) and a profile window from the sidebar with Profile, Spark, Invite, Updates and Security tabs. (2026-10-11)
 - [x] Also on founder decision: element art as the card face with no image generation (`CARD_ART=element`, `shared/element-art.ts`); Spark pack prices hidden. (2026-10-10, `b7c9ccd`)
-- [ ] T7 Founder re-tests T1 to T6 locally (the dev server was stopped before this could happen) and reports what is wrong or missing.
+- [x] T7 Founder re-tested T1 to T6 locally (2026-10-11): everything works apart from the four changes below (T9 to T12).
+- [x] T9 Password required, not optional (founder decision, Master Doc v7.5): the welcome step cannot be skipped and asks for a password; accounts without one are asked at their next sign-in; `removePassword` is gone. (2026-10-11)
+- [x] T10 Sign-in lands on Home, not the Lab. (2026-10-11)
+- [x] T11 Forge queue: a creation refused by the daily breaker waits in `p0_forge_queue` and is forged through the unchanged pipeline when the breaker reopens; no Spark reserved while waiting; at most 3 per player and never more than their Spark; in-app notice and a "Before the Arcanum" panel in the Lab with withdraw (`server/forge-queue.ts`, migration 0017, `server/forge-queue.test.ts`). (2026-10-11)
+- [x] T12 Changing a password needs the current one; "Forgot it?" sends a code, and a session opened by code or link in the last 15 minutes may set a new one; other devices are signed out (`p0_sessions.method`, migration 0017). (2026-10-11)
+- [x] Also: a sign-in email that fails to send no longer rate-limits the next attempt; sign-in copy uses "sigil" for the emailed code. (2026-10-11)
+- [x] T14 Navigation: below 1024 px the menu button is the gold "A" logo at the top left (was a hamburger on the right); on desktop the same logo folds the sidebar to an icon rail and back, remembered per browser. (2026-10-11)
+- [x] T15 Forge queue voice: "the Arcanum", the will that presides over magic, acknowledges the spell and grants it (founder rejected "Forgewarden" as cheesy; the name itself can still change). (2026-10-11)
+- [x] T16 No unasked provider calls (founder rule, in `CLAUDE.md`): the dev-startup model check is opt-in (`MODEL_CHECK_ON_START=1`); the forge queue loop never forges `@test.arcanis` accounts outside tests; the queue tests cancel what they leave. (2026-10-11)
+- [ ] T13 Founder tests T9 to T12 and T14, T15 locally. Migration 0017 is on the test database only; apply it to production (after `pnpm db:backup`) at the deploy.
 - [ ] T8 Build the Phase 0 suggestions the founder picks: (a) "refine this spell" for 1 Spark, (b) example prompts in the Lab, (c) try-before-signup on the landing page, (d) public "newest spells" wall, (e) one update email to subscribers. Recommended first: (a) and (b). Each AI path needs Two-Step Verification and a Spark path.
 - **Done when:** the founder has re-tested and signed off, and the picked suggestions are built with tests.
 
