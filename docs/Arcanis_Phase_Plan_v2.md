@@ -7,11 +7,12 @@
 
 Founder decisions on refinement (Master Doc v7.6, Sections 6.7 and 22.1):
 
-- **Phase 1a scope adds mending** (refine an own spell for 1 Refinement Stone; a stone is minted by each Spark-paid creation) and example prompts in the Lab.
-- **Phase 1b scope adds ascension** (refine a spell one tier up, for Spark, with full research, gated by the target tier's requirements). Design only until then.
+- **Phase 1a scope adds example prompts in the Lab.** Mending (refine an own spell for 1 Refinement Rune; a rune is minted by each Spark-paid creation) is built but switched off for the creation soft launch (founder, 2026-10-11); it opens in Phase 1b with battles. Runes are minted from the soft launch on.
+- **Research comes first (founder, 2026-10-11):** a spell that needs research is shown and granted only when the research completes (Master Doc 6.3).
+- **Phase 1b scope adds mending and ascension** (ascension: refine a spell one tier up, cost open, with full research, gated by the target tier's requirements). Design only until then.
 - **Gate 1a definitions are unchanged (Section 5).** A mend is not a creation: it does not count toward "signup to first creation" or "day-7 creation retention". Mends are logged as their own events and reported beside the gate, not inside it.
 - **Cost sheet refresh moves to Phase 1 (Section 4, founder 2026-10-11).** Phase 0 is closed on the 2026-10-10 cost sheet. That sheet predates the stronger stat guidance and mending, so it is redone in Phase 1a from the first week of soft-launch traffic (`pnpm cost-report --days 7 --write`, then update `docs/cost_sheet.md`), with cost per mend and cost per Spark spent added. No separate corpus rerun is planned.
-- **Cost criterion (Section 5):** a creation can now be followed by at most one stone-paid mend, so the cost report also shows cost per mend and cost per Spark spent (creation plus mends). The $0.08 line applies to cost per Spark spent.
+- **Cost criterion (Section 5):** a creation can now be followed by at most one rune-paid mend, so the cost report also shows cost per mend and cost per Spark spent (creation plus mends). The $0.08 line applies to cost per Spark spent.
 
 ## What changed in v2.2 (2026-10-10)
 
@@ -77,7 +78,7 @@ The governing principle: **every phase must either reduce a named risk or prove 
 
 Deliverables:
 - Pick Layer 1 text model, image model, and moderation classifier. Run 100+ real spell-creation prompts through each candidate. Record: cost per call, latency, schema-failure rate, Layer 2a clamp rate (how often output needed clamping), moderation false-positive rate.
-- Compute true all-in cost per spell creation and per fusion. Set Spark pricing from this, not from estimates.
+- Compute true all-in cost per spell creation. Set Spark pricing from this, not from estimates. (v2.3, founder: the per-fusion cost is a Phase 1 item, not Phase 0; it stays an estimate until fusion exists, which is V2.)
 - Build a **balance harness**: script that simulates N thousand async battles between generated spells and reports win rates by category and cast type. This answers the real balance risk (strategic imbalance inside the caps), which the stat clamp alone does not.
 - Decide whether Layer 2c fires often enough to matter for cost (target: under 10 to 15 percent of generations).
 
@@ -91,8 +92,8 @@ Deliverables:
 
 **Delivery order (v2.1):** battles were measured at about 10 to 15 percent complete versus 50 to 60 percent for creation and share, so Phase 1 ships in two steps:
 
-- **Phase 1a, creation soft launch:** sign up, create, mend (v2.3), preview, share, referral, fake-door Spark pricing. Ships once every soft-launch blocker in Build Plan Section 15 is closed. Doubles as the real-traffic Phase 0 cost measurement.
-- **Phase 1b, async battles:** built in parallel, on the same deployable, released to the same users when the Build Plan battle Definition of Done items pass. v2.3: ascension (Master Doc 6.7) ships here, once the tier gates it depends on exist.
+- **Phase 1a, creation soft launch:** sign up, create, preview, share, referral, fake-door Spark pricing. Ships once every soft-launch blocker in Build Plan Section 15 is closed. Doubles as the real-traffic Phase 0 cost measurement.
+- **Phase 1b, async battles:** built in parallel, on the same deployable, released to the same users when the Build Plan battle Definition of Done items pass. v2.3: refinement (Master Doc 6.7) opens here: mending, which is already built, and ascension, once the tier gates it depends on exist.
 
 Phase 1 is complete, and the full Gate 1 below can be evaluated, only after 1b.
 

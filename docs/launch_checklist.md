@@ -23,15 +23,15 @@ Everything in code is done and tested on branch `track-a` (A0 to A15, A17). Thes
 
 ## 4. Database
 
-- [x] Production migrated to **0018** on 2026-10-11 (0017: forge queue table, session method column; 0018: Refinement Stone ledger, `p0_spells.refined_from_id`, `p0_generation_runs.kind`), after a backup that passed `db:restore-check` (`D:\Arcanis-backups\arcanis-...-2026-10-10T21-00-56-850Z.sql`). Any later migration: `cd phase0 && pnpm db:backup`, then `pnpm db:migrate`.
-- [x] Spells forged before 0018 minted no Refinement Stone, and there is no retroactive grant (founder, 2026-10-11). Existing players earn their first stone with their next spell.
+- [x] Production migrated to **0018** on 2026-10-11 (0017: forge queue table, session method column; 0018: Refinement Rune ledger, `p0_spells.refined_from_id`, `p0_generation_runs.kind`), after a backup that passed `db:restore-check` (`D:\Arcanis-backups\arcanis-...-2026-10-10T21-00-56-850Z.sql`). Any later migration: `cd phase0 && pnpm db:backup`, then `pnpm db:migrate`.
+- [x] Spells forged before 0018 minted no Refinement Rune, and there is no retroactive grant (founder, 2026-10-11). Existing players earn their first rune with their next spell.
 - [x] The 36 base spells are seeded in production (2026-10-11). `pnpm seed` is idempotent if it needs re-running.
 - [x] The founder's account is an admin in production (2026-10-11; the admin pages are `/admin/metrics` and `/admin/moderation`). It has no password yet, so its next sign-in is by emailed code and then asks for one.
 
 ## 5. Deploy and verify
 
 - [ ] Merge `track-a` to `main` (CI runs type-check, tests against a MySQL container, build).
-- [ ] Sign up on the public domain with a real inbox; enter the code; choose a password at the welcome step; create a spell; the card shows its element art. Sign out and back in with the password. Try "Forgot it?" once. Open the new card, press "Refine this spell", and check that the refined spell appears beside the original and the stone count drops to 0.
+- [ ] Sign up on the public domain with a real inbox; enter the code; choose a password at the welcome step; create a spell; the card shows its element art. Sign out and back in with the password. Try "Forgot it?" once. Forge a third spell: it must show as "research under way" (no card), and be granted with a notice some minutes later. There must be no refine button (refinement opens with battles).
 - [ ] Paste a share link into Discord, X and WhatsApp: the card (1200x630, spell name, Arcanis frame) must show. This closes the last A15 item.
 - [ ] `/admin/metrics`: breaker open, today's counts move.
 

@@ -21,8 +21,8 @@ The audit findings below describe the repo on 2026-10-09. This section is the cu
 | Phase 1a (creation soft launch) | Code complete: Track A (A0 to A15, A17) and two founder test rounds (T1 to T7, T9 to T12, T14 to T16). 128 tests pass, type-check clean. |
 | Phase 1b (battles) | Not started. |
 | Docs | Master Doc v7.6, Phase Plan v2.3, Build Plan v2.6. |
-| Database | Production at migration 0016; `track-a` needs 0017 (forge queue table, session method column) and 0018 (Refinement Stone ledger, refined-from link, run kind). Test database at 0018. |
-| Refinement (added later on 2026-10-11) | Mending is built (T8): a third currency, Refinement Stones, minted 1 per forged spell and spent 1 per mend. Ascension is designed (Master Doc 6.7) and belongs to Phase 1b. |
+| Database | Production at migration 0016; `track-a` needs 0017 (forge queue table, session method column) and 0018 (Refinement Rune ledger, refined-from link, run kind). Test database at 0018. |
+| Refinement (added later on 2026-10-11) | Mending is built (T8): a third currency, Refinement Runes, minted 1 per forged spell and spent 1 per mend. Ascension is designed (Master Doc 6.7) and belongs to Phase 1b. |
 
 What the 2026-10-09 violations became:
 

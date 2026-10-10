@@ -172,11 +172,12 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] T15 Forge queue voice: "the Arcanum", the will that presides over magic, acknowledges the spell and grants it (founder rejected "Forgewarden" as cheesy; the name itself can still change). (2026-10-11)
 - [x] T16 No unasked provider calls (founder rule, in `CLAUDE.md`): the dev-startup model check is opt-in (`MODEL_CHECK_ON_START=1`); the forge queue loop never forges `@test.arcanis` accounts outside tests; the queue tests cancel what they leave. (2026-10-11)
 - [ ] T13 Founder tests T9 to T12 and T14, T15 locally. Migration 0017 is on the test database only; apply it to production (after `pnpm db:backup`) at the deploy.
-- [x] T8 (a) Refine, as mending (founder decisions 2026-10-11, Master Doc v7.6 Sections 6.7 and 22.1): a third currency, Refinement Stones, 1 minted per Spark-paid creation that passes verification (`p0_stone_ledger`, `server/stones.ts`); "Refine this spell" on an own spell's card spends 1 stone and makes a new linked spell (`refined_from_id`) with the class, tier and Power Budget locked, through the same verified generation as creation (`server/spell-mend.ts`, `spells.mend`); no research of its own; counts toward the daily creation limit; never counted as a creation in a gate metric. Migration 0018 (test database only). 12 tests in `server/spell-mend.test.ts`. (2026-10-11)
+- [x] T8 (a) Refine, as mending (founder decisions 2026-10-11, Master Doc v7.6 Sections 6.7 and 22.1): a third currency, Refinement Runes, 1 minted per Spark-paid creation that passes verification (`p0_stone_ledger`, `server/stones.ts`); "Refine this spell" on an own spell's card spends 1 rune and makes a new linked spell (`refined_from_id`) with the class, tier and Power Budget locked, through the same verified generation as creation (`server/spell-mend.ts`, `spells.mend`); no research of its own; counts toward the daily creation limit; never counted as a creation in a gate metric. Migration 0018 (test database only). 12 tests in `server/spell-mend.test.ts`. (2026-10-11)
 - [x] T8 (b) Example prompts in the Lab: six fixed spell ideas that fill the form (`client/src/lib/example-prompts.ts`); no AI call, no Spark. (2026-10-11)
 - [ ] T8 (a2) Ascension, the higher-tier refinement: designed in Master Doc 6.7, built in Phase 1b as task B10. Refinement is a Phase 1 feature (mending 1a, ascension 1b). Advanced needs Circle 4, Mega Circle 6 (founder, 2026-10-11). Open: its Spark cost.
 - [ ] T8 (c) try-before-signup on the landing page, (d) public "newest spells" wall, (e) one update email to subscribers: not picked yet.
-- [ ] T17 Founder tests T8 locally: the example chips in the Lab, "Refine this spell" on a card, the stone count in the profile window's Spark tab.
+- [x] T18 Founder test of T8 (2026-10-11), three changes, all built: (1) refinement is switched off for the soft launch (`FEATURES.refinement`; opens with battles, task B10; runes still minted); the currency is renamed Refinement Runes in all copy and docs. (2) Leaving the Lab while a spell forges now ends in a toast (forged, or under research, or the error) instead of silence. (3) Research comes first: a spell that needs research is sealed on the server and shown as a research tile, not a card, until it is granted; the player is told when it is. Test added to `server/spell-pipeline.test.ts`.
+- [ ] T17 Founder tests T8 locally: the example chips in the Lab, "Refine this spell" on a card, the rune count in the profile window's Spark tab.
 - **Done when:** the founder has re-tested and signed off, and the picked suggestions are built with tests.
 
 ---
@@ -226,9 +227,10 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - Found and fixed while verifying: share pages rendered blank (stale production build served in dev; and in production Render's asset hashes could differ from Vercel's), so Vercel now rewrites `/spell/:id` to Render only for link-preview bots and people get the SPA (`/s/:id` alias as a safety net); spells without art served an SVG preview that Discord, X and WhatsApp ignore, now a composed 1200x630 JPEG; the finished-card text counted the spent Spark twice; the hero promised battles.
 - **Done when:** every phase0 screen uses the arcanis-ui components and tokens, `pnpm check` is clean, and the creation flow still passes the A15 end-to-end test. Met (end-to-end run above; A15 adds the committed automated version).
 
-### B10 Ascension (2) (Master Doc 6.7, v7.6)
+### B10 Open refinement: mending and ascension (3) (Master Doc 6.7, v7.6)
+- [ ] Switch on `FEATURES.refinement` (mending is built and tested, T8); rename `p0_stone_ledger`, `server/stones.ts` and `STONES` to rune (a migration and a code rename).
 - [ ] Refine an own spell into a new linked spell one tier up: Spark cost (founder to set), full research, tier from code only, Two-Step Verified, open only to a player who meets the target tier's Circle, affinity and Will capacity requirements.
-- [ ] Founder first: the Spark cost. Circles are settled (founder, 2026-10-11): Advanced from Circle 4, Mega from Circle 6.
+- [ ] Founder first: ascension's cost (3 Spark rejected as too much; Refinement Runes proposed). Circles are settled (founder, 2026-10-11): Advanced from Circle 4, Mega from Circle 6.
 
 ### B9 Battle release (1)
 - [ ] Re-enable Trap and Charged in creation; battle analytics events; full Gate 1 tracking.

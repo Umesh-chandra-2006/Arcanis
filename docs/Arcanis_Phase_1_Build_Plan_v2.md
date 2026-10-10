@@ -5,9 +5,11 @@
 
 ## What changed in v2.6 (2026-10-11)
 
-- **Refinement Stones (Section 6):** a third append-only ledger, `p0_stone_ledger` (migration 0018), written only by `server/stones.ts` with the same reserve, commit and refund rules as Spark. Entry types `grant_creation` (1 per creation whose Spark commits, idempotent per spell), `spend_mend`, `admin_adjust`.
-- **Mending (new Section 7.8):** `spells.mend` (protected) refines an own spell into a new linked spell (`p0_spells.refined_from_id`) for 1 stone, through the same verified generation as creation (`server/spell-mend.ts`). Classification and tier come from the stored spell, never the request or the model. Counts toward the daily creation limit. Events: `mend_started`, `mend_succeeded`, `mend_refunded`, `mend_rejected`.
+- **Refinement Runes (Section 6):** a third append-only ledger, `p0_stone_ledger` (migration 0018), written only by `server/stones.ts` with the same reserve, commit and refund rules as Spark. Entry types `grant_creation` (1 per creation whose Spark commits, idempotent per spell), `spend_mend`, `admin_adjust`.
+- **Mending (new Section 7.8):** `spells.mend` (protected) refines an own spell into a new linked spell (`p0_spells.refined_from_id`) for 1 rune, through the same verified generation as creation (`server/spell-mend.ts`). Classification and tier come from the stored spell, never the request or the model. Counts toward the daily creation limit. Events: `mend_started`, `mend_succeeded`, `mend_refunded`, `mend_rejected`.
+- **Refinement is switched off for the soft launch (founder, 2026-10-11):** `FEATURES.refinement` in `shared/constants.ts` is false, so `spells.mend` refuses and the client shows no refine button and no rune count. Runes are still minted. It is switched on in Track B (task B10), with the rename of the ledger from stone to rune.
 - **Ascension:** designed in Master Doc 6.7, built in Track B (task B10). Not in Phase 1a.
+- **Research comes first (Section 7.5):** while `now < research_ready_at`, `toPublicSpell` returns a sealed view (the player's own name, element and category; blank text, art and stats), `getSpellPublic` returns nothing and the share routes answer 404. The client shows a research tile, not a card, and announces the grant when research completes.
 - **Example prompts (Section 10):** fixed spell ideas in the Lab that fill the form. No endpoint.
 - **Cost sheet refresh (Section 15, A16):** redone in Phase 1a from the first week of soft-launch traffic, with cost per mend and cost per Spark spent (Phase Plan v2.3).
 
@@ -199,7 +201,7 @@ Rules from Master Doc Section 22.
 - **A user-caused rejection** (the user's own input fails moderation) does not refund and counts toward abuse strikes.
 - Spark is never granted for gameplay. Weekly allowance for the free tier is a small fixed grant; rollover is allowed up to a cap (value set in config, default to 2x weekly allowance). v2.1: the weekly allowance must be live for the 1a soft launch, because Gate 1a's day-7 creation retention is meaningless if players physically cannot create again. v2.2 values: 1 Spark per creation; `grant_signup` 5 (once per device); `grant_weekly_allowance` 3, never raising a balance above the rollover cap of 10; `grant_referral_inviter` 3; `grant_referral_invitee` stays in the schema but grants 0 in 1a. All values live in config.
 - Aether Shards ledger is built with the same structure but has no sinks in Phase 1 beyond reserved hooks. Earning rules arrive with progression. Do not build earning logic yet.
-- **Refinement Stones (v2.6, Master Doc 22.1):** a separate append-only ledger with the same structure and the same atomic reserve, commit and refund. One stone is granted when a creation's Spark is committed (idempotency key per spell, so a retry can never mint twice); nothing else mints one. One stone is reserved before a mend's generation, committed on success or a player-caused rejection, and returned on our failure. No conversion to or from Spark or Shards exists in code.
+- **Refinement Runes (v2.6, Master Doc 22.1):** a separate append-only ledger with the same structure and the same atomic reserve, commit and refund. One rune is granted when a creation's Spark is committed (idempotency key per spell, so a retry can never mint twice); nothing else mints one. One rune is reserved before a mend's generation, committed on success or a player-caused rejection, and returned on our failure. No conversion to or from Spark or Shards exists in code.
 
 ## 7. Lab Service: Spell Creation Pipeline
 
@@ -253,12 +255,12 @@ The v7 schema still lists the Tower assessment question arrays. **Do not generat
 
 ### 7.5 Research timer
 
-Stopwatch only, no countdown, no time disclosed (Master Doc 6.3). Duration derived from `research_complexity_score`, roughly 5 to 50 minutes. Spell shows in the library as "researching" (dimmed card, no lock language) and becomes usable on completion. Priority-research is a Phase 2 cosmetic purchase; leave a hook.
+Stopwatch only, no countdown, no time disclosed (Master Doc 6.3). Duration derived from `research_complexity_score`, roughly 5 to 50 minutes. v2.6: research comes first. Until it completes the spell is not granted: the library shows a research tile with the player's own name and element (no card, no lock language), and nothing generated leaves the server. On completion the spell is granted and the player is told. Priority-research is a Phase 2 cosmetic purchase; leave a hook.
 
 v2.1:
 - Store `research_ready_at` (UTC timestamp) on the spell row at creation. "Researching" is simply `now < research_ready_at`; no timers, queues or in-process `setTimeout`, so restarts lose nothing.
 - **The first 2 spells per account are exempt:** `research_ready_at` is set to the creation time. The generation wait (roughly 10 to 30 seconds) is presented as the forging moment.
-- Sharing and the public preview work during research; research only gates battle use, which arrives in 1b.
+- v2.6 (replaces "sharing works during research"): a spell in research has no public preview and cannot be shared until it is granted.
 
 ### 7.6 Image generation
 
@@ -285,13 +287,13 @@ Rules from Master Doc 6.7. A mend is a generation path, so every engineering rul
 
 1. Authenticated (`protectedProcedure`). Input: the spell id, the player's request in words (1 to 500 characters), and an optional new name.
 2. The spell must exist, belong to the caller, not be a platform spell and not be taken down. Account restrictions apply as in creation.
-3. Daily breaker check before anything is reserved. A refused mend takes no stone and is not queued. Mends count toward `DAILY_CREATION_LIMIT` together with creations.
-4. Reserve 1 Refinement Stone (Section 6).
-5. Layer 2b on the player's request and name, with 2c on borderline; a rejection keeps the stone and adds an abuse strike.
+3. Daily breaker check before anything is reserved. A refused mend takes no rune and is not queued. Mends count toward `DAILY_CREATION_LIMIT` together with creations.
+4. Reserve 1 Refinement Rune (Section 6).
+5. Layer 2b on the player's request and name, with 2c on borderline; a rejection keeps the rune and adds an abuse strike.
 6. Layer 1 with the mend prompt: the original's text and current stats, the request, and the same stat ranges and Power Budget share as a creation of that classification and tier. Then Layers 2a, 2b and conditional 2c with silent retries, through the same function creation uses.
 7. Store a new spell with `refined_from_id` set, the original's element, category, cast type, tier and card art, and `research_ready_at` equal to now, or to the original's if that is still in the future. The original row is never written.
-8. Commit the stone. No Spark entry, no stone grant, no referral payout.
-9. Any failure that is ours returns the stone. Provider telemetry and a `generation_runs` row (`kind = mend`) are written as for creation.
+8. Commit the rune. No Spark entry, no rune grant, no referral payout.
+9. Any failure that is ours returns the rune. Provider telemetry and a `generation_runs` row (`kind = mend`) are written as for creation.
 
 ## 8. Game Service: Battles
 
@@ -631,7 +633,7 @@ Track A total: roughly 20 to 23 working days. v2.2: founder actions F1 to F11 ar
 | B7 | Persistence, rematch notifications (in-app inbox plus email digest) | 1.5 |
 | B8 | Balance harness battle simulation; tune Will bands and strain descriptor cut points; Will leakage tests | 2.5 |
 | B9 | Re-enable Trap and Charged in creation; battle analytics events | 1 |
-| B10 | v2.6: ascension (Master Doc 6.7): one tier up, Spark cost, full research, gated by the target tier's Circle, affinity and Will capacity requirements; tier from code only. Advanced needs Circle 4, Mega Circle 6 (founder, 2026-10-11). Needs the founder's Spark cost first | 2 |
+| B10 | v2.6: open refinement: switch on `FEATURES.refinement` (mending, already built and tested), rename the ledger and code from stone to rune, then ascension (Master Doc 6.7): one tier up, Spark cost, full research, gated by the target tier's Circle, affinity and Will capacity requirements; tier from code only. Advanced needs Circle 4, Mega Circle 6 (founder, 2026-10-11). Needs the founder's decision on ascension's cost first (3 Spark was rejected; Refinement Runes proposed) | 3 |
 
 Track B total: roughly 27 to 30 working days.
 

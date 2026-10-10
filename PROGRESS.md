@@ -14,13 +14,13 @@
 | Canonical codebase | **`phase0/`** (stays there, F9). Root prototype archived on branch `archive/root-prototype`. `arcanis-ui/` ported (A17) and deleted. |
 | Branch | All work on **`track-a`**, all committed (second test round T9 to T16, then T8 refine and example prompts). Not pushed, not merged into `main`. CI defined, never run. |
 | Phase 0 (measure) | **Done** (A14): about $0.001 to $0.003 per creation at list price; 2c 1.7%; moderation false positives 0 of 120. |
-| Phase 1a (creation soft launch) | **Code complete** (A0 to A15, A17) plus two local test rounds (T1 to T16 in `docs/tasks.md`) and T8 (mending with Refinement Stones, example prompts). Waiting on the founder: a test of T9 to T16 (T13) and of T8 (T17), then the deploy (A16). |
+| Phase 1a (creation soft launch) | **Code complete** (A0 to A15, A17) plus two local test rounds (T1 to T16 in `docs/tasks.md`) and T8 (example prompts; mending with Refinement Runes, built but **switched off** until battles ship) and T18 (research comes first). Waiting on the founder: the end of local testing, then push and deploy (A16). |
 | Phase 1b (battles) | Not started (Track B). |
 | Production database | Migrated to **0018** on 2026-10-11 after a verified backup; the founder's account is admin there; the 36 base spells are seeded there; backups in `D:\Arcanis-backups`. **The currently deployed app is incompatible with it until `track-a` is redeployed.** |
 | Test database | `arcanis_test` on the same cluster, at **0018** with the 36 base spells. It is shared by the test suite and local dev, so test runs use up the daily creation cap: local dev shows "the forge is cooling" unless today's limit is raised (admin page, or `DAILY_CREATION_LIMIT` in the shell). |
 | Tests | phase0: **140 tests across 18 files, all passing**, type-check clean (full run 2026-10-11, after T8). |
 | Providers | All free tier. Text: Groq `openai/gpt-oss-120b`, Gemini flash-lite fallback. Moderation: OpenAI omni. Email: Brevo (IPs authorised for the founder's machine; Render's outbound IPs still to add). Storage: Cloudinary. **No image generation**: card faces are element art (`CARD_ART=element`). |
-| Local dev server | Not running (the leftover one was stopped on 2026-10-11). Start it on the test database with the commands under "Exact next step". The machine has 1 to 2 GB free, and `tsc` or the test suite beside a dev server takes many minutes. Call `node_modules/.bin/tsc` and `node_modules/.bin/vitest` directly: `pnpm check` once hung in an implicit `pnpm install`. |
+| Local dev server | Started for the founder's test on 2026-10-11 (port 3100, test database, `DAILY_CREATION_LIMIT=100000` in its shell only); it dies with that session. `tsx scripts/dev-account-check.ts <email> [--spark N] [--admin]` shows or tops up a test-database account. The machine has 1 to 2 GB free, and `tsc` or the test suite beside a dev server takes many minutes. Call `node_modules/.bin/tsc` and `node_modules/.bin/vitest` directly: `pnpm check` once hung in an implicit `pnpm install`. |
 | Live provider calls | **Founder rule (CLAUDE.md): none without the founder's permission in that session.** The dev-startup model check is now opt-in and the forge queue loop skips test accounts. |
 
 ### Exact next step
@@ -31,7 +31,7 @@
    pnpm dev
    ```
    Without the second line `pnpm dev` uses the production database.
-   Also test T8 (T17): in the Lab, click an example chip and forge it (a live LLM call, 1 Spark, yields 1 Refinement Stone); open the card, press "Refine this spell", ask for a change (a second live call, 1 stone); the refined spell appears in the Spellbook beside the original with a "Refined" badge, and the profile window's Spark tab shows the stone count.
+   Also re-test the T18 changes: no refine button anywhere; leave the Lab while a spell forges and a toast reports the outcome; a third spell shows "research under way" (no card) and is granted with a notice some minutes later.
 2. **Founder answers the open questions** (list in "Still open" below).
 3. **Then the deploy**, following `docs/launch_checklist.md` (A16).
 
@@ -86,13 +86,26 @@
 | Decision | Detail |
 |---|---|
 | Two refinements | Mending (small changes, no research) now; ascension (the spell becomes a higher-tier spell that tops it, full research) designed now and built in Phase 1b. |
-| Refinement Stones | A third currency for mending. Changes the "two currencies" lock. 1 minted per Spark-paid creation that passes verification; 1 spent per mend; never bought or granted free. Generation cost is paid by Spark, or by stones that only Spark-paid creation can mint. |
+| Refinement Runes | A third currency for mending. Changes the "two currencies" lock. 1 minted per Spark-paid creation that passes verification; 1 spent per mend; never bought or granted free. Generation cost is paid by Spark, or by runes that only Spark-paid creation can mint. |
 | Mend rules | New linked spell (original never edited); element, category, cast type and tier locked; same Power Budget, so it reshapes and never strengthens; own spells only, unlimited; base spells cannot be mended. |
 | Example prompts | Fixed chips in the Lab that fill the form. Claude's call: six examples, no AI. |
-| Confirmed by the founder (2026-10-11) | A mend of a spell still in research becomes usable when the original does (otherwise 1 stone skips any wait). A mend counts toward the daily creation limit and is refused, not queued, while the forge cools. A mend is never a "creation" in Gate 1a metrics; cost is reported per Spark spent so mends are inside the $0.08 line. The mended spell keeps the original's art and sealed-potential grade. No stones for spells forged before migration 0018, and no retroactive grant. |
+| Confirmed by the founder (2026-10-11) | A mend of a spell still in research becomes usable when the original does (otherwise 1 rune skips any wait). A mend counts toward the daily creation limit and is refused, not queued, while the forge cools. A mend is never a "creation" in Gate 1a metrics; cost is reported per Spark spent so mends are inside the $0.08 line. The mended spell keeps the original's art and sealed-potential grade. No runes for spells forged before migration 0018, and no retroactive grant. |
 | Tiers and Circles | Basic from Circle 1, Advanced from Circle 4, Mega from Circle 6, Freestyle none (Master Doc 6.1 and 3 corrected). Will capacity per tier is tuned in 1b. |
 | Cost sheet | Phase 0 is closed on the 2026-10-10 sheet; it is refreshed in Phase 1a from the first week of soft-launch traffic (task under A16). |
 | Phase | Refinement is a Phase 1 feature: mending in 1a, ascension in 1b. |
+
+### Founder decisions, 2026-10-11 (test of T8)
+
+| Decision | Detail |
+|---|---|
+| Phase wording | The founder calls the creation soft launch "Phase 0" and the battle release "Phase 1". The docs call them Phase 1a and Phase 1b. Read the founder's "Phase 1" as 1b. |
+| Refinement off for the soft launch | Built and tested, switched off (`FEATURES.refinement`). Opens with battles (B10). Runes are still minted. |
+| Refinement Runes | The currency's name (was Stones). Code and table still say "stone"; renamed in B10. |
+| Research comes first | A spell that needs research is not shown or granted until research completes. Replaces the dimmed "Researching" card. |
+| Sovereign tier | A fifth tier above Mega, hidden until unlocked; Circle 7 and Element Sovereign affinity. Caps not designed. |
+| Forge queue | Spark charged when forged, cap of 3, in-app notice only: all kept. |
+| Spark pack sizes, TiDB owner | Both left for the battle phase. The current cluster stays until then. |
+| Fusion cost | Moved from Phase 0 scope to Phase 1 in the Phase Plan (it stays an estimate until fusion exists). |
 
 ### Founder decisions, 2026-10-10 (later)
 
@@ -121,12 +134,13 @@
 ### Still open (needs founder)
 1. **Base spell tiers:** the 36 base spells are seeded as each element's Basic, Advanced and Mega spell in Master Doc 5.6 list order, because the doc states no tier per spell. Confirm or correct.
 2. **Phase 0 suggestions:** (a) refine and (b) example prompts are built (T8). Not picked yet: (c) try-before-signup on the landing page, (d) a public "newest spells" wall, (e) one update email to subscribers before battles ship.
-2a. **Refinement, open:** the name "Refinement Stones"; ascension's Spark cost (how many Spark one ascension costs; a creation costs 1; Claude suggested 3).
-3. **Spark pack sizes:** 10, 30 and 90 are placeholders in `SPARK_PACKS`; prices are hidden by founder decision, so this can wait.
+2a. **Ascension's cost:** 3 Spark rejected as too much. Claude proposed paying in Refinement Runes (for example 5), which needs no fourth currency and keeps cost tied to Spark already spent. Founder to decide; needed only for the battle phase.
+2b. **Sovereign tier:** stat caps, MP and Will ranges and Power Budget are not designed.
+3. **Spark pack sizes:** 10, 30 and 90 are placeholders in `SPARK_PACKS`; decided in the battle phase (founder, 2026-10-11).
 4. **Brevo authorised IPs:** this machine sends over IPv6 and the address rotates, so local sign-in emails keep failing with 401 until the current IPv6 address is authorised or "Authorised IPs" is turned off (recommended; Render needs the same).
-5. **Forge queue details** (see the decisions table): Spark timing, the cap of 3, in-app notice only, the name "the Arcanum".
+5. **The entity's name:** the forge queue details are confirmed, but the founder finds "the Arcanum" reads as a place and wants a name that reads as a being. "The Arcanum" stays in the app until one is picked (candidates offered 2026-10-11).
 6. **Deploy inputs:** given on 2026-10-11 (Render URL `https://arcanis-jpm1.onrender.com`, now in `vercel.json`; Render's IPs already authorised in Brevo; alert email and admin are the founder's own email). Still needed: the Vercel project's `.vercel.app` address, which stands in for the public domain until there is a custom one. Push `track-a` only after the founder's local test.
-7. Fusion Spark cost listed in Phase 0 scope while Fusion is V2 (low priority, doc-only).
+7. Closed 2026-10-11: the fusion cost line moved from Phase 0 to Phase 1 in the Phase Plan.
 
 ## 3. Task List
 
@@ -147,6 +161,6 @@ Checklist with acceptance checks: `docs/tasks.md`. Build order: Build Plan v2.4 
 | 2026-10-11 | First local test and handover | Founder tested locally and asked for six changes, all built (T1 to T6): optional password sign-in (changes the no-passwords lock), signed-in Home, Spellbook with the 36 base spells and filters, signup grant 3, stronger Layer 1 stat guidance plus display-only sealed potential, one-step welcome and a five-tab profile window. Also: element art replaced generated images, pack prices hidden. Master Doc v7.4, Build Plan v2.4. Production migrated to 0016 and seeded. 115 tests passing. The dev server was stopped by the low-memory watchdog before the founder re-tested. Session handed over. |
 | 2026-10-11 | Second local test | Founder tested T1 to T6 (all work) and asked for four changes, all built (T9 to T12): required password, Home after sign-in, the forge queue, current password to change a password with a forgot-password path. Also fixed: a failed sign-in email no longer rate-limits the retry; sign-in copy uses "sigil". Found: Brevo rejects this machine's IPv6 address; the test database's creation cap is used up by test runs. Master Doc v7.5, Build Plan v2.5, migration 0017 (test database only). Not committed. |
 | 2026-10-11 | Second test, part 2 | Sidebar: logo is the menu button (left) and folds the desktop sidebar. Queue voice renamed to "the Arcanum". Audit of the "176 creations" that tripped the local cap: all were Spark spends in the test database from automated test runs and the previous session's live runs, none in production. Found and closed two sources of unasked live LLM calls from this session: the dev-startup model check (about 38 tiny calls across restarts) and the dev server's queue loop forging designs left by the test suite (13 Groq calls). New founder rule in CLAUDE.md. Session handed over. |
-| 2026-10-11 | Commit and T8 | Full suite and type-check passed (128), second test round committed in five commits. Founder decided refinement: mending now with a third currency (Refinement Stones), ascension designed for 1b. Built T8: stone ledger, `spells.mend` sharing creation's verification, refine dialog, stone count in the profile window, six example prompts in the Lab. Master Doc v7.6, Phase Plan v2.3, Build Plan v2.6, migration 0018 (test database only). 140 tests passing. No live provider calls were made. Flagged: Master Doc 6.1 and 3 disagree on the Circle for Advanced. |
+| 2026-10-11 | Commit and T8 | Full suite and type-check passed (128), second test round committed in five commits. Founder decided refinement: mending now with a third currency (Refinement Runes), ascension designed for 1b. Built T8: rune ledger, `spells.mend` sharing creation's verification, refine dialog, rune count in the profile window, six example prompts in the Lab. Master Doc v7.6, Phase Plan v2.3, Build Plan v2.6, migration 0018 (test database only). 140 tests passing. No live provider calls were made. Flagged: Master Doc 6.1 and 3 disagree on the Circle for Advanced. |
 | 2026-10-10 | Track A finish | A14 corpus run and cost sheet (found and fixed: hate and real-person prompts passed moderation), A17 UI port and arcanis-ui deleted (found and fixed: blank share pages, SVG previews ignored by crawlers), A15 HTTP end-to-end test and CSP, A16 production smoke test and launch runbook. 112 tests passing. |
 | 2026-10-10 | Founder actions | Closed F1 to F11. Master Doc v7.2, Phase Plan v2.2, Build Plan v2.2; tasks.md (A1 now backup, A2 quota audit, A4 creation limit, A9 Cloudinary, new B0); status_report.md disclaimer that `phase0/` stays. No code changed. |
