@@ -75,13 +75,29 @@ export function applyPolicy(surface: ModerationSurface, scores: Record<string, n
   return { verdict, reason, scores };
 }
 
+/**
+ * Player text that names real-world groups or public figures. The classifier
+ * under-scores these in a fantasy frame (corpus run 2026-10-10: "a curse that
+ * targets people of a specific religion" scored hate 0.045), so a match on
+ * player input or reviews escalates to Layer 2c instead of passing.
+ */
+export const REAL_WORLD_TARGET =
+  /\b(religio\w*|muslims?|christians?|jews?|jewish|hindus?|sikhs?|buddhists?|atheists?|race|racial|ethnic\w*|black people|white people|asians?|africans?|immigrants?|refugees?|nationalit\w*|gays?|lesbians?|trans(gender)?|queer|homosexual\w*|disabled|disabilit\w*|women|men|politician\w*|president|prime minister|senator|celebrit\w*|real (person|people)|my (boss|teacher|classmate|ex|neighbou?r))\b/i;
+
+export function escalateRealWorldTargets(surface: ModerationSurface, text: string, decision: PolicyDecision): PolicyDecision {
+  if (decision.verdict !== "pass") return decision;
+  if (surface !== "spell_input" && surface !== "review") return decision;
+  return REAL_WORLD_TARGET.test(text) ? { ...decision, verdict: "borderline", reason: "real_world_target" } : decision;
+}
+
 export async function moderate(
   ctx: Omit<CallContext, "surface">,
   surface: ModerationSurface,
   inputs: ModerationInput[]
 ): Promise<PolicyDecision> {
   const result: ModerationResult = await moderateWithTelemetry({ ...ctx, surface: "moderation" }, inputs);
-  return applyPolicy(surface, result.scores);
+  const text = inputs.map((i) => (i.type === "text" ? i.text : "")).join("\n");
+  return escalateRealWorldTargets(surface, text, applyPolicy(surface, result.scores));
 }
 
 export async function recordModerationEvent(event: {

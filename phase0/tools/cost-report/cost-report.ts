@@ -4,14 +4,14 @@
 //   pnpm cost-report               production database, last 7 days
 //   pnpm cost-report --test        test database
 //   pnpm cost-report --days 30
-//   pnpm cost-report --since 2026-10-10T00:00:00Z   (A14 corpus runs)
+//   pnpm cost-report --since 2026-10-10T00:00:00Z [--until ...]   (A14 corpus runs)
 import path from "node:path";
 import fs from "node:fs";
 
 process.loadEnvFile?.(path.resolve(import.meta.dirname, "../../../.env"));
 if (process.argv.includes("--test")) process.env.DATABASE_URL = process.env.TEST_DATABASE_URL ?? "";
 
-const { gte } = await import("drizzle-orm");
+const { and, gte, lt } = await import("drizzle-orm");
 const { getDb } = await import("../../server/db");
 const { p0GenerationRuns, p0ProviderCalls } = await import("../../drizzle/schema");
 
@@ -20,10 +20,11 @@ const arg = (name: string) => {
   return i > -1 ? process.argv[i + 1] : undefined;
 };
 const since = arg("--since") ? new Date(arg("--since")!) : new Date(Date.now() - Number(arg("--days") ?? 7) * 86_400_000);
+const until = arg("--until") ? new Date(arg("--until")!) : new Date(Date.now() + 60_000);
 
 const db = (await getDb())!;
-const runs = await db.select().from(p0GenerationRuns).where(gte(p0GenerationRuns.createdAt, since));
-const calls = await db.select().from(p0ProviderCalls).where(gte(p0ProviderCalls.createdAt, since));
+const runs = await db.select().from(p0GenerationRuns).where(and(gte(p0GenerationRuns.createdAt, since), lt(p0GenerationRuns.createdAt, until)));
+const calls = await db.select().from(p0ProviderCalls).where(and(gte(p0ProviderCalls.createdAt, since), lt(p0ProviderCalls.createdAt, until)));
 
 const pct = (n: number, d: number) => (d ? `${((n / d) * 100).toFixed(1)}%` : "-");
 const usd = (n: number) => `$${n.toFixed(5)}`;
@@ -55,7 +56,7 @@ for (const c of calls) bySurface.set(`${c.surface} ${c.provider}:${c.model}`, [.
 const report = `# Cost report
 
 - Database: ${process.argv.includes("--test") ? "test" : "production"}
-- Window: since ${since.toISOString()}
+- Window: ${since.toISOString()} to ${until.toISOString()}
 - Creations attempted: ${finished.length} (success ${success.length}, refunded ${finished.filter((r) => r.outcome === "refunded").length}, user rejected ${finished.filter((r) => r.outcome === "user_rejected").length}, error ${finished.filter((r) => r.outcome === "error").length})
 
 ## Gate metrics

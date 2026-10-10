@@ -127,10 +127,11 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** intent and waitlist joins are recorded and visible on the admin page. Met (`server/fake-door.test.ts`; `/admin/metrics` shows pack clicks, waitlist size and intent rate at zero Spark).
 
 ### A14 Phase 0 measurement (1) (after A2, A6, A7, A8)
-- [ ] Run the corpus through the chosen providers.
-- [ ] One-page cost sheet in `docs/`: cost per creation, latency, schema failure rate, 2a clamp rate, 2c trigger rate, moderation false-positive rate (on a hand-reviewed sample).
-- [ ] If all-in cost per creation exceeds $0.08, stop and revisit model tiering with the founder.
-- **Done when:** the Phase 0 exit criteria in Phase Plan v2.1 Section 4 are met.
+- [x] Ran the 135-prompt corpus through the real pipeline (`pnpm corpus:run`, test database). (2026-10-10)
+- [x] One-page cost sheet `docs/cost_sheet.md`: about $0.001 to $0.003 per creation at list price, p50 4.3 s without image, schema failures 4.2%, 2a clamp 80.9% and fallback 0.9%, 2c 1.7%, moderation false positives 0 of 120 (hand-reviewed). (2026-10-10)
+- [x] $0.08 check passes by a factor of 25 to 80; no tiering change. (2026-10-10)
+- [x] Safety finding fixed: hate and real-person prompts passed omni-moderation (hate scored 0.045). Player text naming real-world groups or public figures now escalates to 2c (`escalateRealWorldTargets`); both rejected live; no realistic prompt affected. (2026-10-10)
+- **Done when:** the Phase 0 exit criteria in Phase Plan v2.2 Section 4 are met. Met, except image cost and latency, which stay estimates until Cloudflare image keys exist (re-run then).
 
 ### A15 Hardening (1.5)
 - [ ] End-to-end creation test (signup by code, create, share, preview).
