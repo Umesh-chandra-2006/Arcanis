@@ -1,5 +1,8 @@
-import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, Navigate, useSearchParams } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { readDraft, saveDraft } from "@/lib/draft";
 import { motion } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { Panel } from "@/components/game/panel";
@@ -35,6 +38,8 @@ export default function Home() {
       </div>
     );
   }
+  // A visitor who wrote a spell on the landing page and then signed in goes straight to the Lab, where it waits.
+  if (isAuthenticated && user && readDraft()) return <Navigate to="/create" replace />;
   return isAuthenticated && user ? <MageHome name={user.nameChosen ? user.username : null} /> : <Landing />;
 }
 
@@ -121,6 +126,24 @@ function MageHome({ name }: { name: string | null }) {
 function Landing() {
   const featured = trpc.spells.baseSpells.useQuery(undefined, { staleTime: 10 * 60_000 });
   const examples = (featured.data ?? []).filter((s) => s.tier === "Mega").slice(0, 6);
+  const recent = trpc.spells.recent.useQuery(undefined, { staleTime: 60_000 });
+  const fresh = (recent.data ?? []).slice(0, 6);
+  const track = trpc.analytics.track.useMutation();
+  const [draftName, setDraftName] = useState("");
+  const [draftText, setDraftText] = useState("");
+  const [drafted, setDrafted] = useState<string | null>(() => readDraft()?.name ?? null);
+
+  // Try before signup: the design stays in this browser until the visitor has signed in and presses Create.
+  const keepDraft = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = draftName.trim();
+    const description = draftText.trim();
+    if (!name || !description) return;
+    saveDraft({ name, description });
+    setDrafted(name);
+    track.mutate({ eventType: "landing_draft_started", metadata: {} }, { onError: () => {} });
+    document.getElementById("signup")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
 
   return (
     <div>
@@ -138,18 +161,26 @@ function Landing() {
               Describe a spell in your own words. Arcanis forges its stats and lore, and gives it a page to share. {SPARK.signupGrant} free Spark on
               signup.
             </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <a href="#signup">
-                <Button size="lg">
-                  <Sparkles /> Create your first spell, free
+            <form onSubmit={keepDraft} className="arc-panel arc-panel-gold mx-auto mt-8 max-w-xl space-y-3 p-4 text-left">
+              <p className="font-serif text-base font-semibold">Start now: what is your first spell?</p>
+              <Input placeholder="Its name, for example Ember Lance" value={draftName} maxLength={64} onChange={(e) => setDraftName(e.target.value)} aria-label="Spell name" />
+              <Textarea
+                placeholder="Describe it in your own words. What does it look like? What does it do?"
+                value={draftText}
+                maxLength={1000}
+                onChange={(e) => setDraftText(e.target.value)}
+                className="min-h-20"
+                aria-label="Spell description"
+              />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <a href="#featured" className="text-xs text-muted-foreground hover:text-primary">
+                  See examples first
+                </a>
+                <Button type="submit" size="lg" disabled={!draftName.trim() || !draftText.trim()}>
+                  <Sparkles /> Forge it, free
                 </Button>
-              </a>
-              <a href="#featured">
-                <Button size="lg" variant="outline">
-                  See examples
-                </Button>
-              </a>
-            </div>
+              </div>
+            </form>
             <div className="mx-auto mt-10 grid max-w-lg grid-cols-1 gap-4 text-left sm:grid-cols-3">
               {[
                 { icon: Wand2, title: "Describe", text: "Name it, choose its element, write its story." },
@@ -168,10 +199,34 @@ function Landing() {
       </section>
 
       <section id="signup" className="mx-auto max-w-lg px-4 py-10">
-        <Panel title="Claim your free Spark" gold>
+        <Panel title={drafted ? `One step left to forge ${drafted}` : "Claim your free Spark"} gold>
+          {drafted && (
+            <p className="mb-3 text-sm text-muted-foreground">
+              Your design is kept on this device. Sign in and it will be waiting in the Lab, with {SPARK.signupGrant} free Spark to forge it.
+            </p>
+          )}
           <SignInForm />
         </Panel>
       </section>
+
+      {fresh.length >= 3 && (
+        <section className="mx-auto max-w-5xl px-4 py-10">
+          <Panel
+            title="Freshly forged by mages"
+            action={
+              <Link to="/codex" className="text-xs text-primary hover:underline">
+                Open the Codex
+              </Link>
+            }
+          >
+            <div className="flex flex-wrap justify-center gap-5">
+              {fresh.map((spell) => (
+                <SpellCardWrapper key={spell.id} spell={mapSpellToCardProps(spell)} size="sm" />
+              ))}
+            </div>
+          </Panel>
+        </section>
+      )}
 
       <section id="featured" className="mx-auto max-w-5xl px-4 py-10">
         <Panel title="Spells of legend" gold>

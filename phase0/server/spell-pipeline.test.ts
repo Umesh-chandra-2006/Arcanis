@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { p0GenerationRuns, p0ModerationEvents, p0Spells, p0Users } from "../drizzle/schema";
-import { createSpell, getMySpells, getSpellPublic, type PipelineDeps } from "./spell-pipeline";
+import { createSpell, getMySpells, getRecentSpells, getSpellPublic, type PipelineDeps } from "./spell-pipeline";
 import { getSparkBalance, grantSpark } from "./spark";
 import { getBreakerStatus } from "./spend-breaker";
 import { AllProvidersFailedError, ProviderError } from "./providers/errors";
@@ -212,7 +212,10 @@ describeDb("creation pipeline", () => {
     const mine = await getMySpells(user.id);
     expect(mine.find((s) => s.id === c.spell!.id)).toMatchObject(sealed);
     expect(mine.find((s) => s.id === a.spell!.id)!.damageMax).toBeGreaterThan(0);
-    // No public page until it is granted.
+    // No public page until it is granted, and it is not on the public wall.
+    const wall = (await getRecentSpells(60)).map((s) => s.id);
+    expect(wall).toContain(a.spell!.id);
+    expect(wall).not.toContain(c.spell!.id);
     expect(await getSpellPublic(c.spell!.id)).toBeNull();
     expect(await getSpellPublic(a.spell!.id)).not.toBeNull();
 

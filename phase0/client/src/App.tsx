@@ -9,6 +9,7 @@ const AuthVerify = lazy(() => import("./pages/AuthVerify"));
 const SignIn = lazy(() => import("./pages/SignIn"));
 const Create = lazy(() => import("./pages/Create"));
 const Library = lazy(() => import("./pages/Library"));
+const Codex = lazy(() => import("./pages/Codex"));
 const ShareSpell = lazy(() => import("./pages/ShareSpell"));
 const ReviewsPage = lazy(() => import("./pages/ReviewsPage"));
 const AdminMetrics = lazy(() => import("./pages/AdminMetrics"));
@@ -35,6 +36,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/create" element={<Create />} />
             <Route path="/library" element={<Library />} />
+            <Route path="/codex" element={<Codex />} />
             <Route path="/spell/:spellId" element={<ShareSpell />} />
             {/* Alias never rewritten to the OG renderer (see vercel.json). */}
             <Route path="/s/:spellId" element={<ShareSpell />} />

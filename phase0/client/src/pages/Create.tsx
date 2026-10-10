@@ -21,6 +21,7 @@ import { shareUrlFor } from "@/lib/share";
 import { useNameGate } from "@/components/NameDialog";
 import { ForgeQueuePanel } from "@/components/ForgeQueue";
 import { EXAMPLE_PROMPTS } from "@/lib/example-prompts";
+import { clearDraft, readDraft } from "@/lib/draft";
 import { FEATURES } from "@shared/constants";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
@@ -83,6 +84,17 @@ export default function Create() {
       navigate("/");
     }
   }, [isAuthenticated, isLoading, navigate]);
+
+  // Try before signup: a design written on the landing page waits here, once.
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const draft = readDraft();
+    if (!draft) return;
+    clearDraft();
+    setName(draft.name);
+    setDescription(draft.description);
+    toast.message("Your design is waiting", { description: "Choose its element and category, then press Create Spell.", duration: 9000 });
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) trackEvent.mutate({ eventType: "lab_opened", metadata: {} }, { onError: () => {} });

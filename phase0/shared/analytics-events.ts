@@ -11,6 +11,8 @@ const shortText = z.string().max(200);
 /** Events an anonymous visitor may send. */
 export const ANONYMOUS_EVENTS = {
   landing_view: z.object({ referrer: shortText.optional(), path: shortText.optional() }),
+  /** A visitor wrote a first spell on the landing page before signing in. The text itself is never sent. */
+  landing_draft_started: z.object({}),
   preview_viewed: z.object({ spellId, referrer: shortText.optional() }),
   preview_cta_clicked: z.object({ spellId }),
   share_clicked: z.object({ spellId, channel: z.enum(SHARE_CHANNELS) }),

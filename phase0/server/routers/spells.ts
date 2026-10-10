@@ -8,6 +8,7 @@ import {
   getBaseSpells,
   getFeaturedSpells,
   getMySpells,
+  getRecentSpells,
   getSpellPublic,
   incrementShareCount,
 } from "../spell-pipeline";
@@ -134,6 +135,9 @@ export const spellsRouter = router({
   }),
 
   baseSpells: publicProcedure.query(() => getBaseSpells()),
+
+  /** The public wall of newest player spells. */
+  recent: publicProcedure.query(() => getRecentSpells(24)),
 
   featured: publicProcedure.query(async () => {
     return getFeaturedSpells(5);
