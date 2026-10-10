@@ -12,9 +12,9 @@ Never use em dashes anywhere: code, comments, commit messages, docs, UI copy. Us
 
 Docs live in `docs/`. Precedence on conflict:
 
-1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.1)
-2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.1; Section 15 is the current build order)
-3. `docs/Arcanis_Phase_Plan_v2.md` (content is v2.1; Gate 1a definitions)
+1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.4)
+2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.4; Section 15 is the current build order)
+3. `docs/Arcanis_Phase_Plan_v2.md` (content is v2.2; Gate 1a definitions)
 4. `docs/handover.md` (decision history; its phase status may be stale, trust the repo)
 5. `docs/archive/` (superseded, reference only, never build from it)
 
@@ -28,7 +28,7 @@ When a decision changes: update the Master Doc first, then the Phase Plan, then 
 - **Async-first PvP.** The opponent is a stored player profile snapshot piloted by the rule-based engine using a playstyle vector (aggression, risk tolerance, resource discipline). Zero LLM cost. Live Duel is a later, liquidity-gated layer.
 - **Two-Step Verification on every AI surface.** Layer 1 generation, then 2a deterministic schema and stat clamp (100%), 2b moderation classifier on text and images (100%), 2c small-model semantic check only when 2a or 2b flags. Silent retry before any user-visible failure. No unverified AI output reaches a user.
 - **Two currencies, never merged.** Spark: hard currency, the only thing that spends against generation cost, never earned through gameplay, append-only ledger, atomic reserve/commit/refund. Aether Shards: soft, earned, cosmetic and social only. XP is progression only and never purchasable.
-- **Identity.** Magic-link auth, with a 6-digit code in the same email for in-app browsers (v7.1). No passwords anywhere. Session in an httpOnly cookie. Viewing is anonymous; any generation requires a session, checked at the gateway before any provider is called. Per-identity, per-device, and per-IP rate limits. First free Spark grant once per device.
+- **Identity.** Accounts are created only through magic-link auth, with a 6-digit code in the same email for in-app browsers (v7.1). A player may add an optional password to sign in without an email (v7.4, founder decision; the emailed code always still works and is the recovery path). Sign-in must never reveal whether an email has an account. Session in an httpOnly cookie. Viewing is anonymous; any generation requires a session, checked at the gateway before any provider is called. Per-identity, per-device, and per-IP rate limits. First free Spark grant once per device.
 - **Classification system, elements, amicability, terrains, tiers and stat caps** are locked as specified in the Master Doc. The engine and validation support the full taxonomy even where the creation form exposes a subset.
 - **Provider abstraction.** Every external provider (text, image, moderation, email) sits behind an interface in `shared/`, selected by one env var. No provider request or response shape in business logic.
 
@@ -52,7 +52,7 @@ Architecture is a modular monolith (Build Plan v2.2 Section 3): one deployable w
 
 | Path | What it is |
 |---|---|
-| `phase0/` | **Canonical app (decision H1). Stays at `phase0/` permanently (F9); never promote it to the root.** Express + tRPC 11 + React 19 + Vite 8 + Tailwind 4, Drizzle on MySQL, tables prefixed `p0_`. Magic link (plus a password step that is being removed), Spark balance, Power Budget stat engine, LLM writes flavor text only, FLUX art, public share page with OG tags, reviews, admin metrics. All work lands here. |
+| `phase0/` | **Canonical app (decision H1). Stays at `phase0/` permanently (F9); never promote it to the root.** Express + tRPC 11 + React 19 + Vite 8 + Tailwind 4, Drizzle on MySQL, tables prefixed `p0_`. Sign-in by emailed code or link (optional password), Spark ledger, hybrid Power Budget, Two-Step Verification pipeline, element card art, 36 base spells, public share page with OG tags, referrals, reviews, profile window, admin dashboard and moderation queue. All work lands here. |
 | branch `archive/root-prototype` | The old root full-game prototype (Manus template, Hearth, socket battles). Removed from the working tree in A0. Never extend it; mine it for ideas only. |
 | `.github/workflows/ci.yml` | CI: install, type-check, tests (against a MySQL service container), build, for `phase0/`. |
 | `docs/` | Project docs (see Source of truth). `docs/status_report.md` is the latest audit; `docs/tasks.md` is the Phase 0 to 1 task checklist. |
@@ -67,7 +67,7 @@ cd phase0 && pnpm install
 
 ### Environment
 
-One `.env` at the repo root; `.env.example` lists every key. `phase0/server/_core/env.ts` loads `../.env`. Tests load it too, but `server/test/setup-env.ts` replaces `DATABASE_URL` with `TEST_DATABASE_URL` (database `arcanis_test` on the same cluster locally, a MySQL container in CI) and refuses any URL that points at production; DB tests use `describeDb` from `server/test/db.ts` and skip when no test DB is configured. The database is MySQL on TiDB Cloud (us-east-1); kept through the soft launch with logical backups (task A1), migrated to a new founder-owned host in Phase 1b (task B0). Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (image storage for the soft launch; R2 in Phase 1b). `OPENAI_API_KEY` (for `omni-moderation`), `TEST_DATABASE_URL`. All providers run on free-tier keys with no payment method attached. phase0 also reads `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `METRICS_KEY`, and client-side `VITE_API_URL` (API base) and `VITE_PUBLIC_URL` (share link base). None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). The `.env` still holds leftover keys from the archived root app (`BUILT_IN_FORGE_*`, `OAUTH_SERVER_URL`, `OWNER_*`, `VITE_APP_*`, `VITE_OAUTH_PORTAL_URL`, `VITE_ANALYTICS_*`); nothing reads them.
+One `.env` at the repo root; `.env.example` lists every key. `phase0/server/_core/env.ts` loads `../.env`. Tests load it too, but `server/test/setup-env.ts` replaces `DATABASE_URL` with `TEST_DATABASE_URL` (database `arcanis_test` on the same cluster locally, a MySQL container in CI) and refuses any URL that points at production; DB tests use `describeDb` from `server/test/db.ts` and skip when no test DB is configured. The database is MySQL on TiDB Cloud (us-east-1); kept through the soft launch with logical backups (task A1), migrated to a new founder-owned host in Phase 1b (task B0). Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (image storage for the soft launch; R2 in Phase 1b). `OPENAI_API_KEY` (for `omni-moderation`), `TEST_DATABASE_URL`. All providers run on free-tier keys with no payment method attached. phase0 also reads `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `TRUST_PROXY_HOPS`, `CARD_ART` (`element` default, or `generated`), and client-side `VITE_PUBLIC_URL` (share link base); the client always calls `/api` on its own origin. None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). The `.env` still holds leftover keys from the archived root app (`BUILT_IN_FORGE_*`, `OAUTH_SERVER_URL`, `OWNER_*`, `VITE_APP_*`, `VITE_OAUTH_PORTAL_URL`, `VITE_ANALYTICS_*`); nothing reads them.
 
 ### Run
 
@@ -76,7 +76,7 @@ cd phase0 && pnpm dev        # http://localhost:3100, Vite middleware in dev
 cd phase0 && pnpm build && pnpm start
 ```
 
-Deploy (phase0): client on Vercel (`phase0/vercel.json`, `pnpm build:client`, output `dist/public`), API on Render (configured in the dashboard, no `render.yaml`; free instance kept awake by an external `/health` ping, decision F3). OG tags are injected only by the Express route `/spell/:spellId`. Today `vercel.json` rewrites every path to `index.html`, so share links on the Vercel domain get no OG tags; task A10 adds rewrites for `/api/*` and the share route to Render ahead of the SPA catch-all.
+Deploy (phase0): client on Vercel (`phase0/vercel.json`, `pnpm build:client`, output `dist/public`), API on Render (configured in the dashboard, no `render.yaml`; free instance kept awake by an external `/health` ping, decision F3). `vercel.json` is generated by `pnpm vercel:config <render-url>`: `/api/*` and the share image go to Render, and `/spell/:id` goes to Render only for link-preview bots (people get the SPA). See `docs/launch_checklist.md`. `pnpm dev` uses `DATABASE_URL` (production); to develop against the test database run it with `DATABASE_URL` set to the value of `TEST_DATABASE_URL`.
 
 ### Tests and type-check
 
@@ -92,7 +92,7 @@ Drizzle Kit against `DATABASE_URL` (MySQL). Tables are prefixed `p0_`; the produ
 
 ```
 cd phase0 && pnpm db:generate && pnpm db:migrate   # migrations in phase0/drizzle/
-cd phase0 && pnpm seed                              # 12 platform spells + archivist user
+cd phase0 && pnpm seed                              # the 36 base spells (Master Doc 5.6) + archivist user; idempotent
 cd phase0 && pnpm db:backup                         # mysqldump of DATABASE_URL to ../../Arcanis-backups (BACKUP_DIR)
 cd phase0 && pnpm db:restore-check                  # restore newest backup into a scratch DB, compare row counts, drop it
 ```
@@ -115,10 +115,10 @@ Reports go to `tools/balance-harness/reports/` and `tools/cost-report/reports/`.
 
 ### Conventions found in the code
 
-- tRPC routers in `server/routers/*.ts`; `protectedProcedure` for anything authenticated (every generation path must use it). Auth is a Bearer JWT read in `server/_core/context.ts`.
+- tRPC routers in `server/routers/*.ts`; `protectedProcedure` for anything authenticated (every generation path must use it). `adminProcedure` for admin. Auth is the `arc_session` httpOnly cookie resolved in `server/_core/context.ts` (sessions in `p0_sessions`).
 - Zod input schemas in `shared/validation.ts`; game constants and stat caps in `shared/constants.ts`. Path aliases `@/` (client src) and `@shared/`.
-- phase0 stats come from `phase0/server/power-budget.ts` (deterministic today; becoming the hybrid budget in task A7); the LLM returns identity text validated by `LLMSpellIdentitySchema`.
-- Spark operations go through `phase0/server/spark.ts` only (being rewritten as an append-only ledger in task A3; the current version has a double-spend race); analytics through `trackEvent()` in `phase0/server/analytics.ts`.
+- Spell stats: hybrid Power Budget in `phase0/shared/power-budget.ts` (budget, Layer 2a enforcement) with taxonomy and caps in `shared/taxonomy.ts`; the pipeline is `server/spell-pipeline.ts`; Layer 1 output is validated by `LLMSpellIdentitySchema`. Spells leave the server only through `toPublicSpell` (`shared/spell-view.ts`), which never carries Will numbers.
+- Spark operations go through `phase0/server/spark.ts` only (append-only ledger, READ COMMITTED transactions); analytics through `trackEvent()` in `phase0/server/analytics.ts`; every provider call through `server/providers/*` (telemetry is automatic).
 - Drizzle: camelCase in TS; snake_case column names.
 - Prettier config at root (`.prettierrc`).
 - UI: black and gold `arcanis-ui` system (ported in A17; the folder is deleted, history has it). Pages render inside `components/layout/app-shell.tsx` with `components/layout/page.tsx`; spell cards show art, name and one line of flavor only, tier by frame ornament, accent from the art's colour.

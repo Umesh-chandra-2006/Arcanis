@@ -7,6 +7,8 @@ import {
   deriveUsername,
   isDisposableEmail,
   requestSignIn,
+  setPassword,
+  signInWithPassword,
   revokeSession,
   userForSession,
   validateEmailFormat,
@@ -14,7 +16,7 @@ import {
   verifySignInLink,
 } from "./auth-service";
 import { getDb } from "./db";
-import { p0LoginTokens, p0SparkLedger } from "../drizzle/schema";
+import { p0LoginTokens, p0SparkLedger, p0Users } from "../drizzle/schema";
 import { describeDb } from "./test/db";
 import { createTestUser } from "./test/factories";
 import { LOGIN_CODE_MAX_ATTEMPTS } from "../shared/constants";
@@ -135,6 +137,38 @@ describeDb("identity (Build Plan 16)", () => {
     const email = freshEmail();
     await requestSignIn(email, req());
     await expect(requestSignIn(email, req())).rejects.toMatchObject({ code: "rate_limited" });
+  });
+
+  it("optional password: signs in without an email, and failures never reveal accounts", async () => {
+    const email = freshEmail();
+    const sent = await requestSignIn(email, req());
+    const { user } = await verifySignInCode(email, sent.devCode!, device(), null);
+    // No password set yet: the same error as a wrong password or an unknown email.
+    const noPassword = await signInWithPassword(email, "whatever-it-is", null).catch((e) => e);
+    await setPassword(user.id, "a strong passphrase");
+    const wrong = await signInWithPassword(email, "not the passphrase", null).catch((e) => e);
+    const unknown = await signInWithPassword(freshEmail(), "a strong passphrase", null).catch((e) => e);
+    expect(noPassword).toBeInstanceOf(AuthError);
+    expect(wrong.message).toBe(noPassword.message);
+    expect(unknown.message).toBe(noPassword.message);
+
+    const ok = await signInWithPassword(email, "a strong passphrase", null);
+    expect(ok.user.id).toBe(user.id);
+    expect((await userForSession(ok.sessionToken))?.id).toBe(user.id);
+    // The hash is salted scrypt, never the password.
+    const [row] = await (await getDb())!.select().from(p0Users).where(eq(p0Users.id, user.id));
+    expect(row.passwordHash).toMatch(/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/);
+  });
+
+  it("locks out repeated wrong passwords for an email", async () => {
+    const email = freshEmail();
+    const sent = await requestSignIn(email, req());
+    const { user } = await verifySignInCode(email, sent.devCode!, device(), null);
+    await setPassword(user.id, "a strong passphrase");
+    // Successful sign-ins never count toward the lockout.
+    for (let i = 0; i < 7; i++) await signInWithPassword(email, "a strong passphrase", null);
+    for (let i = 0; i < 5; i++) await signInWithPassword(email, "wrong", null).catch(() => {});
+    await expect(signInWithPassword(email, "a strong passphrase", null)).rejects.toMatchObject({ code: "rate_limited" });
   });
 
   it("logout revokes the session", async () => {

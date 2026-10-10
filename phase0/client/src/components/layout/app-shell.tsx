@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { NavLink, Outlet, useLocation, useNavigate, Link } from "react-router-dom";
+import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Castle, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, Menu, X, LogOut, LogIn } from "lucide-react";
+import { Castle, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, Menu, X, LogIn, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
-import { SparkDots } from "@/components/SparkDots";
+import { ProfileDialog } from "@/components/ProfileDialog";
+import { Onboarding } from "@/components/Onboarding";
 import { Button } from "@/components/ui/button";
 
 // Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle and the
@@ -66,6 +67,8 @@ export function AppShell() {
         )}
       </AnimatePresence>
 
+      <Onboarding />
+
       <main className="min-w-0 flex-1 pt-14 lg:ml-56 lg:pt-0">
         <AnimatePresence mode="wait">
           <motion.div
@@ -93,8 +96,8 @@ export function Wordmark() {
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { user, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
   const spark = trpc.spells.sparkBalance.useQuery(undefined, { enabled: isAuthenticated });
   const items = PLAYER_NAV.filter((i) => !i.auth || isAuthenticated);
   const linkClass = ({ isActive }: { isActive: boolean }) =>
@@ -138,30 +141,27 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </nav>
 
-      <div className="border-t border-border p-4">
+      <div className="border-t border-border p-3">
         {user ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 font-serif text-primary">
-                {user.username.slice(0, 1).toUpperCase()}
-              </span>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{user.nameChosen ? user.username : "Unnamed mage"}</p>
-                {spark.data && <SparkDots balance={spark.data.balance} />}
-              </div>
-            </div>
+          <>
+            {/* The profile block opens the floating profile window. */}
             <button
               type="button"
-              onClick={async () => {
-                onNavigate?.();
-                await logout();
-                navigate("/");
-              }}
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setProfileOpen(true)}
+              className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-secondary/60"
+              aria-label="Open your profile"
             >
-              <LogOut size={14} /> Sign out
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 font-serif text-primary">
+                {(user.nameChosen ? user.username : "M").slice(0, 1).toUpperCase()}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{user.nameChosen ? user.username : "Name your mage"}</span>
+                <span className="block text-[11px] text-muted-foreground">{spark.data ? `${spark.data.balance} Spark` : " "}</span>
+              </span>
+              <ChevronsUpDown size={14} className="shrink-0 text-muted-foreground" />
             </button>
-          </div>
+            <ProfileDialog open={profileOpen} onOpenChange={(open) => { setProfileOpen(open); if (!open) onNavigate?.(); }} />
+          </>
         ) : (
           <Link to="/signin" onClick={onNavigate}>
             <Button variant="outline" size="sm" className="w-full">

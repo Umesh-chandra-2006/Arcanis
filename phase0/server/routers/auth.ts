@@ -5,11 +5,12 @@ import {
   requestSignIn,
   revokeSession,
   SESSION_TTL_MS,
+  signInWithPassword,
   verifySignInCode,
   verifySignInLink,
   type SignInResult,
 } from "../auth-service";
-import { SignInCodeSchema, SignInLinkSchema, SignInRequestSchema } from "../../shared/validation";
+import { SignInCodeSchema, SignInLinkSchema, SignInPasswordSchema, SignInRequestSchema } from "../../shared/validation";
 import { recordSessionDay, trackEvent } from "../analytics";
 import type { Phase0User } from "../../drizzle/schema";
 import type { TrpcContext } from "../_core/context";
@@ -22,6 +23,9 @@ export function publicUser(user: Phase0User) {
     username: user.username,
     role: user.role,
     nameChosen: user.nameChosen,
+    hasPassword: Boolean(user.passwordHash),
+    updatesOptIn: user.updatesOptIn,
+    onboarded: user.onboardedAt !== null,
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -35,7 +39,7 @@ function toTrpcError(error: unknown): never {
 
 const referralCodeOf = (ctx: TrpcContext) => parseCookies(ctx.req.headers.cookie)[REFERRAL_COOKIE] ?? null;
 
-async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "link" | "code") {
+async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "link" | "code" | "password") {
   appendSetCookie(ctx.res, serializeCookie(SESSION_COOKIE, result.sessionToken, { maxAgeSeconds: SESSION_TTL_MS / 1000 }));
   if (referralCodeOf(ctx)) appendSetCookie(ctx.res, serializeCookie(REFERRAL_COOKIE, "", { maxAgeSeconds: 0 }));
   await trackEvent({
@@ -63,6 +67,12 @@ export const authRouter = router({
   verifyCode: publicProcedure.input(SignInCodeSchema).mutation(async ({ ctx, input }) => {
     const result = await verifySignInCode(input.email, input.code, ctx.device, ctx.ip, referralCodeOf(ctx)).catch(toTrpcError);
     return finishSignIn(ctx, result, "code");
+  }),
+
+  /** Returning players who set a password: no email is sent. Same error for every failure. */
+  signInWithPassword: publicProcedure.input(SignInPasswordSchema).mutation(async ({ ctx, input }) => {
+    const result = await signInWithPassword(input.email, input.password, ctx.ip).catch(toTrpcError);
+    return finishSignIn(ctx, result, "password");
   }),
 
   me: publicProcedure.query(async ({ ctx }) => {

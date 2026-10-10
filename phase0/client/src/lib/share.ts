@@ -4,3 +4,9 @@ export function shareUrlFor(spellId: string, referralCode?: string | null): stri
   const url = `${base}/spell/${spellId}`;
   return referralCode ? `${url}?ref=${encodeURIComponent(referralCode)}` : url;
 }
+
+/** Invite link to the home page carrying the inviter's code. */
+export function inviteUrl(referralCode: string): string {
+  const base = ((import.meta.env.VITE_PUBLIC_URL as string | undefined)?.trim() || window.location.origin).replace(/\/+$/, "");
+  return `${base}/?ref=${encodeURIComponent(referralCode)}`;
+}

@@ -3,7 +3,7 @@ export const UNAUTHED_ERR_MSG = "Please login (10001)";
 // Spark economy, Phase 1a values (Master Doc v7.2 22.1, founder decision F7).
 export const SPARK = {
   creationCost: 1,
-  signupGrant: 5,
+  signupGrant: 3,
   weeklyAllowance: 3,
   /** The weekly allowance never raises a balance above this. */
   rolloverCap: 10,
@@ -118,6 +118,7 @@ export const VALIDATION_MESSAGES = {
   EMAIL_INVALID: "Please enter a valid email address",
   EMAIL_DISPOSABLE: "Disposable email addresses are not allowed",
   SIGNIN_RATE_LIMITED: "Too many sign-in attempts. Please wait a few minutes and try again.",
+  PASSWORD_INVALID: "That email and password don't match. You can sign in with an emailed code instead.",
   CODE_INVALID: "That code is not valid. Check the newest email, or request a new code.",
   SPELL_NOT_FOUND: "Spell not found",
   TOKEN_INVALID: "This link is invalid, expired or already used. Request a new one.",

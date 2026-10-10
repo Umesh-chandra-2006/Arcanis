@@ -3,6 +3,7 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { SpellCreationInputSchema } from "../../shared/validation";
 import {
   createSpell,
+  getBaseSpells,
   getFeaturedSpells,
   getMySpells,
   getSpellPublic,
@@ -84,6 +85,8 @@ export const spellsRouter = router({
   sparkTransactions: protectedProcedure.query(async ({ ctx }) => {
     return recentSparkEntries(ctx.user.id);
   }),
+
+  baseSpells: publicProcedure.query(() => getBaseSpells()),
 
   featured: publicProcedure.query(async () => {
     return getFeaturedSpells(5);

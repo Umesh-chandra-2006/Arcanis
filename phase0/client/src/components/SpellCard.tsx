@@ -1,24 +1,64 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { SpellCard as GameSpellCard } from "@/components/game/spell-card";
 import { ElementIcon } from "@/components/game/element-icon";
 import type { SpellCardProps } from "@/lib/adapters";
-import { Share2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { CAST_TIME_MS, TIER_CAPS, type CastType, type Tier } from "@shared/taxonomy";
+import { Share2, Lock } from "lucide-react";
 
 interface SpellCardWrapperProps {
-  spell: SpellCardProps & { imageUrl?: string };
+  spell: SpellCardProps;
   size?: "sm" | "md" | "lg";
   onOpen?: () => void;
 }
 
-function StatCell({ label, value, className }: { label: string; value: string; className?: string }) {
+/** A stat against the ceiling of its tier, so a spell near the top reads as strong. */
+function StatBar({ label, value, fill, tone = "bg-primary" }: { label: string; value: string; fill: number; tone?: string }) {
   return (
     <div>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
-      <p className={`font-mono font-bold text-sm ${className ?? ""}`}>{value}</p>
+      <div className="flex items-baseline justify-between text-xs">
+        <span className="uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="font-mono font-semibold text-foreground">{value}</span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-secondary">
+        <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.round(Math.max(0.04, Math.min(1, fill)) * 100)}%` }} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The sealed-potential line: the concept can be grander than the form the mage
+ * can wield today. Display only; it never changes stats (Master Doc v7.4).
+ */
+export function PotentialNote({ tier, potential }: { tier: string; potential: string | null }) {
+  if (!potential || potential === tier || potential === "Basic") return null;
+  return (
+    <div className="flex items-start gap-2 rounded-md border border-primary/40 bg-primary/5 p-3 text-sm">
+      <Lock className="mt-0.5 size-4 shrink-0 text-primary" />
+      <p>
+        <span className="font-serif font-semibold text-primary">Sealed {potential}-class spell.</span>{" "}
+        <span className="text-muted-foreground">You wield its {tier} form for now. This spell awaits your growth.</span>
+      </p>
+    </div>
+  );
+}
+
+export function SpellStats({ spell }: { spell: SpellCardProps }) {
+  const caps = TIER_CAPS[spell.tier as Tier] ?? TIER_CAPS.Basic;
+  const [castMin, castMax] = CAST_TIME_MS[spell.castType as CastType] ?? CAST_TIME_MS.Instant;
+  const strainFill = { Light: 0.33, Moderate: 0.66, Heavy: 1 }[spell.strain] ?? 0.5;
+  return (
+    <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
+      <StatBar label="Power" value={spell.damage} fill={spell.damageMax / caps.damage[1]} />
+      <StatBar label="Speed" value={`${spell.castTime}s cast`} fill={(castMax - spell.castTimeMs) / (castMax - castMin)} tone="bg-sky-400" />
+      <StatBar label="Mana cost" value={`${spell.mpCost} MP`} fill={spell.mpCost / caps.mp[1]} tone="bg-indigo-400" />
+      {/* Strain is the only way Will cost is ever shown: a word, never a number. */}
+      <StatBar label="Strain" value={spell.strain} fill={strainFill} tone="bg-accent" />
+      {spell.drainRatio !== null && <StatBar label="Drain" value={`${Math.round(spell.drainRatio * 100)}% returned`} fill={spell.drainRatio / 0.5} tone="bg-emerald-400" />}
     </div>
   );
 }
@@ -27,16 +67,6 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
-  const cardData = {
-    id: spell.id,
-    name: spell.name,
-    flavor: spell.flavor,
-    element: spell.element,
-    tier: spell.tier,
-    art: spell.art,
-    artAccent: spell.artAccent,
-  };
-
   const open = () => {
     setIsOpen(true);
     onOpen?.();
@@ -44,75 +74,37 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
 
   return (
     <>
-      <GameSpellCard spell={cardData} size={size} onClick={open} />
+      <GameSpellCard
+        spell={{ id: spell.id, name: spell.name, flavor: spell.flavor, element: spell.element, tier: spell.tier, art: spell.art, artAccent: spell.artAccent }}
+        size={size}
+        onClick={open}
+      />
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-md bg-card border-border text-foreground">
+        <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto border-border bg-card text-foreground">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl font-semibold flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 font-serif text-xl font-semibold">
               <ElementIcon element={spell.element} size={20} />
               {spell.name}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="aspect-video bg-secondary/50 rounded-md overflow-hidden flex items-center justify-center border border-border">
-              {spell.imageUrl ? (
-                <img src={spell.imageUrl} alt={spell.name} className="w-full h-full object-cover rounded-md" />
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-2">
-                  <ElementIcon element={spell.element} size={48} />
-                  <span className="text-xs text-muted-foreground capitalize">{spell.element}</span>
-                </div>
-              )}
+            {spell.lore && <p className="text-center font-serif text-base italic leading-relaxed text-primary/90">"{spell.lore}"</p>}
+
+            <div className="flex flex-wrap justify-center gap-1.5">
+              <Badge variant="outline" className="capitalize">{spell.element}</Badge>
+              <Badge variant="outline" className="capitalize">{spell.category}</Badge>
+              <Badge variant="outline">{spell.castType}</Badge>
+              <Badge variant="outline" className="border-primary/40 text-primary">{spell.tier} form</Badge>
+              {spell.isBase && <Badge variant="outline">Base spell</Badge>}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Tier</p>
-                <Badge variant="outline" className="border-primary/40 text-primary">{spell.tier}</Badge>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Element</p>
-                <Badge variant="outline" className="capitalize">{spell.element}</Badge>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Category</p>
-                <Badge variant="outline" className="capitalize">{spell.category}</Badge>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Cast Type</p>
-                <Badge variant="outline">{spell.castType}</Badge>
-              </div>
-            </div>
+            <PotentialNote tier={spell.tier} potential={spell.potentialTier} />
 
-            <div className="grid grid-cols-4 gap-2 text-center p-3 bg-secondary/30 rounded-md border border-border">
-              <StatCell label="Damage" value={spell.damage} />
-              <StatCell label="MP" value={String(spell.mpCost)} className="text-sky-400" />
-              <StatCell label="Strain" value={spell.strain} className="text-accent-foreground" />
-              <StatCell label="Cast" value={`${spell.castTime}s`} />
-            </div>
+            {spell.flavor && <p className="text-sm leading-relaxed text-foreground/90">{spell.flavor}</p>}
 
-            {(spell.interruptionThreshold !== null || spell.drainRatio !== null || spell.maintenanceCostPerTurn !== null) && (
-              <div className="grid grid-cols-3 gap-2 text-center p-3 bg-secondary/30 rounded-md border border-border">
-                {spell.interruptionThreshold !== null && (
-                  <StatCell label="Interrupt" value={String(spell.interruptionThreshold)} />
-                )}
-                {spell.drainRatio !== null && (
-                  <StatCell label="Drain" value={`${Math.round(spell.drainRatio * 100)}%`} />
-                )}
-                {spell.maintenanceCostPerTurn !== null && (
-                  <StatCell label="Maint/Turn" value={String(spell.maintenanceCostPerTurn)} />
-                )}
-              </div>
-            )}
-
-            {(spell.lore || spell.flavor) && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">Lore</p>
-                <p className="text-sm italic text-foreground/90 font-serif leading-relaxed">{spell.lore}</p>
-              </div>
-            )}
+            <SpellStats spell={spell} />
 
             <Button
               variant="outline"
@@ -123,7 +115,7 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
               }}
             >
               <Share2 />
-              View Share Page
+              View share page
             </Button>
           </div>
         </DialogContent>

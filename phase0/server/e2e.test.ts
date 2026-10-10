@@ -7,6 +7,7 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { startApp } from "./_core/app";
 import { describeDb } from "./test/db";
+import { SPARK } from "../shared/constants";
 
 let server: Server;
 let base = "";
@@ -70,7 +71,7 @@ describeDb("end to end: sign up, create, share, preview", () => {
     expect(signedIn.isNewUser).toBe(true);
     expect(player.jar.has("arc_session")).toBe(true);
     expect((await player.query("auth.me")).nameChosen).toBe(false);
-    expect((await player.query("spells.sparkBalance")).balance).toBe(5);
+    expect((await player.query("spells.sparkBalance")).balance).toBe(SPARK.signupGrant);
 
     // Create a spell through the real pipeline (test providers).
     const created = await player.mutation("spells.create", {
@@ -84,7 +85,7 @@ describeDb("end to end: sign up, create, share, preview", () => {
     expect(JSON.stringify(created)).not.toMatch(/will_?cost/i);
     expect(created.spell.researching).toBe(false);
     expect(created.spell.drainRatio).toBeGreaterThan(0);
-    expect((await player.query("spells.sparkBalance")).balance).toBe(4);
+    expect((await player.query("spells.sparkBalance")).balance).toBe(SPARK.signupGrant - 1);
     expect((await player.query("spells.mySpells")).map((s: { id: string }) => s.id)).toContain(created.spell.id);
 
     // Name the mage, get the referral code for the share link.
@@ -118,9 +119,21 @@ describeDb("end to end: sign up, create, share, preview", () => {
     await stranger.mutation("auth.verifyCode", { email: email2, code: sent2.devCode });
     expect(stranger.jar.has("arc_ref")).toBe(false); // consumed at signup
 
-    // Logout revokes the session.
+    // The one-step welcome: opt in to updates and set a password.
+    const welcomed = await player.mutation("profile.completeOnboarding", { updatesOptIn: true, password: "correct horse battery" });
+    expect(welcomed).toMatchObject({ onboarded: true, updatesOptIn: true, hasPassword: true });
+    const overview = await player.query("profile.overview");
+    expect(overview.spellsForged).toBe(1);
+    expect(overview.invitesJoined).toBe(1);
+    expect((await player.query("spells.baseSpells")).length).toBeGreaterThanOrEqual(0);
+
+    // Logout revokes the session; the password signs back in with no email.
     await player.mutation("auth.logout", null);
     expect(await player.query("auth.me")).toBeNull();
+    const back = await player.mutation("auth.signInWithPassword", { email, password: "correct horse battery" });
+    expect(back.isNewUser).toBe(false);
+    expect((await player.query("auth.me")).email).toBe(email);
+    await player.mutation("auth.logout", null);
     await expect(player.query("spells.mySpells")).rejects.toThrow();
   });
 });

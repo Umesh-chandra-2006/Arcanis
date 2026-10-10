@@ -7,6 +7,9 @@ export interface AuthUser {
   username: string;
   role: "user" | "admin";
   nameChosen: boolean;
+  hasPassword: boolean;
+  updatesOptIn: boolean;
+  onboarded: boolean;
   createdAt: string;
 }
 

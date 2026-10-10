@@ -32,6 +32,12 @@ export const p0Users = mysqlTable(
     referralCode: varchar("referral_code", { length: 16 }),
     /** False until the player picks a mage name (asked when first needed, Master Doc 18.2). */
     nameChosen: boolean("name_chosen").notNull().default(false),
+    /** Optional password (v7.4): lets returning players sign in without an email. */
+    passwordHash: varchar("password_hash", { length: 255 }),
+    /** Opted in to Arcanis update emails. */
+    updatesOptIn: boolean("updates_opt_in").notNull().default(false),
+    /** Set when the one-step welcome was completed or skipped. */
+    onboardedAt: timestamp("onboarded_at"),
   },
   (table) => ({
     emailIdx: uniqueIndex("p0_users_email_idx").on(table.email),
@@ -71,6 +77,11 @@ export const p0Spells = mysqlTable(
     dominantColor: varchar("dominant_color", { length: 7 }),
     imagePrompt: text("image_prompt"),
     imageAttempts: int("image_attempts").notNull().default(0),
+    /**
+     * How grand the described concept is, judged at creation. Display only: it
+     * never changes stats or tier (tier comes from the request, never the model).
+     */
+    potentialTier: mysqlEnum("potential_tier", TIERS),
     researchComplexity: int("research_complexity").notNull().default(1),
     /** "Researching" is simply now < research_ready_at (Build Plan 7.5). */
     researchReadyAt: timestamp("research_ready_at").notNull().defaultNow(),

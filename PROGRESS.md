@@ -10,7 +10,7 @@
 
 | Area | State |
 |---|---|
-| Docs | Master Doc **v7.2**, Phase Plan **v2.2**, Build Plan **v2.2**. Audit `docs/status_report.md`; cost sheet `docs/cost_sheet.md`; quotas `docs/provider_quotas.md`; launch runbook `docs/launch_checklist.md`. |
+| Docs | Master Doc **v7.4**, Phase Plan **v2.2**, Build Plan **v2.4**. Audit `docs/status_report.md`; cost sheet `docs/cost_sheet.md`; quotas `docs/provider_quotas.md`; launch runbook `docs/launch_checklist.md`. |
 | Canonical codebase | **`phase0/`** (stays there, F9). Root prototype archived on branch `archive/root-prototype`. `arcanis-ui/` ported (A17) and deleted. |
 | Branch | All work on **`track-a`**, not yet merged or pushed. CI defined, not yet run. |
 | Phase 0 (measure) | **Done** (A14): about $0.001 to $0.003 per creation at list price; 2c 1.7%; moderation false positives 0 of 120. Image numbers are estimates until Cloudflare keys exist. |
@@ -46,6 +46,16 @@ Founder follows `docs/launch_checklist.md`: Cloudflare image keys, email fix (Br
 | H10 | All four security fixes are soft-launch blockers (enumeration, localStorage JWT, plaintext tokens, open analytics). Analytics: anonymous events only from an allowlist, schema-validated, rate-limited. |
 | Small | Blockers: images to object storage, 1200x630 OG variant, vercel.json share fix, live model-ID check. Not blocking: delete dead template code, remove Hearth. |
 | Docs | Onboarding goes straight to creation; Spell XP reveal removed; Conflagration Wave = Attack / Continuous. |
+
+### Founder decisions, 2026-10-11 (first local test)
+
+| Decision | Detail |
+|---|---|
+| Optional passwords | Changes the "no passwords" lock (decision E). Accounts still created by emailed code; password is optional, saves email quota; no account enumeration. |
+| Welcome step and profile window | One skippable dialog (name, optional password, update emails); profile window with 5 tabs. Changes "straight to creation". |
+| Signup grant 3 | Was 5. |
+| Sealed potential | Display-only concept grade (Basic/Advanced/Mega) plus stronger Layer 1 stat guidance, so a grand description reads as grand without breaking the tier rule. |
+| Base spells | 36 seeded and shown in the Spellbook with filters. Tier per spell assumed (Basic/Advanced/Mega in list order): **founder to confirm**. |
 
 ### Founder decisions, 2026-10-10 (later)
 

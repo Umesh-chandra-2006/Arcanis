@@ -1,7 +1,15 @@
-# Arcanis: Phase 1 Build Plan v2.3
+# Arcanis: Phase 1 Build Plan v2.4
 
-**Agent-facing implementation document. Companion to Master Documentation v7.3 (the bible) and Phase Plan v2.2.**
+**Agent-facing implementation document. Companion to Master Documentation v7.4 (the bible) and Phase Plan v2.2.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.4 (2026-10-11)
+
+- **Identity (Section 5):** optional password for returning players (`auth.signInWithPassword`, `profile.setPassword`); accounts are still created only by emailed code or link; failures are indistinguishable; only failed attempts count toward the lockout.
+- **Spark (Section 6):** `grant_signup` is 3.
+- **Creation (Section 7):** Layer 1 returns a display-only `potential` (stored as `potential_tier`) and is told to commit stats to the described identity.
+- **UI (Section 10):** one-step skippable welcome; profile window with Profile, Spark, Invite, Updates and Security tabs; signed-in Home; Spellbook with "My spells" and "Base spells" and filters by source, element, category and tier; stat bars against the tier ceiling.
+- **Platform spells:** the 36 base spells are seeded now (`pnpm seed`), ahead of B2, as each element's Basic, Advanced and Mega spell.
 
 ## What changed in v2.3 (2026-10-10)
 

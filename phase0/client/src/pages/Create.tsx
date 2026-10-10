@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Page } from "@/components/layout/page";
 import { useAuth } from "@/contexts/AuthContext";
 import { Panel } from "@/components/game/panel";
-import { SpellCardWrapper } from "@/components/SpellCard";
+import { PotentialNote, SpellCardWrapper, SpellStats } from "@/components/SpellCard";
 import { ElementIcon } from "@/components/game/element-icon";
 import { SparkDots } from "@/components/SparkDots";
 import { SparkPacksDialog } from "@/components/SparkPacks";
@@ -326,15 +326,21 @@ export default function Create() {
             >
               <div className="mb-6 text-center">
                 <h2 className="font-serif text-2xl font-semibold text-primary">
-                  ✨ Your spell is ready!
+                  Your spell is forged
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Forged from 1 Spark. {balance} remaining.
                 </p>
               </div>
 
-              <div className="flex justify-center">
+              <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 md:flex-row md:items-start">
                 <SpellCardWrapper spell={mapSpellToCardProps(created) as SpellCardProps} size="lg" />
+                <div className="w-full flex-1 space-y-4">
+                  <p className="text-center font-serif text-lg italic leading-relaxed text-primary/90 md:text-left">"{created.loreLine}"</p>
+                  <PotentialNote tier={created.tier} potential={created.potentialTier} />
+                  <p className="text-sm leading-relaxed text-foreground/90">{created.flavorText}</p>
+                  <SpellStats spell={mapSpellToCardProps(created)} />
+                </div>
               </div>
 
               {nameDialog}

@@ -32,6 +32,15 @@ export async function hitRateLimit(key: string, limit: number, windowSeconds: nu
   };
 }
 
+/** Reads the current window's count without adding a hit (for limits that count only failures). */
+export async function peekRateLimit(key: string, limit: number, windowSeconds: number, now = Date.now()): Promise<RateLimitResult> {
+  const windowStart = Math.floor(now / 1000 / windowSeconds) * windowSeconds;
+  const bucket = `${key}@${windowStart}`.slice(0, 191);
+  const [row] = await requireDb().select({ count: p0RateLimits.count }).from(p0RateLimits).where(sql`${p0RateLimits.bucket} = ${bucket}`);
+  const count = row?.count ?? 0;
+  return { allowed: count < limit, count, retryAfterSeconds: Math.max(1, Math.ceil(windowStart + windowSeconds - now / 1000)) };
+}
+
 /** Deletes expired buckets; called opportunistically. */
 export async function sweepRateLimits(now = new Date()): Promise<void> {
   await requireDb().delete(p0RateLimits).where(lt(p0RateLimits.expiresAt, now));

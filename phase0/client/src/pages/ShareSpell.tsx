@@ -13,6 +13,8 @@ import { Stars } from "@/components/reviews/stars";
 import { mapSpellToCardProps, elementAccent } from "@/lib/adapters";
 import { Sparkles, Wand2, Star, LogOut } from "lucide-react";
 import { toast } from "sonner";
+import { SPARK } from "@shared/constants";
+import { PotentialNote, SpellStats } from "@/components/SpellCard";
 import { ReportButton } from "@/components/ReportButton";
 import { useNameGate } from "@/components/NameDialog";
 
@@ -219,11 +221,14 @@ export default function ShareSpell() {
           </div>
 
           <Panel className="w-full max-w-xl" gold>
-            <p className="text-center font-serif text-sm italic leading-relaxed text-foreground/90">
-              "{spell.flavorText}"
-            </p>
-            <div className="mt-3 flex justify-end">
-              <ReportButton targetType="spell" targetId={spell.id} />
+            <div className="space-y-4">
+              <p className="text-center font-serif text-lg italic leading-relaxed text-primary/90">"{spell.loreLine}"</p>
+              <PotentialNote tier={spell.tier} potential={spell.potentialTier} />
+              <p className="text-sm leading-relaxed text-foreground/90">{spell.flavorText}</p>
+              <SpellStats spell={card} />
+              <div className="flex justify-end">
+                <ReportButton targetType="spell" targetId={spell.id} />
+              </div>
             </div>
           </Panel>
 
@@ -233,7 +238,7 @@ export default function ShareSpell() {
               Create Your Own Spell
             </Button>
             <p className="mt-3 text-center text-xs text-muted-foreground">
-              Describe a spell. Arcanis forges its stats, lore and artwork. 5 free Spark on signup.
+              Describe a spell. Arcanis forges its stats and lore. {SPARK.signupGrant} free Spark on signup.
             </p>
           </div>
 

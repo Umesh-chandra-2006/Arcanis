@@ -2,14 +2,15 @@
 // email; no passwords; server-side sessions behind an httpOnly cookie.
 import { nanoid } from "nanoid";
 import { and, desc, eq, gt, isNull, sql } from "drizzle-orm";
-import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, randomBytes, randomInt, scrypt as scryptCb, timingSafeEqual } from "node:crypto";
+import { promisify } from "node:util";
 import { getDb, requireDb } from "./db";
 import { p0LoginTokens, p0Sessions, p0Users, type Phase0User } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { DISPOSABLE_EMAIL_DOMAINS, LOGIN_CODE_MAX_ATTEMPTS, LOGIN_TOKEN_TTL_MS, VALIDATION_MESSAGES } from "../shared/constants";
 import { grantSignupSpark, type DeviceSignals } from "./spark";
 import { emailProviders, sendEmail } from "./providers/email";
-import { hitRateLimit, sweepRateLimits } from "./db-rate-limit";
+import { hitRateLimit, peekRateLimit, sweepRateLimits } from "./db-rate-limit";
 import { attachReferral } from "./referrals";
 
 export const SESSION_TTL_MS = 30 * 24 * 3600 * 1000;
@@ -254,4 +255,63 @@ export async function userForSession(token: string | null | undefined): Promise<
 export async function revokeSession(token: string | null | undefined): Promise<void> {
   if (!token) return;
   await requireDb().update(p0Sessions).set({ revokedAt: new Date() }).where(eq(p0Sessions.tokenHash, sha256(token)));
+}
+
+// ---- Optional passwords (Master Doc v7.4) ----
+// A returning player may set a password so signing in does not need an email.
+// New accounts are always created through the emailed code or link, which is
+// what verifies the address. Every failure returns the same error, and a dummy
+// hash runs when the account or password is missing, so the endpoint cannot be
+// used to discover which emails have accounts.
+
+const scrypt = promisify(scryptCb) as (password: string, salt: Buffer, keylen: number) => Promise<Buffer>;
+export const PASSWORD_MIN = 8;
+export const PASSWORD_MAX = 72;
+const DUMMY_HASH = `scrypt$${"00".repeat(16)}$${"00".repeat(64)}`;
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16);
+  const hash = await scrypt(password, salt, 64);
+  return `scrypt$${salt.toString("hex")}$${hash.toString("hex")}`;
+}
+
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const [scheme, saltHex, hashHex] = stored.split("$");
+  if (scheme !== "scrypt" || !saltHex || !hashHex) return false;
+  const expected = Buffer.from(hashHex, "hex");
+  const actual = await scrypt(password, Buffer.from(saltHex, "hex"), expected.length);
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+export async function signInWithPassword(email: string, password: string, ip: string | null): Promise<SignInResult> {
+  const normalized = normalizeEmail(email);
+  // Only failures count toward the lockout, so signing in normally (even from
+  // several devices) never locks a player out.
+  const limits: Array<[string, number, number]> = [[`pw:email:${normalized}`, 5, 900]];
+  if (ip) limits.push([`pw:ip:${ip}`, 30, 3600]);
+  for (const [key, limit, windowSeconds] of limits) {
+    if (!(await peekRateLimit(key, limit, windowSeconds)).allowed) {
+      throw new AuthError(VALIDATION_MESSAGES.SIGNIN_RATE_LIMITED, "rate_limited");
+    }
+  }
+  const db = requireDb();
+  const [user] = await db.select().from(p0Users).where(eq(p0Users.email, normalized)).limit(1);
+  const ok = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !user.passwordHash || !ok || user.bannedAt) {
+    for (const [key, limit, windowSeconds] of limits) await hitRateLimit(key, limit, windowSeconds);
+    throw new AuthError(VALIDATION_MESSAGES.PASSWORD_INVALID, "invalid");
+  }
+  await db.update(p0Users).set({ lastSignedInAt: new Date() }).where(eq(p0Users.id, user.id));
+  return { user, isNewUser: false, sessionToken: await createSession(user.id) };
+}
+
+export async function setPassword(userId: number, password: string): Promise<void> {
+  if (password.length < PASSWORD_MIN || password.length > PASSWORD_MAX) {
+    throw new AuthError(`Use ${PASSWORD_MIN} to ${PASSWORD_MAX} characters.`, "invalid");
+  }
+  await requireDb().update(p0Users).set({ passwordHash: await hashPassword(password) }).where(eq(p0Users.id, userId));
+}
+
+export async function removePassword(userId: number): Promise<void> {
+  await requireDb().update(p0Users).set({ passwordHash: null }).where(eq(p0Users.id, userId));
 }

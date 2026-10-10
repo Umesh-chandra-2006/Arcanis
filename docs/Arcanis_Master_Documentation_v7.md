@@ -1,12 +1,24 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.3*
+*Complete Vision Blueprint | Version 7.4*
 
 Author: Umesh Chandra Tirumani
 Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.3 supersedes all prior versions, including v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.4 supersedes all prior versions, including v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.4, WHAT CHANGED FROM v7.3 (2026-10-11)
+
+Founder decisions from the first local test session. Two of them change earlier locked items; both changes are the founder's.
+
+- **Optional passwords (Section 18.1; changes the v7.1 "no passwords anywhere" lock).** New accounts are still created only through the emailed 6-digit code or link, which is what verifies the address. A player may then set a password (at the welcome step or in the profile window) and sign in with it, which sends no email and so saves email quota. The emailed code always remains available, and doubles as password recovery. Passwords are salted scrypt; only failed attempts count toward the lockout; every failure returns the same message, so sign-in still never reveals whether an email has an account.
+- **Welcome step (Section 18.2; changes "signup goes straight to creation").** After the first sign-in, one dialog asks for the mage name, an optional password and whether to receive Arcanis update emails. Every field is optional and it can be skipped, so the first spell stays about a minute away. A profile window (Profile, Spark, Invite, Updates, Security) opens from the sidebar.
+- **Signup grant is 3 Spark (Section 22.1; was 5).** Weekly allowance 3, rollover cap 10 and the referral bonus are unchanged.
+- **Sealed potential (Sections 5.4, 6.5).** Layer 1 also judges how grand the described concept is (Basic, Advanced or Mega). This is display only: it never changes stats, and tier still comes from the request, never the model. A grand concept is shown as a sealed higher-class spell wielded in its current form, with the existing line "This spell awaits your growth." Layer 1 is also told to commit stats to the described identity (a devastating spell goes to the top of the damage range and pays in cost and cast time) instead of returning middling values.
+- **Base spells (Section 5.6).** The 36 platform spells are seeded and shown in the Spellbook beside the player's own, with filters. The table does not state a tier per spell; they are seeded as each element's Basic, Advanced and Mega spell in list order. **Founder to confirm this reading.**
 
 ---
 
@@ -1122,7 +1134,7 @@ The only currency that can be spent on anything that consumes real generation co
 - **Never earned through gameplay**, this is a deliberate, load-bearing separation. Spark is the money-facing currency; mixing it with earnable soft currency would make its real cost basis impossible to reason about and would open the door to farming real generation cost for free.
 - Unused Spark **rolls forward** rather than evaporating on a weekly reset, within a reasonable cap, so paying players don't feel penalized for an inactive week.
 
-**Phase 1a values (v7.2, founder):** 1 Spark per creation. Signup grant 5 (once per device). Weekly free allowance 3. Rollover cap 10 (the allowance does not top a balance above 10). Referral bonus 3 to the inviter (Section 23.3). While providers run on free tiers, the app's daily creation limit (Phase 1 Build Plan Section 7.7) keeps total creations inside provider quotas regardless of balances.
+**Phase 1a values (v7.2, founder; signup grant changed to 3 in v7.4):** 1 Spark per creation. Signup grant 3 (once per device). Weekly free allowance 3. Rollover cap 10 (the allowance does not top a balance above 10). Referral bonus 3 to the inviter (Section 23.3). While providers run on free tiers, the app's daily creation limit (Phase 1 Build Plan Section 7.7) keeps total creations inside provider quotas regardless of balances.
 
 ## 22.2 Why the Separation Matters
 

@@ -22,6 +22,7 @@ export interface SpellRowLike {
   interruptionThreshold: number | null;
   maintenanceCostPerTurn: number | null;
   drainRatio?: number | null;
+  potentialTier?: string | null;
   flavorText: string;
   loreLine: string;
   imageUrl: string;
@@ -51,6 +52,8 @@ export interface PublicSpell {
   interruptionThreshold: number | null;
   maintenanceCostPerTurn: number | null;
   drainRatio: number | null;
+  /** Display only: how grand the concept is (may exceed the tier it is wielded at). */
+  potentialTier: string | null;
   flavorText: string;
   loreLine: string;
   imageUrl: string;
@@ -80,6 +83,7 @@ export function toPublicSpell(spell: SpellRowLike, now = new Date()): PublicSpel
     interruptionThreshold: spell.interruptionThreshold,
     maintenanceCostPerTurn: spell.maintenanceCostPerTurn,
     drainRatio: spell.drainRatio ?? null,
+    potentialTier: spell.potentialTier ?? null,
     flavorText: spell.flavorText,
     loreLine: spell.loreLine,
     // The portrait card crop when it exists; older spells only have the original.

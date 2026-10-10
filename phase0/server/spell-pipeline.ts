@@ -71,15 +71,16 @@ interface Trace {
 }
 
 export const IDENTITY_SYSTEM_PROMPT = `You are the spell forge of Arcanis, a fantasy game where players invent spells.
-A player has described a spell. Give it a voice and allocate its stats. Return ONLY one JSON object, no markdown:
+A player has described a spell. Give it a voice worthy of what they imagined, and allocate its stats. Return ONLY one JSON object, no markdown:
 {
-  "flavor_text": "1 to 3 vivid sentences on what casting it looks and feels like. No numbers.",
-  "lore_line": "one short mystical line whispered about the spell",
+  "flavor_text": "2 to 3 vivid sentences on what casting it looks and feels like, written at the full scale the player described. If they described a world-ending force, write a world-ending force. No numbers.",
+  "lore_line": "one short, quotable line of myth about the spell",
   "image_prompt": "an art prompt for the card: subject, mood, colors, composition. Never ask for text, letters or UI in the image.",
+  "potential": "Basic" | "Advanced" | "Mega" (how grand the described concept is: Basic = a practical working spell; Advanced = a master's signature technique; Mega = a legendary, world-shaking force),
   "research_complexity": 1 to 10 (how intricate the spell is),
   "stats": { ...the stat fields listed below... }
 }
-Write in a neutral narrator voice. Do not mention levels, XP, ranks or game rules.`;
+Honor the player's own imagery and words. Write in a neutral narrator voice. Do not mention levels, XP, ranks or game rules.`;
 
 function describeCategory(category: string): string {
   switch (category) {
@@ -114,7 +115,11 @@ Player's description: ${data.description}
 Stats (${describeCategory(data.category)}):
 ${lines.join("\n")}
 
-Power budget: this spell may be about ${share}% as strong as a spell maxed in every field. Spend it to fit the description: a slow, heavy, costly spell can hit hard; a quick, cheap one should be weaker. Do not max everything.${
+Power budget: this spell may be about ${share}% as strong as a spell maxed in every field, so it cannot be best at everything.
+Commit to the identity the player described; never answer with middling values across the board:
+- A devastating, catastrophic or legendary spell: push damage_min and damage_max to or near the TOP of the range, and pay for it with HIGH mp_cost, HIGH will cost and a SLOW cast_time.
+- A swift or precise spell: fastest cast_time, lower damage.
+- An efficient or subtle spell: lowest mp_cost and will cost, modest damage.${
     feedback ? `\n\nYour previous answer was rejected: ${feedback}. Fix that and answer again.` : ""
   }`;
 }
@@ -313,7 +318,8 @@ export async function createSpell(
       try {
         const schema = LLMSpellIdentitySchema.safeParse(JSON.parse(stripFences(response.text)));
         if (!schema.success) throw new Error(schema.error.issues[0]?.message ?? "schema");
-        identity = schema.data;
+        // Models like to wrap the lore line in quotation marks; the card adds its own.
+        identity = { ...schema.data, lore_line: schema.data.lore_line.replace(/^[\s"'‘’“”]+|[\s"'‘’“”]+$/g, "") };
       } catch (error) {
         trace.steps.push({ step: "layer2a_schema", attempt, error: String(error).slice(0, 200) });
         feedback = "the JSON was invalid or missing fields";
@@ -433,6 +439,7 @@ export async function createSpell(
       dominantColor: stored?.dominantColor ?? null,
       imagePrompt: accepted.identity.image_prompt,
       imageAttempts: 1,
+      potentialTier: accepted.identity.potential,
       researchComplexity: complexity,
       researchReadyAt,
       verificationTrace: { ...flags, attempts, steps: trace.steps.length },
@@ -484,6 +491,15 @@ export async function getFeaturedSpells(limit = 5): Promise<PublicSpell[]> {
     .where(and(eq(p0Spells.isPlatformSpell, true), visible))
     .orderBy(desc(p0Spells.shareCount), desc(p0Spells.createdAt))
     .limit(limit);
+  return rows.map((r) => toPublicSpell(r));
+}
+
+/** The platform base spells (Master Doc 5.6), in a stable element and tier order. */
+export async function getBaseSpells(): Promise<PublicSpell[]> {
+  const rows = await requireDb()
+    .select()
+    .from(p0Spells)
+    .where(and(eq(p0Spells.isPlatformSpell, true), visible));
   return rows.map((r) => toPublicSpell(r));
 }
 
