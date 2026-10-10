@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Castle, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, Menu, X, LogIn, ChevronsUpDown } from "lucide-react";
+import { Castle, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, LogIn, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProfileDialog } from "@/components/ProfileDialog";
 import { Onboarding } from "@/components/Onboarding";
+import { ForgeQueueWatcher } from "@/components/ForgeQueue";
 import { Button } from "@/components/ui/button";
 
 // Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle and the
@@ -22,26 +23,45 @@ const ADMIN_NAV = [
   { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert },
 ];
 
+const COLLAPSED_KEY = "arc_sidebar_collapsed";
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Desktop: the sidebar folds to an icon rail. A per-browser convenience only.
+  const [collapsed, setCollapsed] = useState(readCollapsed);
   const location = useLocation();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(COLLAPSED_KEY, collapsed ? "1" : "0");
+    } catch {
+      // Storage can be blocked; the toggle still works for this visit.
+    }
+  }, [collapsed]);
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-56 flex-col border-r border-border bg-card lg:flex">
-        <SidebarContent />
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-border bg-card transition-[width] duration-300 lg:flex",
+          collapsed ? "w-16" : "w-56"
+        )}
+      >
+        <SidebarContent collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       </aside>
 
-      <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card px-4 lg:hidden">
-        <Wordmark />
-        <button
-          type="button"
-          onClick={() => setMobileOpen((v) => !v)}
-          aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
-          className="flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground"
-        >
-          {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
+      {/* Below lg the logo, on the left, is the menu button. */}
+      <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-card px-4 lg:hidden">
+        <LogoButton onClick={() => setMobileOpen((v) => !v)} label={mobileOpen ? "Close navigation" : "Open navigation"} expanded={mobileOpen} />
+        <WordmarkText />
       </header>
 
       <AnimatePresence>
@@ -68,8 +88,9 @@ export function AppShell() {
       </AnimatePresence>
 
       <Onboarding />
+      <ForgeQueueWatcher />
 
-      <main className="min-w-0 flex-1 pt-14 lg:ml-56 lg:pt-0">
+      <main className={cn("min-w-0 flex-1 pt-14 transition-[margin] duration-300 lg:pt-0", collapsed ? "lg:ml-16" : "lg:ml-56")}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
@@ -86,53 +107,91 @@ export function AppShell() {
   );
 }
 
+const MARK_CLASS = "flex h-7 w-7 shrink-0 items-center justify-center rounded-sm border border-primary/40 font-serif text-sm font-bold text-primary";
+
+/** The gold "A": opens the menu on small screens and folds the sidebar on large ones. */
+function LogoButton({ onClick, label, expanded }: { onClick: () => void; label: string; expanded: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      aria-expanded={expanded}
+      title={label}
+      className={cn(MARK_CLASS, "transition-colors duration-300 hover:border-primary hover:bg-primary/10")}
+    >
+      A
+    </button>
+  );
+}
+
+function WordmarkText() {
+  return (
+    <Link to="/" className="font-serif text-lg font-semibold tracking-[0.2em] text-foreground">
+      ARCANIS
+    </Link>
+  );
+}
+
 export function Wordmark() {
   return (
     <Link to="/" className="flex items-center gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-sm border border-primary/40 font-serif text-sm font-bold text-primary">A</span>
+      <span className={MARK_CLASS}>A</span>
       <span className="font-serif text-lg font-semibold tracking-[0.2em] text-foreground">ARCANIS</span>
     </Link>
   );
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent({ onNavigate, collapsed = false, onToggle }: { onNavigate?: () => void; collapsed?: boolean; onToggle?: () => void }) {
   const { user, isAuthenticated } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const spark = trpc.spells.sparkBalance.useQuery(undefined, { enabled: isAuthenticated });
   const items = PLAYER_NAV.filter((i) => !i.auth || isAuthenticated);
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-300",
+      "flex items-center gap-3 rounded-md py-2 text-sm transition-colors duration-300",
+      collapsed ? "justify-center px-0" : "px-3",
       isActive ? "bg-secondary text-primary" : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
     );
+  const displayName = user ? (user.nameChosen ? user.username : "Name your mage") : "";
 
   return (
     <>
-      <div className="hidden px-5 pb-4 pt-6 lg:block">
-        <Wordmark />
-      </div>
-      <div className="arc-rule mx-4 hidden lg:block" />
+      {/* Desktop only: the mobile drawer sits under the fixed header, which already carries the logo. */}
+      {onToggle && (
+        <>
+          <div className={cn("flex items-center gap-2 pb-4 pt-6", collapsed ? "justify-center px-0" : "px-5")}>
+            <LogoButton onClick={onToggle} label={collapsed ? "Expand sidebar" : "Collapse sidebar"} expanded={!collapsed} />
+            {!collapsed && <WordmarkText />}
+          </div>
+          <div className="arc-rule mx-4" />
+        </>
+      )}
 
-      <nav aria-label="Main" className="flex-1 overflow-y-auto px-3 py-4">
+      <nav aria-label="Main" className={cn("flex-1 overflow-y-auto py-4", collapsed ? "px-2" : "px-3")}>
         <ul className="flex flex-col gap-0.5">
           {items.map(({ to, label, icon: Icon }) => (
             <li key={to}>
-              <NavLink to={to} end={to === "/"} onClick={onNavigate} className={linkClass}>
+              <NavLink to={to} end={to === "/"} onClick={onNavigate} className={linkClass} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined}>
                 <Icon size={16} aria-hidden="true" />
-                {label}
+                {!collapsed && label}
               </NavLink>
             </li>
           ))}
         </ul>
         {user?.role === "admin" && (
           <>
-            <p className="mt-6 px-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">Admin</p>
+            {collapsed ? (
+              <div className="arc-rule mx-2 my-4" />
+            ) : (
+              <p className="mt-6 px-3 text-[10px] uppercase tracking-[0.25em] text-muted-foreground/70">Admin</p>
+            )}
             <ul className="mt-1 flex flex-col gap-0.5">
               {ADMIN_NAV.map(({ to, label, icon: Icon }) => (
                 <li key={to}>
-                  <NavLink to={to} onClick={onNavigate} className={linkClass}>
+                  <NavLink to={to} onClick={onNavigate} className={linkClass} title={collapsed ? label : undefined} aria-label={collapsed ? label : undefined}>
                     <Icon size={16} aria-hidden="true" />
-                    {label}
+                    {!collapsed && label}
                   </NavLink>
                 </li>
               ))}
@@ -141,31 +200,39 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         )}
       </nav>
 
-      <div className="border-t border-border p-3">
+      <div className={cn("border-t border-border", collapsed ? "p-2" : "p-3")}>
         {user ? (
           <>
             {/* The profile block opens the floating profile window. */}
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
-              className="flex w-full items-center gap-3 rounded-md p-2 text-left transition-colors hover:bg-secondary/60"
+              className={cn(
+                "flex w-full items-center gap-3 rounded-md text-left transition-colors hover:bg-secondary/60",
+                collapsed ? "justify-center p-1.5" : "p-2"
+              )}
               aria-label="Open your profile"
+              title={collapsed ? displayName : undefined}
             >
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/30 font-serif text-primary">
                 {(user.nameChosen ? user.username : "M").slice(0, 1).toUpperCase()}
               </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{user.nameChosen ? user.username : "Name your mage"}</span>
-                <span className="block text-[11px] text-muted-foreground">{spark.data ? `${spark.data.balance} Spark` : " "}</span>
-              </span>
-              <ChevronsUpDown size={14} className="shrink-0 text-muted-foreground" />
+              {!collapsed && (
+                <>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium">{displayName}</span>
+                    <span className="block text-[11px] text-muted-foreground">{spark.data ? `${spark.data.balance} Spark` : " "}</span>
+                  </span>
+                  <ChevronsUpDown size={14} className="shrink-0 text-muted-foreground" />
+                </>
+              )}
             </button>
             <ProfileDialog open={profileOpen} onOpenChange={(open) => { setProfileOpen(open); if (!open) onNavigate?.(); }} />
           </>
         ) : (
-          <Link to="/signin" onClick={onNavigate}>
-            <Button variant="outline" size="sm" className="w-full">
-              <LogIn /> Sign in
+          <Link to="/signin" onClick={onNavigate} title={collapsed ? "Sign in" : undefined} aria-label={collapsed ? "Sign in" : undefined}>
+            <Button variant="outline" size="sm" className={cn("w-full", collapsed && "px-0")}>
+              <LogIn /> {!collapsed && "Sign in"}
             </Button>
           </Link>
         )}
