@@ -186,11 +186,12 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [ ] Will leakage tests on every battle payload.
 
 ### A17 UI port from `arcanis-ui` (after A12, before A16)
-- [ ] Port the `arcanis-ui` visual system (black and gold tokens, fonts, panels, element icons, bars, spell card, app shell) into `phase0/client`.
-- [ ] Restyle every phase0 page (Home, SignIn, Create, Library, ShareSpell, Reviews, AdminMetrics, fake-door tiles) on that system, keeping the A12 copy rules (no Will numbers, no Tower, no XP).
-- [ ] Mobile at 375px with no horizontal scroll; light/dark not required (black and gold default).
-- [ ] Delete `arcanis-ui/` once ported.
-- **Done when:** every phase0 screen uses the arcanis-ui components and tokens, `pnpm check` is clean, and the creation flow still passes the A15 end-to-end test.
+- [x] Ported the `arcanis-ui` system into `phase0/client`: tokens and panels (already shared), app shell (sidebar, mobile drawer, page transitions) with Phase 1a nav only (no Tower, Quests, Circle or XP from the prototype), `Page` frame, the design's spell card (name and flavor only on the face, tier by ornament not colour, accent from the art), gold "A" favicon. The prototype's icons were generic template assets and were not used. (2026-10-10)
+- [x] Home, Lab, Spellbook, Reviews, share page and both admin pages on the shell; sign-in pages stay standalone. (2026-10-10)
+- [x] Phone (375 px) and desktop screenshots of every page via Edge: no horizontal scroll. Real browser end-to-end: sign-in by code, creation, name gate, share link with `?ref=`, stranger opens it and the referral cookie is captured (first card 22 s after opening sign-in). (2026-10-10)
+- [x] `arcanis-ui/` deleted. (2026-10-10)
+- Found and fixed while verifying: share pages rendered blank (stale production build served in dev; and in production Render's asset hashes could differ from Vercel's), so Vercel now rewrites `/spell/:id` to Render only for link-preview bots and people get the SPA (`/s/:id` alias as a safety net); spells without art served an SVG preview that Discord, X and WhatsApp ignore, now a composed 1200x630 JPEG; the finished-card text counted the spent Spark twice; the hero promised battles.
+- **Done when:** every phase0 screen uses the arcanis-ui components and tokens, `pnpm check` is clean, and the creation flow still passes the A15 end-to-end test. Met (end-to-end run above; A15 adds the committed automated version).
 
 ### B9 Battle release (1)
 - [ ] Re-enable Trap and Charged in creation; battle analytics events; full Gate 1 tracking.

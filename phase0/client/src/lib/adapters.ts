@@ -1,15 +1,13 @@
 import type { PublicSpell } from "@shared/spell-view";
+import { ELEMENT_COLORS } from "@shared/taxonomy";
 
 export type Phase0Spell = PublicSpell;
 
 const STRAIN_LABEL = { light: "Light", moderate: "Moderate", heavy: "Heavy" } as const;
 
-const ELEMENT_ACCENTS: Record<string, string> = {
-  fire: "#d4713a",
-  water: "#6da2c9",
-  wind: "#8d8a80",
-  earth: "#6e9a5f",
-};
+const ELEMENT_ACCENTS: Record<string, string> = Object.fromEntries(
+  Object.entries(ELEMENT_COLORS).map(([el, c]) => [el.toLowerCase(), c.accent])
+);
 
 function getElementalArtFallback(element: string): string {
   const el = (element || "arcane").toLowerCase();

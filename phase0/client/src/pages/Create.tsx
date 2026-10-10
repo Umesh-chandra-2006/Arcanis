@@ -329,7 +329,7 @@ export default function Create() {
                   ✨ Your spell is ready!
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Forged from 1 Spark. {balance - 1} remaining.
+                  Forged from 1 Spark. {balance} remaining.
                 </p>
               </div>
 

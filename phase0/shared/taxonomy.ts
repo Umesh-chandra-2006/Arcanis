@@ -90,3 +90,19 @@ export function strainOf(tier: Tier, willCostAvg: number): Strain {
   if (t < 2 / 3) return "moderate";
   return "heavy";
 }
+
+/** Element tints for placeholders only; real cards take their accent from the art (Build Plan 7.6). */
+export const ELEMENT_COLORS: Record<Element, { accent: string; dark: string }> = {
+  Fire: { accent: "#d4713a", dark: "#3a1d0d" },
+  Water: { accent: "#6da2c9", dark: "#0d1d33" },
+  Wind: { accent: "#a8b8c8", dark: "#141c26" },
+  Earth: { accent: "#6e9a5f", dark: "#1a2410" },
+  Lightning: { accent: "#d8c46a", dark: "#2a240c" },
+  Void: { accent: "#7a6fb0", dark: "#120f22" },
+  Arcane: { accent: "#9b7fd9", dark: "#1b1230" },
+  Light: { accent: "#e8d9a0", dark: "#2a2412" },
+  Shadow: { accent: "#6b6880", dark: "#0c0b12" },
+  Nature: { accent: "#7fb069", dark: "#14220f" },
+  Frost: { accent: "#9fd3e6", dark: "#0e1e26" },
+  Chaos: { accent: "#c0476b", dark: "#260b14" },
+};

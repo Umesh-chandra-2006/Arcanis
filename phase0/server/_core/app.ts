@@ -13,6 +13,9 @@ import { getSpellRow, isTakenDown } from "../spell-pipeline";
 import { ENV } from "./env";
 import { findProjectRoot } from "./paths";
 import { deviceCookieMiddleware } from "./cookies";
+import sharp from "sharp";
+import { ogVariant } from "../spell-images";
+import { ELEMENT_COLORS, type Element } from "../../shared/taxonomy";
 import { checkTextModels } from "../providers/check";
 import { startImageRetryLoop } from "../image-retry";
 
@@ -103,9 +106,11 @@ export async function registerOgRoutes(app: Express) {
         return res.send(buffer);
       }
 
-      const svg = placeholderSvg(spell.element);
-      res.set({ "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=3600" });
-      return res.send(svg);
+      // No art yet: still a 1200x630 JPEG, since preview crawlers ignore SVG.
+      const art = await sharp(Buffer.from(placeholderSvg(spell.element))).png().toBuffer();
+      const jpeg = await ogVariant(new Uint8Array(art), { name: spell.name, element: spell.element, accent: "#c9a24b" });
+      res.set({ "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=3600" });
+      return res.send(jpeg);
     } catch (error) {
       console.error("[OG Image] error:", error);
       return res.status(500).send("Error");
@@ -149,13 +154,7 @@ export async function registerOgRoutes(app: Express) {
 }
 
 function placeholderSvg(element: string): string {
-  const colors: Record<string, [string, string]> = {
-    Fire: ["#d4713a", "#3a1d0d"],
-    Water: ["#6da2c9", "#0d1d33"],
-    Earth: ["#6e9a5f", "#1a2410"],
-    Wind: ["#a8b8c8", "#141c26"],
-  };
-  const [accent, dark] = colors[element] ?? ["#c9a24b", "#14141c"];
+  const { accent, dark } = ELEMENT_COLORS[element as Element] ?? { accent: "#c9a24b", dark: "#14141c" };
   return `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
   <defs>
     <radialGradient id="g" cx="50%" cy="45%" r="75%">

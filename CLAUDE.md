@@ -53,7 +53,6 @@ Architecture is a modular monolith (Build Plan v2.2 Section 3): one deployable w
 | Path | What it is |
 |---|---|
 | `phase0/` | **Canonical app (decision H1). Stays at `phase0/` permanently (F9); never promote it to the root.** Express + tRPC 11 + React 19 + Vite 8 + Tailwind 4, Drizzle on MySQL, tables prefixed `p0_`. Magic link (plus a password step that is being removed), Spark balance, Power Budget stat engine, LLM writes flavor text only, FLUX art, public share page with OG tags, reviews, admin metrics. All work lands here. |
-| `arcanis-ui/` | UI design reference (black and gold dashboard, game components). Task A17 ports its look into `phase0/client`; delete the folder once A17 is done. |
 | branch `archive/root-prototype` | The old root full-game prototype (Manus template, Hearth, socket battles). Removed from the working tree in A0. Never extend it; mine it for ideas only. |
 | `.github/workflows/ci.yml` | CI: install, type-check, tests (against a MySQL service container), build, for `phase0/`. |
 | `docs/` | Project docs (see Source of truth). `docs/status_report.md` is the latest audit; `docs/tasks.md` is the Phase 0 to 1 task checklist. |
@@ -122,3 +121,4 @@ Reports go to `tools/balance-harness/reports/` and `tools/cost-report/reports/`.
 - Spark operations go through `phase0/server/spark.ts` only (being rewritten as an append-only ledger in task A3; the current version has a double-spend race); analytics through `trackEvent()` in `phase0/server/analytics.ts`.
 - Drizzle: camelCase in TS; snake_case column names.
 - Prettier config at root (`.prettierrc`).
+- UI: black and gold `arcanis-ui` system (ported in A17; the folder is deleted, history has it). Pages render inside `components/layout/app-shell.tsx` with `components/layout/page.tsx`; spell cards show art, name and one line of flavor only, tier by frame ornament, accent from the art's colour.

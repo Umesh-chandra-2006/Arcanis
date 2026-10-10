@@ -14,7 +14,8 @@ export default defineConfig({
     environment: "node",
     setupFiles: ["server/test/setup-env.ts"],
     globalSetup: ["server/test/global-setup.ts"],
-    testTimeout: 30_000,
+    // DB tests do many round-trips to a remote test database (TiDB, us-east-1).
+    testTimeout: 90_000,
     hookTimeout: 120_000,
     // DB tests share one test database; run files one at a time.
     fileParallelism: false,
