@@ -2,6 +2,7 @@ import { ENV } from "../_core/env";
 import type { CallContext, ImageProvider, ImageRequest, ImageResult } from "../../shared/providers";
 import { AllProvidersFailedError, ProviderError, providerFetch } from "./errors";
 import { imageCostUsd } from "./pricing";
+import { FakeImageProvider, fakeProvidersAllowed } from "./fake";
 import { withTelemetry } from "./telemetry";
 
 const TIMEOUT_MS = 60_000;
@@ -92,7 +93,9 @@ export class HuggingFaceImageProvider implements ImageProvider {
 export function imageProviders(): ImageProvider[] {
   const providers: ImageProvider[] = [];
   for (const name of ENV.imageProviders.split(",").map((s) => s.trim())) {
-    if (name === "cloudflare" && ENV.cloudflareAccountId && ENV.cloudflareAiToken) {
+    if (name === "fake" && fakeProvidersAllowed()) {
+      providers.push(new FakeImageProvider());
+    } else if (name === "cloudflare" && ENV.cloudflareAccountId && ENV.cloudflareAiToken) {
       providers.push(new CloudflareImageProvider(ENV.cloudflareAccountId, ENV.cloudflareAiToken));
     } else if (name === "huggingface" && ENV.imageGenApiKey) {
       providers.push(new HuggingFaceImageProvider(ENV.imageGenApiKey));

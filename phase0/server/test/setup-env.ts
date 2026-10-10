@@ -35,6 +35,11 @@ if (process.env.LIVE_PROVIDERS !== "1") {
   process.env.EMAIL_PROVIDER = "none";
   process.env.MODERATION_PROVIDER = "local";
   process.env.STORAGE_PROVIDER = "inline";
+  // Deterministic providers for code paths that do not inject their own.
+  process.env.SPELL_LLM_PROVIDER = "fake";
+  process.env.SPELL_LLM_FALLBACK_PROVIDERS = "";
+  process.env.SEMANTIC_CHECK_PROVIDERS = "fake";
+  process.env.IMAGE_PROVIDER = "fake";
 }
 
 if (!decision.ok && process.env.REQUIRE_TEST_DB === "1") {

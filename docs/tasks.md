@@ -134,11 +134,13 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** the Phase 0 exit criteria in Phase Plan v2.2 Section 4 are met. Met, except image cost and latency, which stay estimates until Cloudflare image keys exist (re-run then).
 
 ### A15 Hardening (1.5)
-- [ ] End-to-end creation test (signup by code, create, share, preview).
-- [ ] Failure injection: text provider down, image provider down, moderation reject, spend cap hit; Spark always refunded where the user did not cause it.
-- [ ] Abuse tests: disposable emails, same-device grant farming, rate limits.
-- [ ] OG check on real platforms; Will leakage scan of all payloads.
-- **Done when:** all Phase 1a DoD items in Build Plan v2.1 Section 1 pass.
+- [x] End-to-end test over real HTTP (`server/e2e.test.ts`): sign-up by code, httpOnly session, creation through the real pipeline (test providers), name, referral code, bot OG page and 1200x630 JPEG, stranger's referral capture, preview and CTA, attributed signup, logout revocation. Test-only fake providers (`server/providers/fake.ts`) refuse to load outside `NODE_ENV=test`. (2026-10-10)
+- [x] Failure injection, each with Spark refunded unless the player caused it: text providers down or out of quota, rate-limited (backoff), image provider down or every image rejected (placeholder), moderation outage (refund, nothing unchecked), moderation reject (input: Spark kept and strike; output: regenerate), spend cap and creation cap, storage exception (`server/spell-pipeline.test.ts`, `server/spend-breaker.test.ts`). (2026-10-10)
+- [x] Abuse: disposable emails refused, same-device and same-network grant farming, rate limits on sign-in, codes, reports and analytics, abuse strikes to restriction and ban. (2026-10-10)
+- [x] Will leakage scan of every spell-returning payload (`server/leakage.test.ts`). (2026-10-10)
+- [x] Production CSP on Render (helmet, explicit directives) and security headers on Vercel (`vercel.json`: CSP, nosniff, referrer policy, HSTS); production build verified to have no inline scripts. Stale password-era `e2e.mjs` removed. (2026-10-10)
+- [ ] OG check on real platforms (Discord, X, WhatsApp): needs the deployed public domain; moved to A16.
+- **Done when:** all Phase 1a DoD items in Build Plan v2.2 Section 1 pass. Met in tests and the local browser run; the platform OG check is the last open item and belongs to the deploy (A16).
 
 ### A16 Soft launch
 - [ ] Redeploy with the env vars from A10.

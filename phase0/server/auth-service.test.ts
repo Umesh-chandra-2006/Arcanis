@@ -127,6 +127,10 @@ describeDb("identity (Build Plan 16)", () => {
     await expect(verifySignInLink(linkFrom(sent.devUrl!), device())).rejects.toBeInstanceOf(AuthError);
   });
 
+  it("refuses disposable email domains before sending anything", async () => {
+    await expect(requestSignIn("farm123@mailinator.com", req())).rejects.toMatchObject({ code: "bad_email" });
+  });
+
   it("rate-limits repeated requests for one email", async () => {
     const email = freshEmail();
     await requestSignIn(email, req());

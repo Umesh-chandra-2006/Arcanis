@@ -95,8 +95,8 @@ export async function registerOgRoutes(app: Express) {
         return res.redirect(302, shareImage);
       }
 
-      if (spell.imageUrl.startsWith("data:")) {
-        const [header, payload] = spell.imageUrl.split(",");
+      if (shareImage.startsWith("data:")) {
+        const [header, payload] = shareImage.split(",");
         const mime = header.match(/^data:([^;]+)/)?.[1] ?? "image/png";
         const buffer = Buffer.from(payload ?? "", "base64");
         res.set({
@@ -190,7 +190,24 @@ export async function startApp(app: Express) {
   }
 
   app.use(helmet({
-    contentSecurityPolicy: ENV.isProduction ? undefined : false,
+    // Explicit policy: the default would block Cloudinary art and Google Fonts on
+    // pages Render serves itself. Inline scripts stay blocked; the bot OG page's
+    // redirect script is a convenience and its plain link still works without it.
+    contentSecurityPolicy: ENV.isProduction
+      ? {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+            imgSrc: ["'self'", "data:", "https://res.cloudinary.com"],
+            connectSrc: ["'self'"],
+            frameAncestors: ["'none'"],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+          },
+        }
+      : false,
     crossOriginEmbedderPolicy: false,
     crossOriginResourcePolicy: false,
     crossOriginOpenerPolicy: false,
@@ -228,7 +245,7 @@ export async function startApp(app: Express) {
 
   if (ENV.isProduction) {
     serveStatic(app);
-  } else {
+  } else if (!ENV.isTest) {
     await setupVite(app, server);
   }
 

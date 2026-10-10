@@ -4,6 +4,7 @@ import { AllProvidersFailedError, ProviderError, providerFetch } from "./errors"
 
 export { AllProvidersFailedError };
 import { textCostUsd } from "./pricing";
+import { FakeTextProvider, fakeProvidersAllowed } from "./fake";
 import { withTelemetry } from "./telemetry";
 
 const ENDPOINTS: Record<string, string> = {
@@ -97,6 +98,11 @@ export function parseTextProviders(list: string): TextProvider[] {
     const colon = entry.indexOf(":");
     const name = colon === -1 ? entry : entry.slice(0, colon);
     const model = colon === -1 ? defaultModel(name) : entry.slice(colon + 1);
+    if (name === "fake") {
+      if (fakeProvidersAllowed() && !seen.has("fake")) providers.push(new FakeTextProvider());
+      seen.add("fake");
+      continue;
+    }
     const endpoint = ENDPOINTS[name];
     const key = keyFor(name);
     if (!endpoint || !model) {

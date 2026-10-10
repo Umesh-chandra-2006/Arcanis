@@ -15,6 +15,21 @@ export function buildConfig(origin) {
   return {
     buildCommand: "pnpm build:client",
     outputDirectory: "dist/public",
+    headers: [
+      {
+        source: "/(.*)",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https://res.cloudinary.com; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'",
+          },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+        ],
+      },
+    ],
     // Order matters: API and share routes before the SPA catch-all.
     rewrites: [
       { source: "/api/:path*", destination: `${origin}/api/:path*` },

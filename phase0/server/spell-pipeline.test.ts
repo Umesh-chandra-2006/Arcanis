@@ -225,6 +225,25 @@ describeDb("creation pipeline", () => {
     expect((await getBreakerStatus()).reason).not.toBe("provider_quota");
   });
 
+  it("a moderation outage refunds and never lets content through unchecked", async () => {
+    const user = await funded(1);
+    let textCalls = 0;
+    const result = await createSpell(user.id, INPUT, {
+      deps: deps({
+        moderate: async () => {
+          throw new Error("moderation provider down");
+        },
+        text: async () => {
+          textCalls++;
+          return textReply(goodJson());
+        },
+      }),
+    });
+    expect(result).toMatchObject({ success: false, code: "generation_failed" });
+    expect(textCalls).toBe(0);
+    expect((await getSparkBalance(user.id)).balance).toBe(1);
+  });
+
   it("refuses a restricted account without reserving Spark", async () => {
     const user = await funded(2);
     await (await getDb())!.update(p0Users).set({ restrictedUntil: new Date(Date.now() + 3600_000) }).where(eq(p0Users.id, user.id));
