@@ -1,10 +1,10 @@
 # Arcanis: Phase 0 to Phase 1 Tasks
 
-**Source:** Build Plan v2.2 Section 15, decisions of 2026-10-09 and 2026-10-10 (see `PROGRESS.md`). If this file and the Build Plan disagree, the Build Plan wins; flag the conflict.
+**Source:** Build Plan v2.4 Section 15, decisions of 2026-10-09 to 2026-10-11 (see `PROGRESS.md`). If this file and the Build Plan disagree, the Build Plan wins; flag the conflict.
 
 **How to use:** work top to bottom within a track. Tick `[x]` when every acceptance check passes, and note the date and commit in the task line. Estimates are working days. Every task keeps the engineering rules in `CLAUDE.md` (Two-Step Verification and a Spark path on any AI call, auth on any spend path, Will never reaches the client, no em dashes, no secrets in git).
 
-**Status (2026-10-10):** Track A code complete on branch `track-a` (A0 to A15 and A17). A16 is the founder's deploy, following `docs/launch_checklist.md`. Track B not started.
+**Status (2026-10-11):** Track A code complete on branch `track-a` (A0 to A15 and A17), plus the first local test round (T1 to T6, below). Open: T7 (founder re-test), T8 (suggestions the founder picks), A16 (the founder's deploy, `docs/launch_checklist.md`). Track B not started; B2 was done early.
 
 ---
 
@@ -145,10 +145,25 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 ### A16 Soft launch
 - [x] Production build verified locally (`NODE_ENV=production`, test database): health, SPA and assets, CSP, share page with OG tags and working assets, SPA fallback, API with Secure cookies. (2026-10-10)
 - [x] Step-by-step runbook for the founder: `docs/launch_checklist.md` (keys, Render, Vercel, keep-awake monitor, admin role, deploy checks, cohort, rollback). (2026-10-10)
-- [ ] Founder: Cloudflare image keys, email fix, Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, merge `track-a`, redeploy.
+- [ ] Founder: Render's outbound IPs added to Brevo (the founder's own IP is already authorised), Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, admin role for the founder's account, merge `track-a`, redeploy. (Cloudflare image keys are no longer needed: element art.)
 - [ ] OG check on Discord, X and WhatsApp on the public domain.
 - [ ] Small invited cohort; watch cost, quota and funnel dashboards for a week; then open.
 - [ ] Record the Gate 1a evaluation date (4 to 6 weeks out).
+
+---
+
+## First local test round (2026-10-11, founder feedback)
+
+- [x] T1 Optional password sign-in for returning players, to save email quota. Accounts are still created by emailed code or link; salted scrypt; every failure returns the same message (no account enumeration); only failed attempts count toward the lockout. Changes the "no passwords" lock (Master Doc v7.4). (2026-10-11, `55ef642`)
+- [x] T2 Home tab: signed-in players get a real home (forge prompt, latest spells, base spells) instead of a redirect to the Lab. (2026-10-11)
+- [x] T3 Spellbook: "My spells" and "Base spells" sections with filters for source, element, category and tier. The 36 base spells of Master Doc 5.6 are seeded in the test and production databases (`pnpm seed`, idempotent). Tier per spell is assumed (Basic, Advanced, Mega in list order): founder to confirm. (2026-10-11)
+- [x] T4 Signup grant 3 Spark (was 5). (2026-10-11)
+- [x] T5 Weak-feeling results: Layer 1 commits stats to the described identity (founder's "legendary black dragon flame" prompt went from damage 20 to 30 to 40 to 40, heavy strain); display-only sealed potential (`potential_tier`, never affects stats or tier); stat bars against the tier ceiling; lore and full flavor on the reveal and share pages. (2026-10-11)
+- [x] T6 One-step skippable welcome (mage name, optional password, update emails) and a profile window from the sidebar with Profile, Spark, Invite, Updates and Security tabs. (2026-10-11)
+- [x] Also on founder decision: element art as the card face with no image generation (`CARD_ART=element`, `shared/element-art.ts`); Spark pack prices hidden. (2026-10-10, `b7c9ccd`)
+- [ ] T7 Founder re-tests T1 to T6 locally (the dev server was stopped before this could happen) and reports what is wrong or missing.
+- [ ] T8 Build the Phase 0 suggestions the founder picks: (a) "refine this spell" for 1 Spark, (b) example prompts in the Lab, (c) try-before-signup on the landing page, (d) public "newest spells" wall, (e) one update email to subscribers. Recommended first: (a) and (b). Each AI path needs Two-Step Verification and a Spark path.
+- **Done when:** the founder has re-tested and signed off, and the picked suggestions are built with tests.
 
 ---
 
@@ -166,7 +181,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [ ] Scenario tests per mechanic (Build Plan Section 16).
 
 ### B2 Platform spells (1)
-- [ ] Seed the 36 spells exactly as Master Doc 5.6 (Conflagration Wave: Attack, Continuous), stats inside caps.
+- [x] Seed the 36 spells exactly as Master Doc 5.6 (Conflagration Wave: Attack, Continuous), stats inside caps. Done early in T3 (2026-10-11); tier per spell awaits founder confirmation.
 
 ### B3 Server-scored minigames (3 to 4)
 - [ ] Six element-group minigames; server-issued seed and deadline; client sends raw input events; server replays and scores; implausible input scores as minimum; auto-resolve under 5 seconds.

@@ -2,7 +2,7 @@
 
 **Read this first in every new session.** It is the single source for "where is the project right now". Update it at the end of every working session: change the snapshot, record decisions, tick tasks, and add a line to the session log. Keep it short; detail belongs in `docs/`.
 
-**Last updated:** 2026-10-10
+**Last updated:** 2026-10-11
 
 ---
 
@@ -10,17 +10,28 @@
 
 | Area | State |
 |---|---|
-| Docs | Master Doc **v7.4**, Phase Plan **v2.2**, Build Plan **v2.4**. Audit `docs/status_report.md`; cost sheet `docs/cost_sheet.md`; quotas `docs/provider_quotas.md`; launch runbook `docs/launch_checklist.md`. |
+| Docs | Master Doc **v7.4**, Phase Plan **v2.2**, Build Plan **v2.4**. Cost sheet `docs/cost_sheet.md`; quotas `docs/provider_quotas.md`; launch runbook `docs/launch_checklist.md`; task checklist `docs/tasks.md`. `docs/status_report.md` is the 2026-10-09 audit and is now history. |
 | Canonical codebase | **`phase0/`** (stays there, F9). Root prototype archived on branch `archive/root-prototype`. `arcanis-ui/` ported (A17) and deleted. |
-| Branch | All work on **`track-a`**, not yet merged or pushed. CI defined, not yet run. |
-| Phase 0 (measure) | **Done** (A14): about $0.001 to $0.003 per creation at list price; 2c 1.7%; moderation false positives 0 of 120. Image numbers are estimates until Cloudflare keys exist. |
-| Phase 1a (creation soft launch) | **Code complete** (A0 to A15, A17). Waiting on founder deploy steps (A16). |
+| Branch | All work on **`track-a`** (last commit `55ef642` plus the handover commit). Not pushed, not merged into `main`. CI defined, never run. |
+| Phase 0 (measure) | **Done** (A14): about $0.001 to $0.003 per creation at list price; 2c 1.7%; moderation false positives 0 of 120. |
+| Phase 1a (creation soft launch) | **Code complete** (A0 to A15, A17) plus the first local test round (T1 to T6 in `docs/tasks.md`). Waiting on the founder: a second local test pass, then the deploy (A16). |
 | Phase 1b (battles) | Not started (Track B). |
-| Production database | Migrated to 0015 (backups in `D:\Arcanis-backups`). The currently deployed old app is incompatible with it until the redeploy. |
-| Tests | phase0: 112 tests across 16 files, all passing (test DB `arcanis_test`); `pnpm check` clean. |
+| Production database | Migrated to **0016**; the 36 base spells are seeded there; backups in `D:\Arcanis-backups`. **The currently deployed app is incompatible with it until `track-a` is redeployed.** |
+| Test database | `arcanis_test` on the same cluster, also at 0016 with the 36 base spells. |
+| Tests | phase0: **115 tests across 16 files, all passing**; `pnpm check` clean. |
+| Providers | All free tier. Text: Groq `openai/gpt-oss-120b`, Gemini flash-lite fallback. Moderation: OpenAI omni. Email: Brevo (IPs authorised for the founder's machine; Render's outbound IPs still to add). Storage: Cloudinary. **No image generation**: card faces are element art (`CARD_ART=element`). |
+| Local dev server | Not running. It was stopped twice by Claude Code's low-memory watchdog; the founder's machine has about 1 GB free. Prefer the founder running it in their own terminal (command in "Exact next step"). |
 
 ### Exact next step
-Founder follows `docs/launch_checklist.md`: Cloudflare image keys, email fix (Brevo IPs or Resend domain), Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, merge `track-a`, redeploy, OG check on Discord/X/WhatsApp, invite a small cohort. Founder also sets the real Spark pack sizes (placeholders 10/30/90 in `SPARK_PACKS`).
+1. **Founder tests the 2026-10-11 changes locally** (they were built but the server was stopped before the founder could try them): password sign-in, the welcome step, the Home tab, the Spellbook with base spells and filters, a grand spell description (should give top-of-range stats and the "sealed" note), the profile window. To run against the test database, in PowerShell:
+   ```
+   cd D:\Arcanis\phase0
+   $env:DATABASE_URL = (Select-String -Path ..\.env -Pattern '^TEST_DATABASE_URL=').Line -replace '^TEST_DATABASE_URL=', ''
+   pnpm dev
+   ```
+   Without the second line `pnpm dev` uses the production database.
+2. **Founder answers the open questions** (list in "Still open" below).
+3. **Then the deploy**, following `docs/launch_checklist.md` (A16).
 
 ## 2. Decisions (2026-10-09, founder)
 
@@ -82,25 +93,19 @@ Founder follows `docs/launch_checklist.md`: Cloudflare image keys, email fix (Br
 | F11 | Lemon Squeezy parked until after the soft launch. |
 
 ### Still open (needs founder)
-1. `OPENAI_API_KEY` in `.env` before A6 (moderation).
-2. Fusion Spark cost listed in Phase 0 scope while Fusion is V2 (low priority).
-3. Watch item: free-tier quotas (especially Hugging Face FLUX credits) may cap daily creations below soft-launch demand; A2 audit reports it before A16.
+1. **Base spell tiers:** the 36 base spells are seeded as each element's Basic, Advanced and Mega spell in Master Doc 5.6 list order, because the doc states no tier per spell. Confirm or correct.
+2. **Phase 0 suggestions, none built yet:** (a) a "refine this spell" button for 1 Spark, (b) clickable example prompts in the Lab, (c) try-before-signup on the landing page, (d) a public "newest spells" wall, (e) one update email to subscribers before battles ship. Recommended first: (a) and (b). Founder to pick.
+3. **Spark pack sizes:** 10, 30 and 90 are placeholders in `SPARK_PACKS`; prices are hidden by founder decision, so this can wait.
+4. **Deploy inputs:** the Render service URL (for `pnpm vercel:config`), Render's outbound IPs added to Brevo, `FOUNDER_ALERT_EMAIL`, and which email should be made admin.
+5. Fusion Spark cost listed in Phase 0 scope while Fusion is V2 (low priority, doc-only).
 
----
+## 3. Task List
 
-## 3. Task List (proposed, awaiting go-ahead)
+Checklist with acceptance checks: `docs/tasks.md`. Build order: Build Plan v2.4 Section 15.
 
-Full table with estimates: Build Plan v2.1 Section 15. Checklist with acceptance checks: `docs/tasks.md` (tick tasks there).
-
-**Track A, soft-launch blockers (in order, about 22 to 25 days):** A0 housekeeping, archive, test DB, CI · A1 DB host · A2 provider interfaces + cost telemetry + model-ID check · A3 Spark ledger rewrite + weekly allowance · A4 spend breaker · A5 identity (code, no passwords, cookie, no enumeration) · A6 moderation 2b/2c + reviews + admin queue · A7 hybrid Power Budget + 12 elements + Drain · A8 harness skeleton + corpus + cost-report · A9 object storage + OG 1200x630 · A10 share rewrites + referral · A11 analytics hardening + Gate 1a metrics · A12 copy and flow (Tower, Will on card, strain descriptor, onboarding, research timer) · A13 fake door · A14 corpus run + cost sheet · A15 hardening · A16 soft launch.
-
-**Track B, battles (parallel after A0 to A3, about 27 to 30 days):** B1 engine · B2 36 platform spells · B3 server-scored minigames · B4 piloted sampling · B5 snapshots, vector, piloting, matchmaking, bot · B6 battle UI + Will pools · B7 persistence + rematch · B8 harness battles + Will tuning · B9 re-enable Trap and Charged.
-
-**Track B also starts with B0** (new DB host, Cloudinary to R2).
-
-**Founder actions:** F1 to F11 closed 2026-10-10. Remaining: `OPENAI_API_KEY`, and creating the keep-awake monitor at A16.
-
----
+- **Track A (Phase 1a):** A0 to A15 and A17 done. A16 (soft launch) is prepared; the remaining steps need the founder's accounts.
+- **First local test round (2026-10-11):** T1 to T6 done; T7 (founder re-test) and T8 (chosen suggestions) open.
+- **Track B (Phase 1b battles):** not started. Begins with B0 (new database host, Cloudinary to R2). B2 (seed the 36 platform spells) was done early.
 
 ## 4. Session Log
 
@@ -110,5 +115,6 @@ Full table with estimates: Build Plan v2.1 Section 15. Checklist with acceptance
 | 2026-10-09 | Decisions | Founder decided A to H. Updated Master Doc to v7.1, Phase Plan to v2.1, Build Plan to v2.1 (with Track A/B build order), handover.md status, CLAUDE.md locked items and repo specifics, this file. Found DB host is TiDB Cloud. Could not check `VITE_PUBLIC_URL`. No code changed; waiting for go-ahead. |
 | 2026-10-09 | Wrap | Created `docs/tasks.md` (Phase 0 to 1 checklist). Updated this file and CLAUDE.md. Committed all docs. |
 | 2026-10-10 | Track A | On branch `track-a`: A0 to A13 done and committed (see docs/tasks.md). A17 UI port in progress (shell, card, pages done; screenshot-verified at 375px and desktop). Share-page fix: Vercel sends only preview bots to Render; people get the SPA. A14 corpus run was running in the background; rerun `pnpm corpus:run` then `pnpm cost-report --test --since <start> --write` for the cost sheet. Left: A14 sheet, A15 hardening, A16 launch (needs Cloudflare image keys, email fix, Render URL, redeploy), A17 finish and delete arcanis-ui. |
+| 2026-10-11 | First local test and handover | Founder tested locally and asked for six changes, all built (T1 to T6): optional password sign-in (changes the no-passwords lock), signed-in Home, Spellbook with the 36 base spells and filters, signup grant 3, stronger Layer 1 stat guidance plus display-only sealed potential, one-step welcome and a five-tab profile window. Also: element art replaced generated images, pack prices hidden. Master Doc v7.4, Build Plan v2.4. Production migrated to 0016 and seeded. 115 tests passing. The dev server was stopped by the low-memory watchdog before the founder re-tested. Session handed over. |
 | 2026-10-10 | Track A finish | A14 corpus run and cost sheet (found and fixed: hate and real-person prompts passed moderation), A17 UI port and arcanis-ui deleted (found and fixed: blank share pages, SVG previews ignored by crawlers), A15 HTTP end-to-end test and CSP, A16 production smoke test and launch runbook. 112 tests passing. |
 | 2026-10-10 | Founder actions | Closed F1 to F11. Master Doc v7.2, Phase Plan v2.2, Build Plan v2.2; tasks.md (A1 now backup, A2 quota audit, A4 creation limit, A9 Cloudinary, new B0); status_report.md disclaimer that `phase0/` stays. No code changed. |
