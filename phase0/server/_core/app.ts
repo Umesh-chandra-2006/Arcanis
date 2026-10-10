@@ -16,6 +16,7 @@ import { deviceCookieMiddleware } from "./cookies";
 import sharp from "sharp";
 import { ogVariant } from "../spell-images";
 import { ELEMENT_COLORS, type Element } from "../../shared/taxonomy";
+import { elementArtSvg } from "../../shared/element-art";
 import { checkTextModels } from "../providers/check";
 import { startImageRetryLoop } from "../image-retry";
 
@@ -107,7 +108,7 @@ export async function registerOgRoutes(app: Express) {
       }
 
       // No art yet: still a 1200x630 JPEG, since preview crawlers ignore SVG.
-      const art = await sharp(Buffer.from(placeholderSvg(spell.element))).png().toBuffer();
+      const art = await sharp(Buffer.from(elementArtSvg(spell.element, 630, 630))).png().toBuffer();
       const jpeg = await ogVariant(new Uint8Array(art), { name: spell.name, element: spell.element, accent: "#c9a24b" });
       res.set({ "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=3600" });
       return res.send(jpeg);
@@ -178,7 +179,7 @@ export async function startApp(app: Express) {
     console.warn("[Database] Not initialized; DB-backed routes will fail. Check DATABASE_URL.");
   }
 
-  if (!ENV.isTest && db) startImageRetryLoop();
+  if (!ENV.isTest && db && ENV.cardArt === "generated") startImageRetryLoop();
 
   if (!ENV.isProduction && !ENV.isTest) {
     // Non-blocking live check so a retired model ID shows up loudly in dev.

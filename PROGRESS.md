@@ -47,6 +47,14 @@ Founder follows `docs/launch_checklist.md`: Cloudflare image keys, email fix (Br
 | Small | Blockers: images to object storage, 1200x630 OG variant, vercel.json share fix, live model-ID check. Not blocking: delete dead template code, remove Hearth. |
 | Docs | Onboarding goes straight to creation; Spell XP reveal removed; Conflagration Wave = Attack / Continuous. |
 
+### Founder decisions, 2026-10-10 (later)
+
+| Decision | Detail |
+|---|---|
+| No generated art in Phase 0/1a | Cards and share images use element art; `CARD_ART=element` default; FLUX stays behind `CARD_ART=generated`. Cloudflare keys no longer needed for launch. |
+| Pack prices hidden | Fake-door tiles show Spark amounts and "coming soon" only. |
+| Brevo IPs | Authorised by the founder; verified working (free plan, 300 emails a day). |
+
 ### Founder actions closed (2026-10-10)
 
 | ID | Decision |

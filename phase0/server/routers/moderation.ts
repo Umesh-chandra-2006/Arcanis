@@ -85,7 +85,7 @@ export const moderationRouter = router({
       const reviewIds = events.filter((e) => e.targetType === "review" && e.targetId).map((e) => e.targetId!);
       const spells = spellIds.length
         ? await db
-            .select({ id: p0Spells.id, name: p0Spells.name, flavorText: p0Spells.flavorText, imageUrl: p0Spells.imageUrl, cardImageUrl: p0Spells.cardImageUrl, isPublic: p0Spells.isPublic })
+            .select({ id: p0Spells.id, name: p0Spells.name, element: p0Spells.element, flavorText: p0Spells.flavorText, imageUrl: p0Spells.imageUrl, cardImageUrl: p0Spells.cardImageUrl, isPublic: p0Spells.isPublic })
             .from(p0Spells)
             .where(inArray(p0Spells.id, spellIds))
         : [];

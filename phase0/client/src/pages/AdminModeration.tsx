@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
+import { elementArtDataUri } from "@shared/element-art";
 import { useAuth } from "@/contexts/AuthContext";
 import { Panel } from "@/components/game/panel";
 import { Badge } from "@/components/ui/badge";
@@ -67,9 +68,7 @@ export default function AdminModeration() {
               </div>
               {e.spell && (
                 <div className="mt-3 flex gap-3">
-                  {(e.spell.cardImageUrl || e.spell.imageUrl) && (
-                    <img src={e.spell.cardImageUrl || e.spell.imageUrl} alt="" className="size-20 rounded object-cover" />
-                  )}
+                  <img src={e.spell.cardImageUrl || e.spell.imageUrl || elementArtDataUri(e.spell.element, 80, 80)} alt="" className="size-20 rounded object-cover" />
                   <div className="text-sm">
                     <Link to={`/spell/${e.targetId}`} className="font-serif text-primary underline">{e.spell.name}</Link>
                     {!e.spell.isPublic && <span className="ml-2 text-destructive">(taken down)</span>}

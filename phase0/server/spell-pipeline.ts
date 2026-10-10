@@ -20,6 +20,7 @@ import { semanticCheck as semanticCheckDefault, stripFences, type SemanticCheckR
 import { storeSpellImage as storeSpellImageDefault } from "./spell-images";
 import { addAbuseStrike, canCreate } from "./abuse";
 import { payReferralOnFirstCreation } from "./referrals";
+import { ENV } from "./_core/env";
 import { GENERATION_RETRIES, RESEARCH_EXEMPT_SPELLS, VALIDATION_MESSAGES } from "../shared/constants";
 
 export type CreationErrorCode =
@@ -47,6 +48,8 @@ export interface PipelineDeps {
   storeImage: typeof storeSpellImageDefault;
   now: () => Date;
   sleep: (ms: number) => Promise<void>;
+  /** "element": no generated art (Phase 0/1a); "generated": image providers. */
+  cardArt: "element" | "generated";
 }
 
 export const defaultDeps: PipelineDeps = {
@@ -57,6 +60,7 @@ export const defaultDeps: PipelineDeps = {
   storeImage: storeSpellImageDefault,
   now: () => new Date(),
   sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  cardArt: ENV.cardArt,
 };
 
 /** Wait before retrying Layer 1 when every provider was only throttled (free tiers are per-minute limited). */
@@ -389,7 +393,8 @@ export async function createSpell(
     if (!accepted) return await refund(lastReason);
 
     // ---- Image (never blocks creation; falls back to the placeholder) ----
-    const image = await produceImage(deps, ids, accepted.identity.image_prompt, trace);
+    // Element mode: no generated art, no image calls; the element's art is the face.
+    const image = deps.cardArt === "generated" ? await produceImage(deps, ids, accepted.identity.image_prompt, trace) : null;
     const stored = image ? await deps.storeImage({ userId, runId }, runId, image, { name: data.name, element: data.element }) : null;
 
     // ---- Research timer: first spells skip it ----

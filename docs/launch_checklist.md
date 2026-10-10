@@ -4,15 +4,15 @@ Everything in code is done and tested on branch `track-a` (A0 to A15, A17). Thes
 
 ## 1. Accounts and keys (`.env` locally, the same values in Render)
 
-- [ ] **Images:** Cloudflare dashboard, Workers AI, create an API token with "Workers AI: Read and Edit". Set `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_AI_TOKEN`. Check with `cd phase0 && pnpm providers:check --images`. Without this every card uses the placeholder; the background retry fills art once keys exist.
-- [ ] **Email:** either turn off "Authorised IPs" in Brevo (Settings, Security), or verify a sending domain in Resend and set `RESEND_FROM` to an address on it. Without one of these, sign-in emails reach only the founder's own inbox.
+- [x] **Images:** not needed. Phase 0/1a uses element art as the card face (founder decision 2026-10-10, `CARD_ART=element`).
+- [x] **Email:** Brevo IPs authorised by the founder and verified for local use. For production, also add Render's outbound IPs (service, Connect, Outbound). Alternatively, turn off "Authorised IPs" in Brevo (Settings, Security), or verify a sending domain in Resend and set `RESEND_FROM` to an address on it. Without one of these, sign-in emails reach only the founder's own inbox.
 - [ ] `FOUNDER_ALERT_EMAIL`: where breaker alerts go.
 - [ ] `JWT_SECRET`: a long random value (it peppers sign-in code hashes). Keep the current one if already set.
 
 ## 2. Render (API)
 
 - [ ] Root directory `phase0`. Build command `pnpm install --frozen-lockfile && pnpm build`. Start command `pnpm start`. Health check path `/health`.
-- [ ] Environment: `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET`, all provider keys from `.env.example`, `EMAIL_PROVIDER`, `STORAGE_PROVIDER=cloudinary`, `MODERATION_PROVIDER=openai`, `FRONTEND_URL=https://<public domain>`, `CORS_ALLOWED_ORIGINS=https://<public domain>`, `TRUST_PROXY_HOPS=2`, `DAILY_SPEND_LIMIT_USD=2`, `DAILY_CREATION_LIMIT=50` (raise to 130 once Cloudflare images work), `FOUNDER_ALERT_EMAIL`.
+- [ ] Environment: `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET`, all provider keys from `.env.example`, `EMAIL_PROVIDER`, `STORAGE_PROVIDER=cloudinary`, `MODERATION_PROVIDER=openai`, `FRONTEND_URL=https://<public domain>`, `CORS_ALLOWED_ORIGINS=https://<public domain>`, `TRUST_PROXY_HOPS=2`, `DAILY_SPEND_LIMIT_USD=2`, `DAILY_CREATION_LIMIT=50` (text quotas allow more; raise after the first week), `FOUNDER_ALERT_EMAIL`.
 - [ ] Free instance kept awake (decision F3): cron-job.org or UptimeRobot hitting `https://<render service>/health` every 10 minutes, alerting the founder on downtime. Run no other free Render service on the account.
 
 ## 3. Vercel (client)
@@ -29,7 +29,7 @@ Everything in code is done and tested on branch `track-a` (A0 to A15, A17). Thes
 ## 5. Deploy and verify
 
 - [ ] Merge `track-a` to `main` (CI runs type-check, tests against a MySQL container, build).
-- [ ] Sign up on the public domain with a real inbox; enter the code; create a spell; confirm art appears (or the placeholder, then art within 15 minutes).
+- [ ] Sign up on the public domain with a real inbox; enter the code; create a spell; the card shows its element art.
 - [ ] Paste a share link into Discord, X and WhatsApp: the card (1200x630, spell name, Arcanis frame) must show. This closes the last A15 item.
 - [ ] `/admin/metrics`: breaker open, today's counts move.
 

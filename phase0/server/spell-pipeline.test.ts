@@ -41,6 +41,7 @@ function deps(over: Partial<PipelineDeps> = {}): Partial<PipelineDeps> {
     moderate: async () => pass,
     semantic: async () => ({ pass: true, reasonCode: "ok" }),
     sleep: async () => {},
+    cardArt: "generated",
     ...over,
   };
 }
@@ -242,6 +243,23 @@ describeDb("creation pipeline", () => {
     expect(result).toMatchObject({ success: false, code: "generation_failed" });
     expect(textCalls).toBe(0);
     expect((await getSparkBalance(user.id)).balance).toBe(1);
+  });
+
+  it("element card art (Phase 0/1a default) makes no image calls", async () => {
+    const user = await funded();
+    let images = 0;
+    const result = await createSpell(user.id, INPUT, {
+      deps: deps({
+        cardArt: "element",
+        image: async () => {
+          images++;
+          return fakeImage();
+        },
+      }),
+    });
+    expect(result.success).toBe(true);
+    expect(images).toBe(0);
+    expect(result.spell!.imageUrl).toBe("");
   });
 
   it("refuses a restricted account without reserving Spark", async () => {

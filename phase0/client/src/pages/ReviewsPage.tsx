@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
+import { elementArtDataUri } from "@shared/element-art";
 import { Page } from "@/components/layout/page";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -9,16 +10,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { Panel } from "@/components/game/panel";
 import { Stars } from "@/components/reviews/stars";
 import { Wand2, LogOut } from "lucide-react";
-import { elementAccent } from "@/lib/adapters";
 
 function ReviewThumb({ imageUrl, element, name }: { imageUrl: string; element: string; name: string }) {
-  const accent = elementAccent(element);
-  const src =
-    imageUrl.trim().length > 0
-      ? imageUrl
-      : `data:image/svg+xml;utf8,${encodeURIComponent(
-          `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="96"><rect width="80" height="96" fill="#0f0d18"/><circle cx="40" cy="46" r="30" fill="${accent}" opacity="0.7"/></svg>`
-        )}`;
+  const src = imageUrl.trim().length > 0 ? imageUrl : elementArtDataUri(element, 80, 96);
   return (
     <img
       src={src}

@@ -1,7 +1,12 @@
-# Arcanis: Phase 1 Build Plan v2.2
+# Arcanis: Phase 1 Build Plan v2.3
 
-**Agent-facing implementation document. Companion to Master Documentation v7.2 (the bible) and Phase Plan v2.2.**
+**Agent-facing implementation document. Companion to Master Documentation v7.3 (the bible) and Phase Plan v2.2.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.3 (2026-10-10)
+
+- **Image generation (Section 7.6):** off for Phase 0/1a (`CARD_ART=element`, the default). The pipeline makes no image calls; cards and the 1200x630 share image use the element's art (`shared/element-art.ts`). Generated art, its moderation, storage and background retry stay in the code behind `CARD_ART=generated`.
+- **Fake door (Section 10):** Spark pack tiles show amounts only, no prices.
 
 ## What changed in v2.2 (2026-10-10)
 

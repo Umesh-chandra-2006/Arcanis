@@ -12,13 +12,14 @@ export const SPARK = {
 } as const;
 
 /**
- * Fake-door Spark packs (Phase Plan 5, task A13). Prices from Master Doc 28.3;
- * Spark counts are placeholders (founder to set before Phase 2). Nothing is sold.
+ * Fake-door Spark packs (Phase Plan 5, task A13). Prices are deliberately not
+ * shown yet (founder decision 2026-10-10); Spark counts are placeholders.
+ * Nothing is sold.
  */
 export const SPARK_PACKS = [
-  { id: "small", spark: 10, price: "$2.99" },
-  { id: "medium", spark: 30, price: "$7.99" },
-  { id: "large", spark: 90, price: "$19.99" },
+  { id: "small", spark: 10 },
+  { id: "medium", spark: 30 },
+  { id: "large", spark: 90 },
 ] as const;
 export type SparkPackId = (typeof SPARK_PACKS)[number]["id"];
 

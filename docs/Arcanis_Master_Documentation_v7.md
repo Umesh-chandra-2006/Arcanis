@@ -1,12 +1,21 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.2*
+*Complete Vision Blueprint | Version 7.3*
 
 Author: Umesh Chandra Tirumani
 Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.2 supersedes all prior versions, including v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.3 supersedes all prior versions, including v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.3, WHAT CHANGED FROM v7.2 (2026-10-10)
+
+Founder decisions during local testing preparation:
+
+- **No generated card art in Phase 0/1a (Section 6.5).** The face of every card is its element's art (one designed face per element, with rune rings and the element's glyph); the share image uses the same face. Generated art (FLUX) stays built behind a setting and returns in a later phase. This removes the image provider from the soft launch entirely (no image cost, quota or image moderation).
+- **Spark pack prices are not shown (Section 28.3).** The fake-door tiles show Spark amounts and "coming soon" only.
 
 ---
 

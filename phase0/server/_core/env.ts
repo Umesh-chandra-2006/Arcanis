@@ -31,6 +31,10 @@ export const ENV = {
   openrouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
   openrouterModel: process.env.OPENROUTER_MODEL ?? "google/gemma-4-31b-it:free",
 
+  // Card face: "element" (Phase 0/1a, founder decision 2026-10-10: no generated
+  // art, the element's own art is the face) or "generated" (image providers).
+  cardArt: (process.env.CARD_ART ?? "element") === "generated" ? ("generated" as const) : ("element" as const),
+
   // Image
   imageProviders: process.env.IMAGE_PROVIDER ?? "cloudflare,huggingface",
   imageGenApiKey: process.env.IMAGE_GEN_API_KEY ?? "", // Hugging Face

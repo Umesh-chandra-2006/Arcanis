@@ -53,7 +53,6 @@ export function SparkPacksDialog({
               <Sparkles className="size-4 text-primary" />
               <span className="font-serif text-lg">{pack.spark}</span>
               <span className="text-[11px] text-muted-foreground">Spark</span>
-              <span className="text-xs">{pack.price}</span>
               <span className="mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">Coming soon</span>
             </button>
           ))}
