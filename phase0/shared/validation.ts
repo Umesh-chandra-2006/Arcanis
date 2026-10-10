@@ -11,6 +11,15 @@ export const SpellCreationInputSchema = z.object({
 
 export type SpellCreationInput = z.infer<typeof SpellCreationInputSchema>;
 
+/** A mend (Master Doc 6.7): the change in words. Classification and tier come from the stored spell. */
+export const SpellMendInputSchema = z.object({
+  spellId: z.string().min(1).max(36),
+  note: z.string().trim().min(1).max(500),
+  name: z.string().trim().min(1).max(64).optional(),
+});
+
+export type SpellMendInput = z.infer<typeof SpellMendInputSchema>;
+
 /** Layer 1 output. Stats are checked separately by enforceAllocation (Layer 2a). */
 export const LLMSpellIdentitySchema = z.object({
   flavor_text: z.string().trim().min(1).max(600),

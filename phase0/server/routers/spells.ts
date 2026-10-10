@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
-import { SpellCreationInputSchema } from "../../shared/validation";
+import { SpellCreationInputSchema, SpellMendInputSchema } from "../../shared/validation";
+import { mendSpell } from "../spell-mend";
+import { getStoneBalance } from "../stones";
 import {
   getBaseSpells,
   getFeaturedSpells,
@@ -88,6 +90,32 @@ export const spellsRouter = router({
 
   withdrawQueued: protectedProcedure.input(z.object({ id: z.string().max(36) })).mutation(async ({ ctx, input }) => {
     return { success: await withdrawQueued(ctx.user.id, input.id) };
+  }),
+
+  /** Mending (Master Doc 6.7): refine an own spell into a new linked spell for one Refinement Stone. */
+  mend: protectedProcedure.input(SpellMendInputSchema).mutation(async ({ ctx, input }) => {
+    await trackEvent({ eventType: "mend_started", userId: ctx.user.id, sessionId: ctx.sessionId, metadata: { spellId: input.spellId } });
+    const result = await mendSpell(ctx.user.id, input, { sessionId: ctx.sessionId });
+    const outcome = result.success
+      ? "mend_succeeded"
+      : result.code === "generation_failed"
+        ? "mend_refunded"
+        : result.code === "input_rejected"
+          ? "mend_rejected"
+          : null;
+    if (outcome) {
+      await trackEvent({
+        eventType: outcome,
+        userId: ctx.user.id,
+        sessionId: ctx.sessionId,
+        metadata: result.spell ? { spellId: result.spell.id, refinedFromId: input.spellId } : { code: result.code, refinedFromId: input.spellId },
+      });
+    }
+    return result;
+  }),
+
+  stoneBalance: protectedProcedure.query(async ({ ctx }) => {
+    return { balance: await getStoneBalance(ctx.user.id) };
   }),
 
   mySpells: protectedProcedure.query(async ({ ctx }) => {

@@ -34,7 +34,11 @@ const quantile = (xs: number[], q: number) => {
 };
 
 const finished = runs.filter((r) => r.outcome !== "running");
-const success = finished.filter((r) => r.outcome === "success");
+// Cost is per Spark spent (Phase Plan v2.3): mends add to the total, only creations divide it.
+const success = finished.filter((r) => r.outcome === "success" && r.kind === "creation");
+const mends = finished.filter((r) => r.kind === "mend");
+const mendSuccess = mends.filter((r) => r.outcome === "success");
+const mendIds = new Set(mends.map((r) => r.id));
 const runIds = new Set(finished.map((r) => r.id));
 const runCalls = calls.filter((c) => c.runId && runIds.has(c.runId));
 const successIds = new Set(success.map((r) => r.id));
@@ -57,14 +61,18 @@ const report = `# Cost report
 
 - Database: ${process.argv.includes("--test") ? "test" : "production"}
 - Window: ${since.toISOString()} to ${until.toISOString()}
-- Creations attempted: ${finished.length} (success ${success.length}, refunded ${finished.filter((r) => r.outcome === "refunded").length}, user rejected ${finished.filter((r) => r.outcome === "user_rejected").length}, error ${finished.filter((r) => r.outcome === "error").length})
+- Generations attempted: ${finished.length} (creations succeeded ${success.length}, mends succeeded ${mendSuccess.length} of ${mends.length}, refunded ${finished.filter((r) => r.outcome === "refunded").length}, user rejected ${finished.filter((r) => r.outcome === "user_rejected").length}, error ${finished.filter((r) => r.outcome === "error").length})
 
 ## Gate metrics
 
+Rates below are over every generation, creations and mends together.
+
 | Metric | Value | Target |
 |---|---|---|
-| All-in cost per successful creation (shadow, list price) | ${success.length ? usd(allRunCost / success.length) : "-"} | at or below $0.08 |
-| Cost of successful runs only, per success | ${success.length ? usd(successCost / success.length) : "-"} | |
+| All-in cost per Spark spent: every run, mends included, per successful creation (shadow, list price) | ${success.length ? usd(allRunCost / success.length) : "-"} | at or below $0.08 |
+| Cost of successful creations only, per creation | ${success.length ? usd(successCost / success.length) : "-"} | |
+| Cost per successful mend | ${mendSuccess.length ? usd(runCalls.filter((c) => mendIds.has(c.runId!)).reduce((s, c) => s + c.costEstimateUsd, 0) / mendSuccess.length) : "-"} | |
+| Mends per successful creation | ${success.length ? (mendSuccess.length / success.length).toFixed(2) : "-"} | at most 1 by design |
 | Retry rate (Layer 1 attempts beyond the first) | ${pct(finished.reduce((s, r) => s + Math.max(0, r.attempts - 1), 0), finished.length)} | |
 | Schema failure rate (per Layer 1 response) | ${pct(schemaFailures, layer1Responses)} | |
 | Layer 2a clamp or rescale rate | ${pct(finished.filter((r) => r.layer2aClamped).length, finished.length)} | |

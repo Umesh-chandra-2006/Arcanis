@@ -12,6 +12,15 @@ export const SPARK = {
 } as const;
 
 /**
+ * Refinement Stones (Master Doc v7.6 22.1). Minted only by a Spark-paid
+ * creation that passes verification; spent only on mending.
+ */
+export const STONES = {
+  perCreation: 1,
+  mendCost: 1,
+} as const;
+
+/**
  * Fake-door Spark packs (Phase Plan 5, task A13). Prices are deliberately not
  * shown yet (founder decision 2026-10-10); Spark counts are placeholders.
  * Nothing is sold.
@@ -130,6 +139,10 @@ export const VALIDATION_MESSAGES = {
   INVALID_LLM_OUTPUT: "The forge could not shape that spell. Your Spark was returned; please try again.",
   CONTENT_MODERATED: "That description can't be forged. Please rephrase it.",
   INPUT_REJECTED: "That description breaks the forge's rules, so it can't be made. The Spark was spent.",
+  NO_STONES: "You have no Refinement Stones. Each spell you forge yields one.",
+  MEND_NOT_ALLOWED: "Only a spell you forged yourself can be refined.",
+  MEND_REJECTED: "That request breaks the forge's rules, so it can't be made. The Refinement Stone was spent.",
+  MEND_FAILED: "The forge could not reshape that spell. Your Refinement Stone was returned; please try again.",
   ACCOUNT_RESTRICTED: "Your account can't create spells right now.",
   GENERATION_FAILED: "The forge is busy. Please try again in a moment.",
 } as const;

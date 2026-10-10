@@ -98,7 +98,8 @@ export async function computeGateMetrics(options: { days?: number; now?: Date } 
   // 5. Cost per successful creation (shadow cost while on free tiers).
   const runs = await db.select().from(p0GenerationRuns).where(and(gte(p0GenerationRuns.createdAt, from), lt(p0GenerationRuns.createdAt, now)));
   const finished = runs.filter((r) => r.outcome !== "running");
-  const successes = finished.filter((r) => r.outcome === "success").length;
+  // Per Spark spent (Phase Plan v2.3): the cost of mends is inside the total, but only creations divide it.
+  const successes = finished.filter((r) => r.outcome === "success" && r.kind === "creation").length;
   const runCalls = finished.length
     ? await db.select({ cost: p0ProviderCalls.costEstimateUsd, runId: p0ProviderCalls.runId }).from(p0ProviderCalls).where(gte(p0ProviderCalls.createdAt, from))
     : [];

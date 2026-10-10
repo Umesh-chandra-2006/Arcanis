@@ -31,6 +31,7 @@ export interface SpellRowLike {
   dominantColor?: string | null;
   shareCount: number;
   isPlatformSpell: boolean;
+  refinedFromId?: string | null;
   researchReadyAt?: Date | null;
   createdAt: Date;
 }
@@ -60,6 +61,8 @@ export interface PublicSpell {
   dominantColor: string | null;
   shareCount: number;
   isPlatformSpell: boolean;
+  /** The spell this one was mended from, if any (Master Doc 6.7). */
+  refinedFromId: string | null;
   /** True while research runs. No time is ever disclosed (Master Doc 6.3). */
   researching: boolean;
   createdAt: string;
@@ -91,6 +94,7 @@ export function toPublicSpell(spell: SpellRowLike, now = new Date()): PublicSpel
     dominantColor: spell.dominantColor ?? null,
     shareCount: spell.shareCount,
     isPlatformSpell: spell.isPlatformSpell,
+    refinedFromId: spell.refinedFromId ?? null,
     researching: spell.researchReadyAt ? spell.researchReadyAt.getTime() > now.getTime() : false,
     createdAt: spell.createdAt.toISOString(),
   };

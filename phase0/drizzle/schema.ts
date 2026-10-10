@@ -91,6 +91,8 @@ export const p0Spells = mysqlTable(
     shareCount: int("share_count").notNull().default(0),
     generationMetadata: json("generation_metadata").notNull(),
     isPlatformSpell: boolean("is_platform_spell").notNull().default(false),
+    /** The spell this one was mended from (Master Doc 6.7). The original is never edited. */
+    refinedFromId: varchar("refined_from_id", { length: 36 }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({
@@ -131,6 +133,32 @@ export const p0SparkLedger = mysqlTable(
   (table) => ({
     userIdx: index("p0_spark_ledger_user_idx").on(table.userId),
     idempotencyIdx: uniqueIndex("p0_spark_ledger_idem_idx").on(table.idempotencyKey),
+  })
+);
+
+// Refinement Stones (Master Doc 22.1, v7.6): the same append-only rules as the
+// Spark ledger, in a ledger of its own. A stone is minted only by a creation
+// whose Spark committed. Written only by server/stones.ts.
+export const STONE_ENTRY_TYPES = ["grant_creation", "spend_mend", "admin_adjust"] as const;
+
+export const p0StoneLedger = mysqlTable(
+  "p0_stone_ledger",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("user_id").notNull(),
+    amount: int("amount").notNull(),
+    type: mysqlEnum("type", STONE_ENTRY_TYPES).notNull(),
+    status: mysqlEnum("status", ["pending", "committed", "reversed"]).notNull(),
+    refId: varchar("ref_id", { length: 64 }),
+    /** Unique key that makes grants idempotent (e.g. "forge:<spell id>"). */
+    idempotencyKey: varchar("idempotency_key", { length: 128 }),
+    note: varchar("note", { length: 255 }),
+    createdAt: timestamp("created_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+    updatedAt: timestamp("updated_at", { fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+  },
+  (table) => ({
+    userIdx: index("p0_stone_ledger_user_idx").on(table.userId),
+    idempotencyIdx: uniqueIndex("p0_stone_ledger_idem_idx").on(table.idempotencyKey),
   })
 );
 
@@ -268,6 +296,8 @@ export const p0GenerationRuns = mysqlTable(
   {
     id: varchar("id", { length: 36 }).primaryKey(),
     userId: int("user_id").notNull(),
+    /** A mend is a generation too, but never a creation in any metric (Phase Plan 5). */
+    kind: mysqlEnum("kind", ["creation", "mend"]).notNull().default("creation"),
     spellId: varchar("spell_id", { length: 36 }),
     attempts: int("attempts").notNull().default(0),
     layer2aClamped: boolean("layer_2a_clamped").notNull().default(false),
@@ -371,6 +401,7 @@ export type Phase0User = typeof p0Users.$inferSelect;
 export type Phase0ForgeQueueEntry = typeof p0ForgeQueue.$inferSelect;
 export type Phase0Spell = typeof p0Spells.$inferSelect;
 export type Phase0SparkLedgerEntry = typeof p0SparkLedger.$inferSelect;
+export type Phase0StoneLedgerEntry = typeof p0StoneLedger.$inferSelect;
 export type Phase0AnalyticsEvent = typeof p0AnalyticsEvents.$inferSelect;
 export type Phase0Review = typeof p0Reviews.$inferSelect;
 export type Phase0ProviderCall = typeof p0ProviderCalls.$inferSelect;

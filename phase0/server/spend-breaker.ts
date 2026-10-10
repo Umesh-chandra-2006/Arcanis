@@ -2,7 +2,7 @@
 // Spark is reserved, so a refused creation never needs a refund.
 import { and, eq, gte, inArray, sql } from "drizzle-orm";
 import { requireDb } from "./db";
-import { p0BreakerDays, p0ProviderCalls, p0SparkLedger, type Phase0BreakerDay } from "../drizzle/schema";
+import { p0BreakerDays, p0ProviderCalls, p0SparkLedger, p0StoneLedger, type Phase0BreakerDay } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 import { sendEmail } from "./providers/email";
 import { trackEvent } from "./analytics";
@@ -17,6 +17,7 @@ export interface BreakerStatus {
   reason: BreakerReason | null;
   realSpendUsd: number;
   shadowSpendUsd: number;
+  /** Generations counted against the daily limit: creations plus mends. */
   creations: number;
   spendLimitUsd: number;
   creationLimit: number;
@@ -73,9 +74,21 @@ export async function getBreakerStatus(
       )
     );
 
+  // A mend is a generation too (Master Doc 6.7): it draws on the same provider quota.
+  const [mended] = await db
+    .select({ n: sql<string>`COUNT(*)` })
+    .from(p0StoneLedger)
+    .where(
+      and(
+        eq(p0StoneLedger.type, "spend_mend"),
+        inArray(p0StoneLedger.status, ["pending", "committed"]),
+        gte(p0StoneLedger.createdAt, since)
+      )
+    );
+
   const spendLimitUsd = row?.spendLimitOverrideUsd ?? ENV.dailySpendLimitUsd;
   const creationLimit = row?.creationLimitOverride ?? ENV.dailyCreationLimit;
-  const creations = Number(created?.n ?? 0);
+  const creations = Number(created?.n ?? 0) + Number(mended?.n ?? 0);
 
   let reason: BreakerReason | null = null;
   if (row?.trippedReason) {
