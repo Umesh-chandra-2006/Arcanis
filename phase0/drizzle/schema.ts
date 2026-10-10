@@ -247,6 +247,8 @@ export const p0Sessions = mysqlTable(
     revokedAt: timestamp("revoked_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     lastSeenAt: timestamp("last_seen_at").notNull().defaultNow(),
+    /** How the session was opened. A fresh code or link session may set a new password without the old one (v7.5). */
+    method: mysqlEnum("method", ["code", "link", "password"]).notNull().default("password"),
   },
   (table) => ({
     userIdx: index("p0_sessions_user_idx").on(table.userId),
@@ -340,7 +342,33 @@ export const p0SparkWaitlist = mysqlTable("p0_spark_waitlist", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Creations accepted while the daily breaker is closed (Master Doc 25, v7.5).
+// No Spark is reserved here: the queued request goes through the normal
+// pipeline (and its Spark path) when the forge reopens.
+export const p0ForgeQueue = mysqlTable(
+  "p0_forge_queue",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("user_id").notNull(),
+    input: json("input").notNull(), // the validated creation form
+    status: mysqlEnum("status", ["queued", "forging", "forged", "failed", "cancelled"]).notNull().default("queued"),
+    attempts: int("attempts").notNull().default(0),
+    spellId: varchar("spell_id", { length: 36 }),
+    failureCode: varchar("failure_code", { length: 32 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    startedAt: timestamp("started_at"),
+    finishedAt: timestamp("finished_at"),
+    /** Set when the player has been shown the outcome. */
+    seenAt: timestamp("seen_at"),
+  },
+  (table) => ({
+    statusIdx: index("p0_forge_queue_status_idx").on(table.status, table.createdAt),
+    userIdx: index("p0_forge_queue_user_idx").on(table.userId, table.status),
+  })
+);
+
 export type Phase0User = typeof p0Users.$inferSelect;
+export type Phase0ForgeQueueEntry = typeof p0ForgeQueue.$inferSelect;
 export type Phase0Spell = typeof p0Spells.$inferSelect;
 export type Phase0SparkLedgerEntry = typeof p0SparkLedger.$inferSelect;
 export type Phase0AnalyticsEvent = typeof p0AnalyticsEvents.$inferSelect;
