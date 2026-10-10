@@ -1,12 +1,26 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.5*
+*Complete Vision Blueprint | Version 7.6*
 
 Author: Umesh Chandra Tirumani
 Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.5 supersedes all prior versions, including v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.6 supersedes all prior versions, including v7.5, v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.6, WHAT CHANGED FROM v7.5 (2026-10-11)
+
+Founder decisions on refining spells. The first changes the "two currencies, never merged" lock; the change is the founder's.
+
+- **A third currency: Refinement Stones (Section 22.1; changes "two currencies").** A stone is minted only when a Spark-paid creation passes verification: 1 stone per forged spell. Stones are never bought, never granted for free, and never earned from anything that did not itself spend Spark, so every stone traces back to Spark and the cost reasoning of Section 22.2 still holds. A stone is spent on mending. Spark, Aether Shards and Refinement Stones are three separate ledgers and are never converted into one another. The name is a working name.
+- **Spark rule reworded (Sections 22.1, 22.2).** Was: Spark is the only currency that spends against generation cost. Now: generation cost is paid by Spark, or by Refinement Stones, which only Spark-paid creation can mint. Aether Shards still never touch generation cost.
+- **Mending (new Section 6.7).** A player may refine a spell they created. Mending costs 1 Refinement Stone and produces a new spell linked to the original; the original is never changed, so links, previews and reviews already shared stay true. Element, category, cast type and tier are locked. The player describes the change in words; Layer 1 reallocates the stats under the same Power Budget and adjusts the text; the full Two-Step Verification applies. A mend reshapes a spell and never makes it stronger. A mended spell starts no research of its own. A mend mints no stone. Own spells only, any number of times; base spells cannot be mended.
+- **Ascension (new Section 6.7; design only, built in Phase 1b).** The higher refinement: a spell becomes a new spell one tier up that tops it. It costs Spark, runs full research, and is open only to a player who already meets the target tier's requirements, so it never buys progression. Tier is set by code, never the model.
+- **Example prompts in the Lab (Section 18.2).** The creation form offers a few ready-made spell ideas that fill the form when clicked. They are fixed text: no AI call and no Spark.
+
+**Flagged, not resolved:** Section 3 says Advanced spells unlock at Circle 4 to 5; Section 6.1 says Circle 3. Ascension depends on whichever is right. Founder to decide before Phase 1b.
 
 ---
 
@@ -596,6 +610,36 @@ Built in codebase behind feature flag. Activates at a defined subscription-reven
 
 Animation sequence: Phase 1 (0.8s) - magic circles appear around caster, element-colored, rotating, rune-marked. Phase 2 (0.7s) - spell manifests from circle center in classification-appropriate form. Phase 3 (1.5s) - spell travels with element trail. Phase 4 (1s) - impact shockwave, HP drain animation. The magic circle is the visual signature across all spells.
 
+## 6.7 Refinement: Mending and Ascension (v7.6)
+
+A player can refine a spell they created. There are two refinements, and they are deliberately different in cost, in what they change, and in when they ship.
+
+**Rules common to both**
+
+- Own spells only. The 36 base spells and other players' spells cannot be refined.
+- A refinement never edits a spell. It produces a new spell that records which spell it was refined from. The original stays exactly as it was, so a shared link, its preview image and its reviews never change under the people who saw them.
+- Both are AI surfaces: Layer 1, then Layers 2a, 2b and conditional 2c (Section 21), silent retry, and a refund of what was paid if the failure is ours. A request that breaks the content rules keeps the payment and adds an abuse strike, exactly as in creation.
+- Tier always comes from code, never from the model.
+
+**Mending (Phase 1a)**
+
+- Cost: 1 Refinement Stone (Section 22.1). No Spark.
+- Locked: element, category, cast type and tier. The player may change the name.
+- The player describes the change in words ("slower and heavier", "less costly to cast"). Layer 1 reallocates the stats inside the same Power Budget and the same caps as the original, and adjusts the flavor text and lore line to match.
+- A mend reshapes; it never strengthens. The budget does not grow, so any number of mends leaves a spell balanced. Getting stronger is what ascension is for.
+- No research. A mended spell is usable at once, with one exception: a mend of a spell that is still being researched becomes usable when the original does, so mending is not a way around the wait.
+- A mend mints no Refinement Stone. A mended spell can itself be mended.
+- A mend is a generation, so it counts toward the daily creation limit (Section 25). While the forge is cooling a mend is refused, with no stone taken; it does not join the forge queue.
+- Card art: the mended spell keeps the original's art.
+
+**Ascension (designed here, built in Phase 1b with battles)**
+
+- The spell becomes a new spell one tier higher (Basic to Advanced, Advanced to Mega) that keeps its element, category and identity and tops the original within the higher tier's Power Budget and caps.
+- Open only to a player who already meets the target tier's requirements (Section 6.1: Circle, affinity, and the Will capacity gate of Section 2.1). Ascension is a way to carry a loved spell upward, never a way to buy a tier: progression cannot be bought (Section 14).
+- Cost: Spark, more than a creation. The number is open (Section 29.4).
+- Full research, by the normal rule (Section 6.3), with no exemption.
+- It is not built until circles, affinity and Will capacity exist to gate it. It is separate from Awakened spells (Section 7.3), which are earned through proficiency and stay in their tier.
+
 ---
 
 # 7. Spell Proficiency System
@@ -1039,7 +1083,7 @@ The onboarding flow is rebuilt around one non-negotiable rule: **the funnel is n
 |---|---|---|
 | 1. Magic-link signup | Email only. Confirm by link click or by typing the 6-digit code from the same email. | Email field, then code field. |
 | 1b. Welcome (v7.5) | One dialog: choose a password (required), mage name and update emails (optional). The player then lands on Home. | Password field, name field, updates checkbox. |
-| 2. First creation | First Spark grant already available. Minimal creation flow, no tour. First 2 spells skip research (Section 6.3). | Lab flow, trimmed to the launch creation subset (see companion Phase 1 Build Plan). Spell stored locked if above requirements: "This spell awaits your growth." |
+| 2. First creation | First Spark grant already available. Minimal creation flow, no tour. A few example spell ideas can be clicked to fill the form (v7.6; fixed text, no AI call, no Spark). First 2 spells skip research (Section 6.3). | Lab flow, trimmed to the launch creation subset (see companion Phase 1 Build Plan). Spell stored locked if above requirements: "This spell awaits your growth." |
 | 3. Share prompt | Card revealed with a share action. | The card, share button, "Create another". |
 | 4. Name your mage | Single text input, asked the first time the name is needed (first share or first battle). | Name field only. |
 | 5. Avatar selection | Asked the first time the player enters battle. | HP, MP, affinity bonus. Will is never shown here (v7.2, resolved in favor of Section 2.1; v7.0 listed it as a visible stat). |
@@ -1117,6 +1161,8 @@ The genuinely hard case: does this spell's flavor text actually match its assign
 | Surface | Layer 1 Output | Layer 2a | Layer 2b | Layer 2c (conditional) |
 |---|---|---|---|---|
 | Spell creation | Stat allocation within the power budget, classification, flavor/lore text, summon profile (assessment questions once the Tower ships) | Yes, full stat/schema clamp plus budget total | Yes, text + image | Yes, category/flavor coherence check on flag |
+| Mending (Section 6.7) | Reallocated stats within the original's power budget, adjusted flavor/lore text | Yes, same clamp and budget total as creation; classification and tier fixed by code | Yes, the player's request and the generated text | Yes, on flag |
+| Ascension (Section 6.7, Phase 1b) | Stats within the higher tier's power budget, flavor/lore text | Yes | Yes | Yes, on flag |
 | Fusion research | Fusion spell stats, dual-element art | Yes | Yes | Yes |
 | Tower batch grading | Pass/Fail per submitted answer | N/A (binary output) | Yes, on submitted text | Yes, grading defensibility on flag |
 | Freestyle Mode turn | Opponent move, narrative, HP change, round result | Partial, HP/damage bounds clamp | Yes, narrative text | Yes, plausibility check on flag |
@@ -1135,13 +1181,15 @@ v6.0 specified fixed weekly/monthly Lab slot quotas (Section 6.4 of that version
 
 ## 22.1 Two Currencies, Two Distinct Purposes, Never Merged
 
+*v7.6 (founder): there are now three currencies. Refinement Stones are added below. The three are separate ledgers and are never converted into one another.*
+
 ### Aether Shards (Soft Currency, Unchanged Role)
 
 Earned through play (Animus/battle wins, arc completions, circle-ups). Spent on cosmetic and social sinks: Hall creation, avatar alt creation, cosmetic unlocks. **Aether Shards never touch anything that consumes real LLM or image-generation cost.** This system was already correctly designed in v6.0 and is preserved as-is.
 
 ### Spark (Hard Currency, New)
 
-The only currency that can be spent on anything that consumes real generation cost: spell creation, fusion research. Spark is:
+The currency that pays for anything that consumes real generation cost: spell creation, ascension, fusion research. (v7.6: the one other thing that may pay for a generation is a Refinement Stone, below, and a stone exists only because Spark was spent.) Spark is:
 - **Granted on a recurring allowance by subscription tier** (replacing the old fixed weekly slot count, see Section 28 for exact allowance-to-tier mapping).
 - **Purchasable directly in a la carte packs**, independent of subscription tier, so a highly-engaged player can create more without upgrading their whole plan.
 - **Never earned through gameplay**, this is a deliberate, load-bearing separation. Spark is the money-facing currency; mixing it with earnable soft currency would make its real cost basis impossible to reason about and would open the door to farming real generation cost for free.
@@ -1149,7 +1197,22 @@ The only currency that can be spent on anything that consumes real generation co
 
 **Phase 1a values (v7.2, founder; signup grant changed to 3 in v7.4):** 1 Spark per creation. Signup grant 3 (once per device). Weekly free allowance 3. Rollover cap 10 (the allowance does not top a balance above 10). Referral bonus 3 to the inviter (Section 23.3). While providers run on free tiers, the app's daily creation limit (Phase 1 Build Plan Section 7.7) keeps total creations inside provider quotas regardless of balances.
 
+### Refinement Stones (Refinement Currency, v7.6)
+
+The currency of mending (Section 6.7). Working name.
+
+- **Minted only by Spark-paid creation:** 1 stone each time a creation passes verification and its Spark is committed. A refunded creation mints nothing. A mend mints nothing.
+- **Never purchasable, never granted free, never earned from play that did not spend Spark.** If a second source is ever added (battle wins were discussed for Phase 1b), it needs a founder decision and a cap, because it would put an earnable currency onto a generation call.
+- **Spent only on mending:** 1 stone per mend. Reserved before generation, committed on success or on a player-caused rejection, returned on our failure, on the same append-only ledger rules as Spark.
+- **No holding cap in Phase 1a.** Supply is already bounded by Spark spent.
+- Never converted to or from Spark or Aether Shards.
+
+**Phase 1a values (v7.6, founder):** 1 stone per forged spell; 1 stone per mend.
+
 ## 22.2 Why the Separation Matters
+
+*v7.6: Refinement Stones keep this property. A stone is minted only by committed Spark, so every mend still traces back to Spark spent. What the stone adds is a second generation per creation at most, which is a known, bounded multiplier on cost per Spark (measured in the cost report), not an unbounded one.*
+
 
 Every dollar of real inference/image-gen cost the product incurs must trace back to Spark spent, and every unit of Spark must trace back either to a subscription payment or a direct purchase. This is what makes the unit economics in Section 24 and 28 actually computable, a currency that can be earned through free play and then spent on LLM generation makes cost-per-user impossible to bound, which is precisely the trap the original quota system's design (correctly) avoided and the reason it must not be repeated here.
 
@@ -1425,6 +1488,10 @@ The project was originally named "Magic Spar," then renamed to "Arcanis." All re
 - Onboarding goes straight to creation; first 2 spells skip research; no Spell XP reveal.
 - Phase 1 ships as a modular monolith on MySQL, images in object storage. v7.2: soft launch on a free Render instance kept awake by ping, Cloudinary images, current TiDB cluster, free-tier provider keys; R2 and a new DB host in Phase 1b.
 
+### Changed in v7.6
+- Three currencies: Spark, Aether Shards, Refinement Stones (Section 22.1). Generation cost is paid by Spark, or by stones that only Spark-paid creation can mint.
+- Refinement (Section 6.7): mending (1 stone, class and tier locked, same budget, new linked spell, no research) ships in Phase 1a; ascension (one tier up, Spark, full research, gated by the target tier's requirements) is designed and ships with battles.
+
 ## 29.3 Current State of the Project
 
 **v7.1 (2026-10-09):** implementation is underway in the `phase0/` app, which is the canonical codebase; the older root prototype is being archived. Creation and share are partly built; battles are early. Phase 0 measurement (cost per creation, provider rates, balance harness) has not been done. See `PROGRESS.md` and `docs/status_report.md` in the repo for live status. The plan is a creation-first soft launch once the blockers are fixed, with async battles built in parallel (Phase Plan Section 5).
@@ -1451,6 +1518,8 @@ Architecture is complete and reflects the commercial pivot. All major structural
 - Whether Lemon Squeezy can onboard and pay out to an India-based seller (founder verifying; Paddle is the fallback). Prerequisite for Phase 2.
 - Exact Will band edges and the strain descriptor cut points (starting values in Section 2.1, tuned through the balance harness)
 - Reconciling Section 2.1 Will cost ranges with Section 6.2 Will floors/caps (they disagree; flagged in v7.1)
+- Ascension (Section 6.7): its Spark cost, and whether Advanced unlocks at Circle 3 (Section 6.1) or Circle 4 to 5 (Section 3)
+- Refinement Stones: the final name, whether battles become a second source in Phase 1b, and whether a holding cap is needed
 
 ## 29.5 Key Terminology Quick Reference (Updated)
 
@@ -1464,8 +1533,11 @@ Architecture is complete and reflects the commercial pivot. All major structural
 | Playstyle Vector | Computed aggression/risk-tolerance/resource-discipline profile derived from a player's own battle history, used to pilot their async combat profile when offline. |
 | Live Duel | Later, liquidity-gated real-time PvP layer built atop the same battle engine. Not a launch dependency. |
 | Two-Step Verification | Universal architectural law: Layer 1 generation, then Layer 2a (deterministic clamp) + Layer 2b (moderation) + conditional Layer 2c (semantic check) before any AI output reaches a player. |
-| Spark | Hard, purchasable currency. The only currency that spends against real generation cost (spell creation, fusion). Never earned through gameplay. |
+| Spark | Hard, purchasable currency. Pays for real generation cost (spell creation, ascension, fusion). Never earned through gameplay. |
 | Aether Shards | Soft, earned currency. Cosmetic/social sinks only (Halls, alts, cosmetics). Never touches generation cost. |
+| Refinement Stones | Refinement currency (v7.6, working name). 1 minted per Spark-paid creation that passes verification; 1 spent per mend. Never bought, never free. |
+| Mending | Refining an own spell for 1 Refinement Stone: a new linked spell, same class, tier and Power Budget, no research (Section 6.7). |
+| Ascension | Refining an own spell into a new spell one tier up, for Spark, with full research, for players who already meet that tier's requirements (Section 6.7; Phase 1b). |
 | Founder's Pass | One-time/annual premium offer replacing the retired $24.99 recurring tier. Bundled Spark + cosmetic prestige + early access. |
 | Public Spell Preview | No-login external landing page for a shared spell card. The entry point of the growth funnel. |
 | Magic-Link Signup | Email-only, instant-confirmation identity step that creates the account (a password is chosen right after, v7.5) (link click or the 6-digit code in the same email). Required before any generation; never required before viewing. |

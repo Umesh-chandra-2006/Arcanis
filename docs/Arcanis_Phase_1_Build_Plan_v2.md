@@ -1,7 +1,14 @@
-# Arcanis: Phase 1 Build Plan v2.5
+# Arcanis: Phase 1 Build Plan v2.6
 
-**Agent-facing implementation document. Companion to Master Documentation v7.5 (the bible) and Phase Plan v2.2.**
+**Agent-facing implementation document. Companion to Master Documentation v7.6 (the bible) and Phase Plan v2.3.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.6 (2026-10-11)
+
+- **Refinement Stones (Section 6):** a third append-only ledger, `p0_stone_ledger` (migration 0018), written only by `server/stones.ts` with the same reserve, commit and refund rules as Spark. Entry types `grant_creation` (1 per creation whose Spark commits, idempotent per spell), `spend_mend`, `admin_adjust`.
+- **Mending (new Section 7.8):** `spells.mend` (protected) refines an own spell into a new linked spell (`p0_spells.refined_from_id`) for 1 stone, through the same verified generation as creation (`server/spell-mend.ts`). Classification and tier come from the stored spell, never the request or the model. Counts toward the daily creation limit. Events: `mend_started`, `mend_succeeded`, `mend_refunded`, `mend_rejected`.
+- **Ascension:** designed in Master Doc 6.7, built in Track B (task B10). Not in Phase 1a.
+- **Example prompts (Section 10):** fixed spell ideas in the Lab that fill the form. No endpoint.
 
 ## What changed in v2.5 (2026-10-11)
 
@@ -191,6 +198,7 @@ Rules from Master Doc Section 22.
 - **A user-caused rejection** (the user's own input fails moderation) does not refund and counts toward abuse strikes.
 - Spark is never granted for gameplay. Weekly allowance for the free tier is a small fixed grant; rollover is allowed up to a cap (value set in config, default to 2x weekly allowance). v2.1: the weekly allowance must be live for the 1a soft launch, because Gate 1a's day-7 creation retention is meaningless if players physically cannot create again. v2.2 values: 1 Spark per creation; `grant_signup` 5 (once per device); `grant_weekly_allowance` 3, never raising a balance above the rollover cap of 10; `grant_referral_inviter` 3; `grant_referral_invitee` stays in the schema but grants 0 in 1a. All values live in config.
 - Aether Shards ledger is built with the same structure but has no sinks in Phase 1 beyond reserved hooks. Earning rules arrive with progression. Do not build earning logic yet.
+- **Refinement Stones (v2.6, Master Doc 22.1):** a separate append-only ledger with the same structure and the same atomic reserve, commit and refund. One stone is granted when a creation's Spark is committed (idempotency key per spell, so a retry can never mint twice); nothing else mints one. One stone is reserved before a mend's generation, committed on success or a player-caused rejection, and returned on our failure. No conversion to or from Spark or Shards exists in code.
 
 ## 7. Lab Service: Spell Creation Pipeline
 
@@ -269,6 +277,20 @@ v2.1 additions:
 - **Daily spend circuit breaker:** before reserving Spark, sum today's (UTC) `cost_estimate_usd` from `provider_calls`. At or above `DAILY_SPEND_LIMIT_USD`, refuse new generations with a friendly message ("The forge is cooling. Try again soon."), log `creation_blocked_spend_cap`, and alert the founder (email). Nothing is reserved, so nothing needs refunding. Admin can reset or raise the limit. **v2.5:** the refused request joins the forge queue and is forged when the breaker reopens (Master Doc 25); at most 3 waiting designs per player and never more than their Spark; in-app notice when done. This complements, never replaces, the hard caps the founder sets at each provider.
 - v2.2, free tiers: providers run on free-tier keys with no payment method attached. `cost_estimate_usd` records list-price (shadow) cost, so the breaker uses a second limit, `DAILY_CREATION_LIMIT`, set to about 80 percent of the tightest provider daily quota (text, image, moderation, or email for magic links), found by the A2 quota audit. A provider 429 or quota error counts as a provider failure: refund, and trip the breaker for that day.
 - Verify every configured model ID with a live call at startup in non-production and in CI smoke tests; a retired model ID must fail loudly, not silently fall through the cascade.
+
+### 7.8 Mending (v2.6)
+
+Rules from Master Doc 6.7. A mend is a generation path, so every engineering rule for creation applies to it.
+
+1. Authenticated (`protectedProcedure`). Input: the spell id, the player's request in words (1 to 500 characters), and an optional new name.
+2. The spell must exist, belong to the caller, not be a platform spell and not be taken down. Account restrictions apply as in creation.
+3. Daily breaker check before anything is reserved. A refused mend takes no stone and is not queued. Mends count toward `DAILY_CREATION_LIMIT` together with creations.
+4. Reserve 1 Refinement Stone (Section 6).
+5. Layer 2b on the player's request and name, with 2c on borderline; a rejection keeps the stone and adds an abuse strike.
+6. Layer 1 with the mend prompt: the original's text and current stats, the request, and the same stat ranges and Power Budget share as a creation of that classification and tier. Then Layers 2a, 2b and conditional 2c with silent retries, through the same function creation uses.
+7. Store a new spell with `refined_from_id` set, the original's element, category, cast type, tier and card art, and `research_ready_at` equal to now, or to the original's if that is still in the future. The original row is never written.
+8. Commit the stone. No Spark entry, no stone grant, no referral payout.
+9. Any failure that is ours returns the stone. Provider telemetry and a `generation_runs` row (`kind = mend`) are written as for creation.
 
 ## 8. Game Service: Battles
 
@@ -608,6 +630,7 @@ Track A total: roughly 20 to 23 working days. v2.2: founder actions F1 to F11 ar
 | B7 | Persistence, rematch notifications (in-app inbox plus email digest) | 1.5 |
 | B8 | Balance harness battle simulation; tune Will bands and strain descriptor cut points; Will leakage tests | 2.5 |
 | B9 | Re-enable Trap and Charged in creation; battle analytics events | 1 |
+| B10 | v2.6: ascension (Master Doc 6.7): one tier up, Spark cost, full research, gated by the target tier's Circle, affinity and Will capacity requirements; tier from code only. Needs the founder's Spark cost and the Circle 3 versus 4 to 5 answer first | 2 |
 
 Track B total: roughly 27 to 30 working days.
 

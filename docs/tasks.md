@@ -1,6 +1,6 @@
 # Arcanis: Phase 0 to Phase 1 Tasks
 
-**Source:** Build Plan v2.5 Section 15, decisions of 2026-10-09 to 2026-10-11 (see `PROGRESS.md`). If this file and the Build Plan disagree, the Build Plan wins; flag the conflict.
+**Source:** Build Plan v2.6 Section 15, decisions of 2026-10-09 to 2026-10-11 (see `PROGRESS.md`). If this file and the Build Plan disagree, the Build Plan wins; flag the conflict.
 
 **How to use:** work top to bottom within a track. Tick `[x]` when every acceptance check passes, and note the date and commit in the task line. Estimates are working days. Every task keeps the engineering rules in `CLAUDE.md` (Two-Step Verification and a Spark path on any AI call, auth on any spend path, Will never reaches the client, no em dashes, no secrets in git).
 
@@ -171,7 +171,11 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] T15 Forge queue voice: "the Arcanum", the will that presides over magic, acknowledges the spell and grants it (founder rejected "Forgewarden" as cheesy; the name itself can still change). (2026-10-11)
 - [x] T16 No unasked provider calls (founder rule, in `CLAUDE.md`): the dev-startup model check is opt-in (`MODEL_CHECK_ON_START=1`); the forge queue loop never forges `@test.arcanis` accounts outside tests; the queue tests cancel what they leave. (2026-10-11)
 - [ ] T13 Founder tests T9 to T12 and T14, T15 locally. Migration 0017 is on the test database only; apply it to production (after `pnpm db:backup`) at the deploy.
-- [ ] T8 Build the Phase 0 suggestions the founder picks: (a) "refine this spell" for 1 Spark, (b) example prompts in the Lab, (c) try-before-signup on the landing page, (d) public "newest spells" wall, (e) one update email to subscribers. Recommended first: (a) and (b). Each AI path needs Two-Step Verification and a Spark path.
+- [x] T8 (a) Refine, as mending (founder decisions 2026-10-11, Master Doc v7.6 Sections 6.7 and 22.1): a third currency, Refinement Stones, 1 minted per Spark-paid creation that passes verification (`p0_stone_ledger`, `server/stones.ts`); "Refine this spell" on an own spell's card spends 1 stone and makes a new linked spell (`refined_from_id`) with the class, tier and Power Budget locked, through the same verified generation as creation (`server/spell-mend.ts`, `spells.mend`); no research of its own; counts toward the daily creation limit; never counted as a creation in a gate metric. Migration 0018 (test database only). 12 tests in `server/spell-mend.test.ts`. (2026-10-11)
+- [x] T8 (b) Example prompts in the Lab: six fixed spell ideas that fill the form (`client/src/lib/example-prompts.ts`); no AI call, no Spark. (2026-10-11)
+- [ ] T8 (a2) Ascension, the higher-tier refinement: designed in Master Doc 6.7, built in Phase 1b as task B10. Open: its Spark cost, and whether Advanced unlocks at Circle 3 (Master Doc 6.1) or Circle 4 to 5 (Master Doc 3).
+- [ ] T8 (c) try-before-signup on the landing page, (d) public "newest spells" wall, (e) one update email to subscribers: not picked yet.
+- [ ] T17 Founder tests T8 locally: the example chips in the Lab, "Refine this spell" on a card, the stone count in the profile window's Spark tab.
 - **Done when:** the founder has re-tested and signed off, and the picked suggestions are built with tests.
 
 ---
@@ -220,6 +224,10 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] `arcanis-ui/` deleted. (2026-10-10)
 - Found and fixed while verifying: share pages rendered blank (stale production build served in dev; and in production Render's asset hashes could differ from Vercel's), so Vercel now rewrites `/spell/:id` to Render only for link-preview bots and people get the SPA (`/s/:id` alias as a safety net); spells without art served an SVG preview that Discord, X and WhatsApp ignore, now a composed 1200x630 JPEG; the finished-card text counted the spent Spark twice; the hero promised battles.
 - **Done when:** every phase0 screen uses the arcanis-ui components and tokens, `pnpm check` is clean, and the creation flow still passes the A15 end-to-end test. Met (end-to-end run above; A15 adds the committed automated version).
+
+### B10 Ascension (2) (Master Doc 6.7, v7.6)
+- [ ] Refine an own spell into a new linked spell one tier up: Spark cost (founder to set), full research, tier from code only, Two-Step Verified, open only to a player who meets the target tier's Circle, affinity and Will capacity requirements.
+- [ ] Founder first: the Spark cost, and Circle 3 versus Circle 4 to 5 for Advanced (Master Doc 6.1 and 3 disagree).
 
 ### B9 Battle release (1)
 - [ ] Re-enable Trap and Charged in creation; battle analytics events; full Gate 1 tracking.

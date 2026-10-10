@@ -1,7 +1,16 @@
-# Arcanis: Phase Plan v2.2
+# Arcanis: Phase Plan v2.3
 
-**Companion to: Arcanis Master Documentation v7.2 (the bible)**
+**Companion to: Arcanis Master Documentation v7.6 (the bible)**
 **Status:** Commercial product. Supersedes the build order in the old Phased Build Plan v1.0 and Section 24 of Master Doc v6.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.3 (2026-10-11)
+
+Founder decisions on refinement (Master Doc v7.6, Sections 6.7 and 22.1):
+
+- **Phase 1a scope adds mending** (refine an own spell for 1 Refinement Stone; a stone is minted by each Spark-paid creation) and example prompts in the Lab.
+- **Phase 1b scope adds ascension** (refine a spell one tier up, for Spark, with full research, gated by the target tier's requirements). Design only until then.
+- **Gate 1a definitions are unchanged (Section 5).** A mend is not a creation: it does not count toward "signup to first creation" or "day-7 creation retention". Mends are logged as their own events and reported beside the gate, not inside it.
+- **Cost criterion (Section 5):** a creation can now be followed by at most one stone-paid mend, so the cost report also shows cost per mend and cost per Spark spent (creation plus mends). The $0.08 line applies to cost per Spark spent.
 
 ## What changed in v2.2 (2026-10-10)
 
@@ -81,8 +90,8 @@ Deliverables:
 
 **Delivery order (v2.1):** battles were measured at about 10 to 15 percent complete versus 50 to 60 percent for creation and share, so Phase 1 ships in two steps:
 
-- **Phase 1a, creation soft launch:** sign up, create, preview, share, referral, fake-door Spark pricing. Ships once every soft-launch blocker in Build Plan Section 15 is closed. Doubles as the real-traffic Phase 0 cost measurement.
-- **Phase 1b, async battles:** built in parallel, on the same deployable, released to the same users when the Build Plan battle Definition of Done items pass.
+- **Phase 1a, creation soft launch:** sign up, create, mend (v2.3), preview, share, referral, fake-door Spark pricing. Ships once every soft-launch blocker in Build Plan Section 15 is closed. Doubles as the real-traffic Phase 0 cost measurement.
+- **Phase 1b, async battles:** built in parallel, on the same deployable, released to the same users when the Build Plan battle Definition of Done items pass. v2.3: ascension (Master Doc 6.7) ships here, once the tier gates it depends on exist.
 
 Phase 1 is complete, and the full Gate 1 below can be evaluated, only after 1b.
 
@@ -97,6 +106,7 @@ Out of scope: payments, XP tracks, proficiency, Tower, Halls, friends, Live Duel
 - *First creation to share:* players whose first spell was shared (share action used, or its public preview opened by someone other than the owner) within 7 days, divided by players with a first creation.
 - *k-factor:* invites per user x invite conversion rate. Invites per user = shares sent in the period / players active in the period. Invite conversion rate = signups attributed to a share link / shares sent. Measured weekly.
 - *Day-7 creation retention (1a):* of players whose first creation was on day 0, the share who created at least one more spell on days 7 to 13. Requires a weekly free Spark allowance to be live; without one, this metric measures Spark exhaustion, not interest.
+- *Mends (v2.3):* a mend (Master Doc 6.7) is never counted as a creation in any metric above. Reported separately: mends per creating player, and the share of creators who mend at least once.
 - *Day-7 battle retention (1b):* of players who finished a first battle on day 0, the share active (battled or created) on days 7 to 13.
 
 **Gate 1a, creation-only (evaluated after 4 to 6 weeks of soft launch). Locked by the founder on 2026-10-10:**
@@ -104,7 +114,7 @@ Out of scope: payments, XP tracks, proficiency, Tower, Halls, friends, Live Duel
 - First creation to share: at or above 15 percent
 - k-factor: at or above 0.3 is encouraging; below 0.1 means the loop leaks and needs rework before monetization
 - Day-7 creation retention: at or above 10 percent
-- All-in cost per creation on live traffic: at or below $0.08 (v2.2: measured at provider list price while the soft launch runs on free-tier keys, so it predicts paid-tier cost)
+- All-in cost per creation on live traffic: at or below $0.08 (v2.2: measured at provider list price while the soft launch runs on free-tier keys, so it predicts paid-tier cost; v2.3: measured per Spark spent, so the mends a creation pays for are inside the number)
 - Layer 2c trigger rate at or below 15 percent of generations; moderation false-positive rate at or below 2 percent on the reviewed sample
 - Fake-door `spark_pack_intent`: recorded per user who hit zero Spark (no threshold; informs Phase 2 priority)
 

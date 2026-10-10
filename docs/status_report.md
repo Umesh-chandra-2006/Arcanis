@@ -16,12 +16,13 @@ The audit findings below describe the repo on 2026-10-09. This section is the cu
 
 | Area | State |
 |---|---|
-| Codebase | One app, `phase0/`, on branch `track-a`. The root prototype is archived on `archive/root-prototype`. Not pushed, not merged. The work of 2026-10-11 (second test round) is uncommitted. |
+| Codebase | One app, `phase0/`, on branch `track-a`. The root prototype is archived on `archive/root-prototype`. Not pushed, not merged. |
 | Phase 0 (measure) | Done: about $0.001 to $0.003 per creation at list price (`docs/cost_sheet.md`). |
 | Phase 1a (creation soft launch) | Code complete: Track A (A0 to A15, A17) and two founder test rounds (T1 to T7, T9 to T12, T14 to T16). 128 tests pass, type-check clean. |
 | Phase 1b (battles) | Not started. |
-| Docs | Master Doc v7.5, Phase Plan v2.2, Build Plan v2.5. |
-| Database | Production at migration 0016; `track-a` needs 0017 (forge queue table, session method column). Test database at 0017. |
+| Docs | Master Doc v7.6, Phase Plan v2.3, Build Plan v2.6. |
+| Database | Production at migration 0016; `track-a` needs 0017 (forge queue table, session method column) and 0018 (Refinement Stone ledger, refined-from link, run kind). Test database at 0018. |
+| Refinement (added later on 2026-10-11) | Mending is built (T8): a third currency, Refinement Stones, minted 1 per forged spell and spent 1 per mend. Ascension is designed (Master Doc 6.7) and belongs to Phase 1b. |
 
 What the 2026-10-09 violations became:
 
@@ -34,9 +35,9 @@ What the 2026-10-09 violations became:
 Open before the soft launch:
 
 1. Founder tests the second-round changes (T13).
-2. Founder decides the refine-this-spell rules (new linked spell or replace in place; research or not); then T8 (refine, example prompts in the Lab).
+2. Founder tests refine and the example prompts (T17). The refine rules were decided and built on 2026-10-11 (T8).
 3. Brevo rejects the founder machine's IPv6 address, so local sign-in emails reach only the founder's own inbox (through Resend). Turning off Brevo's "Authorised IPs" fixes this and the same problem on Render.
-4. Deploy (A16, `docs/launch_checklist.md`): backup, migration 0017 on production, Render and Vercel settings, admin role, OG check on Discord, X and WhatsApp.
+4. Deploy (A16, `docs/launch_checklist.md`): backup, migrations 0017 and 0018 on production, Render and Vercel settings, admin role, OG check on Discord, X and WhatsApp.
 
 Known weak spots, not blockers: the one-email-per-minute limit uses fixed clock minutes, so two requests that straddle a minute boundary both pass (and its test can fail for that reason); the test suite and local dev share one database, so test runs use up the local daily creation cap.
 

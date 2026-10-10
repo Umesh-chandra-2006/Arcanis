@@ -22,14 +22,15 @@ Everything in code is done and tested on branch `track-a` (A0 to A15, A17). Thes
 
 ## 4. Database
 
-- [ ] Production is at migration 0016; `track-a` needs **0017** (forge queue table, session method column; additive). Before deploy: `cd phase0 && pnpm db:backup`, then `pnpm db:migrate` (uses `DATABASE_URL`, production).
+- [ ] Production is at migration 0016; `track-a` needs **0017** (forge queue table, session method column) and **0018** (Refinement Stone ledger, `p0_spells.refined_from_id`, `p0_generation_runs.kind`). Both are additive. Before deploy: `cd phase0 && pnpm db:backup`, then `pnpm db:migrate` (uses `DATABASE_URL`, production; applies both).
+- [ ] Spells forged before 0018 minted no Refinement Stone. Founder to decide whether existing players get one stone per spell they already own (a one-off grant, not built).
 - [x] The 36 base spells are seeded in production (2026-10-11). `pnpm seed` is idempotent if it needs re-running.
 - [ ] Make the founder's account an admin: `UPDATE p0_users SET role = 'admin' WHERE email = '<founder email>';` (the admin pages are `/admin/metrics` and `/admin/moderation`).
 
 ## 5. Deploy and verify
 
 - [ ] Merge `track-a` to `main` (CI runs type-check, tests against a MySQL container, build).
-- [ ] Sign up on the public domain with a real inbox; enter the code; choose a password at the welcome step; create a spell; the card shows its element art. Sign out and back in with the password. Try "Forgot it?" once.
+- [ ] Sign up on the public domain with a real inbox; enter the code; choose a password at the welcome step; create a spell; the card shows its element art. Sign out and back in with the password. Try "Forgot it?" once. Open the new card, press "Refine this spell", and check that the refined spell appears beside the original and the stone count drops to 0.
 - [ ] Paste a share link into Discord, X and WhatsApp: the card (1200x630, spell name, Arcanis frame) must show. This closes the last A15 item.
 - [ ] `/admin/metrics`: breaker open, today's counts move.
 

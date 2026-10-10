@@ -12,9 +12,9 @@ Never use em dashes anywhere: code, comments, commit messages, docs, UI copy. Us
 
 Docs live in `docs/`. Precedence on conflict:
 
-1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.5)
-2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.5; Section 15 is the current build order)
-3. `docs/Arcanis_Phase_Plan_v2.md` (content is v2.2; Gate 1a definitions)
+1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.6)
+2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.6; Section 15 is the current build order)
+3. `docs/Arcanis_Phase_Plan_v2.md` (content is v2.3; Gate 1a definitions)
 4. `docs/handover.md` (decision history; its phase status may be stale, trust the repo)
 5. `docs/archive/` (superseded, reference only, never build from it)
 
@@ -27,14 +27,15 @@ When a decision changes: update the Master Doc first, then the Phase Plan, then 
 - **Will** is hidden. Two server-side values (Master Doc 2.1, v7.1): capacity (absolute, 0 to 500, grows, gates tiers) and current Will (per battle, starts at capacity, depleted per cast). Bands are current Will as a percentage of capacity (Sharp 60%+, Steady 30 to 60, Strained 16 to 30, Failing 6 to 16, Broken under 6; edges tuned via the harness). Never sent to the client as a number, bar, tooltip, or anything that lets the client reconstruct it. The server emits a band key; feedback text comes from rotating, randomized, pre-verified variant pools (6 to 8+ per band). Will cost appears in the UI only as Light / Moderate / Heavy in the spell detail view. Tune the strings, never the secrecy.
 - **Async-first PvP.** The opponent is a stored player profile snapshot piloted by the rule-based engine using a playstyle vector (aggression, risk tolerance, resource discipline). Zero LLM cost. Live Duel is a later, liquidity-gated layer.
 - **Two-Step Verification on every AI surface.** Layer 1 generation, then 2a deterministic schema and stat clamp (100%), 2b moderation classifier on text and images (100%), 2c small-model semantic check only when 2a or 2b flags. Silent retry before any user-visible failure. No unverified AI output reaches a user.
-- **Two currencies, never merged.** Spark: hard currency, the only thing that spends against generation cost, never earned through gameplay, append-only ledger, atomic reserve/commit/refund. Aether Shards: soft, earned, cosmetic and social only. XP is progression only and never purchasable.
+- **Three currencies, never merged (v7.6, founder; was two).** Spark: hard currency, never earned through gameplay, append-only ledger, atomic reserve/commit/refund. Generation cost is paid by Spark, or by Refinement Stones, which only a Spark-paid creation can mint. Refinement Stones (working name): 1 minted when a creation passes verification, 1 spent per mend, never bought, never granted free, own ledger with the Spark rules; adding any other source needs the founder. Aether Shards: soft, earned, cosmetic and social only, never touch generation cost. No currency converts into another. XP is progression only and never purchasable.
+- **Refinement (Master Doc 6.7).** Mending: own spells only, 1 stone, a new linked spell (the original is never edited), element, category, cast type and tier locked, same Power Budget (reshapes, never strengthens), no research of its own, mints no stone. Ascension (one tier up, Spark, full research, only for a player who already meets that tier's requirements) is designed and is built in Phase 1b, not before.
 - **Identity.** Accounts are created only through magic-link auth, with a 6-digit code in the same email for in-app browsers (v7.1). Every account then sets a password and signs in with it, which sends no email (v7.5, founder decision, to save email quota; the emailed code always still works and is the forgot-password path). Changing a password needs the current one, or a session opened by an emailed code or link in the last 15 minutes. Sign-in must never reveal whether an email has an account. Session in an httpOnly cookie. Viewing is anonymous; any generation requires a session, checked at the gateway before any provider is called. Per-identity, per-device, and per-IP rate limits. First free Spark grant once per device.
 - **Classification system, elements, amicability, terrains, tiers and stat caps** are locked as specified in the Master Doc. The engine and validation support the full taxonomy even where the creation form exposes a subset.
 - **Provider abstraction.** Every external provider (text, image, moderation, email) sits behind an interface in `shared/`, selected by one env var. No provider request or response shape in business logic.
 
 ## Engineering rules (treat violations as bugs)
 
-- Every path that makes an AI call needs Two-Step Verification and a Spark deduction path.
+- Every path that makes an AI call needs Two-Step Verification and a Spark deduction path (for a mend, a Refinement Stone deduction path: reserve, then commit or refund).
 - No unauthenticated path can trigger spend.
 - Never trust client-computed minigame results. The server scores minigames from raw input events against a server-issued seed (Build Plan 8.4).
 - Spell stats use the hybrid Power Budget: code sets the budget, the LLM allocates, Layer 2a enforces caps and the budget total. Tier never comes from the model.
@@ -120,6 +121,8 @@ Reports go to `tools/balance-harness/reports/` and `tools/cost-report/reports/`.
 - Zod input schemas in `shared/validation.ts`; game constants and stat caps in `shared/constants.ts`. Path aliases `@/` (client src) and `@shared/`.
 - Spell stats: hybrid Power Budget in `phase0/shared/power-budget.ts` (budget, Layer 2a enforcement) with taxonomy and caps in `shared/taxonomy.ts`; the pipeline is `server/spell-pipeline.ts`; Layer 1 output is validated by `LLMSpellIdentitySchema`. Spells leave the server only through `toPublicSpell` (`shared/spell-view.ts`), which never carries Will numbers.
 - A creation refused by the daily breaker joins the forge queue (`server/forge-queue.ts`, `p0_forge_queue`): no Spark is reserved while it waits, and it is forged through `createSpell` unchanged when the breaker reopens. Players create through `createOrQueue`.
+- Mending is `server/spell-mend.ts` (`spells.mend`). It shares creation's verification through `screenPlayerInput` and `generateVerifiedIdentity` in `server/spell-pipeline.ts`: any new generation path must go through those two, not a copy. The mended spell carries `refined_from_id`; its run row has `kind = mend`, and a mend is never counted as a creation in a gate metric. Mends count toward the daily creation limit.
+- Refinement Stone operations go through `phase0/server/stones.ts` only (`p0_stone_ledger`, same rules as Spark).
 - Spark operations go through `phase0/server/spark.ts` only (append-only ledger, READ COMMITTED transactions); analytics through `trackEvent()` in `phase0/server/analytics.ts`; every provider call through `server/providers/*` (telemetry is automatic).
 - Drizzle: camelCase in TS; snake_case column names.
 - Prettier config at root (`.prettierrc`).
