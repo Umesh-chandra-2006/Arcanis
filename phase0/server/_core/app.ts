@@ -19,6 +19,7 @@ import { ELEMENT_COLORS, type Element } from "../../shared/taxonomy";
 import { elementArtSvg } from "../../shared/element-art";
 import { checkTextModels } from "../providers/check";
 import { startImageRetryLoop } from "../image-retry";
+import { startForgeQueueLoop } from "../forge-queue";
 
 function renderOgTags(
   baseUrl: string,
@@ -180,9 +181,11 @@ export async function startApp(app: Express) {
   }
 
   if (!ENV.isTest && db && ENV.cardArt === "generated") startImageRetryLoop();
+  if (!ENV.isTest && db) startForgeQueueLoop();
 
-  if (!ENV.isProduction && !ENV.isTest) {
-    // Non-blocking live check so a retired model ID shows up loudly in dev.
+  if (!ENV.isProduction && !ENV.isTest && ENV.modelCheckOnStart) {
+    // Opt-in (MODEL_CHECK_ON_START=1): a live call to every configured model, so a
+    // retired model ID shows up loudly in dev. `pnpm providers:check` does the same on demand.
     void checkTextModels().then((results) => {
       for (const r of results.filter((x) => x.outcome !== "success")) {
         console.error(`[Model check] ${r.provider}:${r.model} ${r.outcome}: ${r.detail}`);

@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { mapSpellToCardProps, type SpellCardProps } from "@/lib/adapters";
 import { shareUrlFor } from "@/lib/share";
 import { useNameGate } from "@/components/NameDialog";
+import { ForgeQueuePanel } from "@/components/ForgeQueue";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
   Wand2,
@@ -127,6 +128,13 @@ export default function Create() {
           utils.spells.mySpells.invalidate(),
         ]);
         setPhase("done");
+      } else if (result.code === "queued") {
+        // The forge is cooling: the design rests before the Arcanum and is granted later.
+        setPhase("form");
+        setName("");
+        setDescription("");
+        await utils.spells.forgeQueue.invalidate();
+        toast.message("The forge is cooling", { description: result.error, duration: 9000 });
       } else {
         setPhase("form");
         if (result.code === "no_spark") setZeroOpen(true);
@@ -193,6 +201,9 @@ export default function Create() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
             >
+              <div className="mx-auto mb-4 max-w-2xl empty:hidden">
+                <ForgeQueuePanel />
+              </div>
               <Panel title="Create Your Spell" gold className="mx-auto max-w-2xl">
                 <form onSubmit={handleCreate} className="space-y-5">
                   <div className="space-y-2">

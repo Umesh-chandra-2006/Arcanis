@@ -14,6 +14,8 @@ export const ENV = {
   jwtSecret: process.env.JWT_SECRET ?? "",
   isProduction: process.env.NODE_ENV === "production",
   isTest: process.env.NODE_ENV === "test",
+  /** Live model check at dev startup. Off by default: it calls every configured LLM on each restart. */
+  modelCheckOnStart: process.env.MODEL_CHECK_ON_START === "1",
   port: parseInt(process.env.PORT || "3100", 10),
   frontendUrl: process.env.FRONTEND_URL ?? "",
   corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ?? "",

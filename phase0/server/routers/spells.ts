@@ -2,7 +2,6 @@ import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { SpellCreationInputSchema } from "../../shared/validation";
 import {
-  createSpell,
   getBaseSpells,
   getFeaturedSpells,
   getMySpells,
@@ -12,6 +11,7 @@ import {
 import { getSparkBalance, recentSparkEntries } from "../spark";
 import { trackEvent } from "../analytics";
 import { hitRateLimit } from "../db-rate-limit";
+import { acknowledgeForged, createOrQueue, forgeQueueFor, withdrawQueued } from "../forge-queue";
 
 const SHARE_DEDUP_WINDOW_MS = 60 * 60 * 1000;
 const recentShareOpens = new Map<string, number>();
@@ -46,9 +46,10 @@ export const spellsRouter = router({
         metadata: { element: input.element, category: input.category },
       });
 
-      const result = await createSpell(ctx.user.id, input, { sessionId: ctx.sessionId });
+      // When the forge is cooling the request joins the forge queue instead of failing.
+      const result = await createOrQueue(ctx.user.id, input, { sessionId: ctx.sessionId });
 
-      // forge_cooling is logged by the breaker as creation_blocked_spend_cap.
+      // A cooling forge is logged by the breaker as creation_blocked_spend_cap, and by the queue as creation_queued.
       const outcome = result.success
         ? "creation_succeeded"
         : result.code === "generation_failed"
@@ -61,7 +62,10 @@ export const spellsRouter = router({
           eventType: outcome,
           userId: ctx.user.id,
           sessionId: ctx.sessionId,
-          metadata: result.spell ? { spellId: result.spell.id, element: result.spell.element, category: result.spell.category } : { code: result.code },
+          metadata:
+            "spell" in result && result.spell
+              ? { spellId: result.spell.id, element: result.spell.element, category: result.spell.category }
+              : { code: result.code },
         });
       }
 
@@ -73,6 +77,18 @@ export const spellsRouter = router({
 
       return result;
     }),
+
+  /** Designs waiting at the forge, and outcomes the player has not been shown yet. */
+  forgeQueue: protectedProcedure.query(({ ctx }) => forgeQueueFor(ctx.user.id)),
+
+  ackForgeQueue: protectedProcedure.input(z.object({ ids: z.array(z.string().max(36)).max(20) })).mutation(async ({ ctx, input }) => {
+    await acknowledgeForged(ctx.user.id, input.ids);
+    return { success: true };
+  }),
+
+  withdrawQueued: protectedProcedure.input(z.object({ id: z.string().max(36) })).mutation(async ({ ctx, input }) => {
+    return { success: await withdrawQueued(ctx.user.id, input.id) };
+  }),
 
   mySpells: protectedProcedure.query(async ({ ctx }) => {
     return getMySpells(ctx.user.id);
