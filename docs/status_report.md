@@ -10,19 +10,21 @@
 
 ---
 
-## Status as of 2026-10-11 (supersedes the headline below)
+## Status as of 2026-10-11, end of day (supersedes the headline below)
 
 The audit findings below describe the repo on 2026-10-09. This section is the current picture; `PROGRESS.md` stays the live source.
 
 | Area | State |
 |---|---|
-| Codebase | One app, `phase0/`, on branch `track-a`. The root prototype is archived on `archive/root-prototype`. Not pushed, not merged. |
+| Codebase | One app, `phase0/`, on branch `track-a`, pushed to GitHub on 2026-10-11 (first push; the first CI run's result has not been checked). Not merged into `main`. The root prototype is archived on `archive/root-prototype`. |
 | Phase 0 (measure) | Done: about $0.001 to $0.003 per creation at list price (`docs/cost_sheet.md`). |
-| Phase 1a (creation soft launch) | Code complete: Track A (A0 to A15, A17) and two founder test rounds (T1 to T7, T9 to T12, T14 to T16). 128 tests pass, type-check clean. |
+| Phase 1a (creation soft launch) | Code complete: Track A (A0 to A15, A17), founder test rounds T1 to T18, and the growth features (example prompts, try before signup, the Codex wall). 140 tests pass, type-check clean. Not deployed yet: the founder still has to create the Vercel project and configure Render (`docs/launch_checklist.md` section 2). |
 | Phase 1b (battles) | Not started. |
 | Docs | Master Doc v7.6, Phase Plan v2.3, Build Plan v2.6. |
-| Database | Production at migration 0016; `track-a` needs 0017 (forge queue table, session method column) and 0018 (Refinement Rune ledger, refined-from link, run kind). Test database at 0018. |
-| Refinement (added later on 2026-10-11) | Mending is built (T8): a third currency, Refinement Runes, minted 1 per forged spell and spent 1 per mend. Ascension is designed (Master Doc 6.7) and belongs to Phase 1b. |
+| Database | Production migrated to 0018 on 2026-10-11 after a verified backup (forge queue, session method, Refinement Rune ledger, refined-from link, run kind); the founder's account is admin there. Test database at 0018. The app still deployed on Render is the old one and does not match this schema. |
+| Refinement | Mending is built and tested but switched off for the soft launch (`FEATURES.refinement`); it opens with battles. The currency is Refinement Runes (code and table still say "stone"): 1 minted per forged spell, 1 per mend, about 5 per ascension. Ascension is designed (Master Doc 6.7) and belongs to Phase 1b. |
+| Research | Research comes first: a spell that needs research is sealed on the server and shown as a research tile, not a card, until it is granted. |
+| Tiers | Basic from Circle 1, Advanced from Circle 4, Mega from Circle 6, a hidden Sovereign tier at Circle 7 (caps not designed), Freestyle none. Only Basic is creatable in Phase 1a. |
 
 What the 2026-10-09 violations became:
 
@@ -34,10 +36,11 @@ What the 2026-10-09 violations became:
 
 Open before the soft launch:
 
-1. Founder tests the second-round changes (T13).
-2. Founder tests refine and the example prompts (T17). The refine rules were decided and built on 2026-10-11 (T8).
-3. Brevo rejects the founder machine's IPv6 address, so local sign-in emails reach only the founder's own inbox (through Resend). Turning off Brevo's "Authorised IPs" fixes this and the same problem on Render.
-4. Deploy (A16, `docs/launch_checklist.md`): backup, migrations 0017 and 0018 on production, Render and Vercel settings, admin role, OG check on Discord, X and WhatsApp.
+1. Check the first CI run on `track-a` and fix anything it finds.
+2. Fresh deploy by the founder: Vercel project, Render settings and environment, keep-awake monitor (`docs/launch_checklist.md` section 2).
+3. Verify on the deployed address, including the screens built late on 2026-10-11, which were never clicked through in a browser: the research tile and grant notice, the toast after leaving the Lab mid-forge, the landing page form, the Codex.
+4. OG check on Discord, X and WhatsApp, then merge `track-a` into `main`.
+5. Plan the first invited cohort with the founder.
 
 Known weak spots, not blockers: the one-email-per-minute limit uses fixed clock minutes, so two requests that straddle a minute boundary both pass (and its test can fail for that reason); the test suite and local dev share one database, so test runs use up the local daily creation cap.
 
