@@ -10,33 +10,17 @@
 
 | Area | State |
 |---|---|
-| Docs | Master Doc **v7.2**, Phase Plan **v2.2**, Build Plan **v2.2** (file names unchanged). Audit: `docs/status_report.md`. |
-| Canonical codebase | **`phase0/`** (decided H1), stays at `phase0/` permanently (F9). Root app to be archived on a branch (task A0). |
-| Architecture | Modular monolith on MySQL. Soft launch: current TiDB cluster, Cloudinary images, free Render instance kept awake by ping, free-tier provider keys. Phase 1b: new DB host and Cloudflare R2 (B0). |
-| Phase 0 (measure) | **Not done.** Folded into Track A (telemetry A2, harness A8, corpus run A14) plus soft-launch measurement. |
-| Phase 1a (creation soft launch) | In progress. Creation and share roughly 50 to 60 percent. Blocked on Track A. |
-| Phase 1b (async battles) | Early (roughly 10 to 15 percent, off-spec root code to be rebuilt). Track B. |
-| Live deployment | phase0 deployed but not publicized. No real users, spells or shares. The soft launch is the first real measurement. |
-| Tests | Root: 9 pass, type-check fails (5 errors). phase0: 19 pass, type-check clean. Tests hit the real DB (no test DB yet). |
-| Code changes this cycle | None. Docs only. **Founder actions closed; waiting for go-ahead on A0.** |
-| Task tracker | `docs/tasks.md` (checklist with acceptance checks for Track A and Track B; founder actions F1 to F11 closed). |
-
-### Done this cycle (2026-10-09)
-- Full repo audit (`docs/status_report.md`).
-- Founder decided A to H (Section 2).
-- Docs updated: Master Doc v7.1, Phase Plan v2.1, Build Plan v2.1, handover.md status, CLAUDE.md locked items and repo specifics.
-- `docs/tasks.md` created.
-
-### In progress
-Nothing in code. Founder to add `OPENAI_API_KEY` to `.env` (needed by A6).
+| Docs | Master Doc **v7.2**, Phase Plan **v2.2**, Build Plan **v2.2**. Audit `docs/status_report.md`; cost sheet `docs/cost_sheet.md`; quotas `docs/provider_quotas.md`; launch runbook `docs/launch_checklist.md`. |
+| Canonical codebase | **`phase0/`** (stays there, F9). Root prototype archived on branch `archive/root-prototype`. `arcanis-ui/` ported (A17) and deleted. |
+| Branch | All work on **`track-a`**, not yet merged or pushed. CI defined, not yet run. |
+| Phase 0 (measure) | **Done** (A14): about $0.001 to $0.003 per creation at list price; 2c 1.7%; moderation false positives 0 of 120. Image numbers are estimates until Cloudflare keys exist. |
+| Phase 1a (creation soft launch) | **Code complete** (A0 to A15, A17). Waiting on founder deploy steps (A16). |
+| Phase 1b (battles) | Not started (Track B). |
+| Production database | Migrated to 0015 (backups in `D:\Arcanis-backups`). The currently deployed old app is incompatible with it until the redeploy. |
+| Tests | phase0: 112 tests across 16 files, all passing (test DB `arcanis_test`); `pnpm check` clean. |
 
 ### Exact next step
-Founder gives go-ahead on Track A. Then start **A0** in `docs/tasks.md`: archive the root app on `archive/root-prototype`, remove it from `main`, add `.env.example`, a separate test DB, and CI. Then **A1**: back up the current TiDB database before any schema change.
-
-### What works today (phase0)
-Magic link sign-in (plus mandatory password, being removed), 5 Spark signup grant, spell creation (4 elements x Attack/Defense/Regen/Debuff x Instant), deterministic stats via Power Budget, LLM flavor text with profanity check, FLUX card art, library, public share page with OG tags, reviews, admin metrics page.
-
----
+Founder follows `docs/launch_checklist.md`: Cloudflare image keys, email fix (Brevo IPs or Resend domain), Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, merge `track-a`, redeploy, OG check on Discord/X/WhatsApp, invite a small cohort. Founder also sets the real Spark pack sizes (placeholders 10/30/90 in `SPARK_PACKS`).
 
 ## 2. Decisions (2026-10-09, founder)
 
@@ -108,4 +92,5 @@ Full table with estimates: Build Plan v2.1 Section 15. Checklist with acceptance
 | 2026-10-09 | Decisions | Founder decided A to H. Updated Master Doc to v7.1, Phase Plan to v2.1, Build Plan to v2.1 (with Track A/B build order), handover.md status, CLAUDE.md locked items and repo specifics, this file. Found DB host is TiDB Cloud. Could not check `VITE_PUBLIC_URL`. No code changed; waiting for go-ahead. |
 | 2026-10-09 | Wrap | Created `docs/tasks.md` (Phase 0 to 1 checklist). Updated this file and CLAUDE.md. Committed all docs. |
 | 2026-10-10 | Track A | On branch `track-a`: A0 to A13 done and committed (see docs/tasks.md). A17 UI port in progress (shell, card, pages done; screenshot-verified at 375px and desktop). Share-page fix: Vercel sends only preview bots to Render; people get the SPA. A14 corpus run was running in the background; rerun `pnpm corpus:run` then `pnpm cost-report --test --since <start> --write` for the cost sheet. Left: A14 sheet, A15 hardening, A16 launch (needs Cloudflare image keys, email fix, Render URL, redeploy), A17 finish and delete arcanis-ui. |
+| 2026-10-10 | Track A finish | A14 corpus run and cost sheet (found and fixed: hate and real-person prompts passed moderation), A17 UI port and arcanis-ui deleted (found and fixed: blank share pages, SVG previews ignored by crawlers), A15 HTTP end-to-end test and CSP, A16 production smoke test and launch runbook. 112 tests passing. |
 | 2026-10-10 | Founder actions | Closed F1 to F11. Master Doc v7.2, Phase Plan v2.2, Build Plan v2.2; tasks.md (A1 now backup, A2 quota audit, A4 creation limit, A9 Cloudinary, new B0); status_report.md disclaimer that `phase0/` stays. No code changed. |

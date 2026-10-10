@@ -4,7 +4,7 @@
 
 **How to use:** work top to bottom within a track. Tick `[x]` when every acceptance check passes, and note the date and commit in the task line. Estimates are working days. Every task keeps the engineering rules in `CLAUDE.md` (Two-Step Verification and a Spark path on any AI call, auth on any spend path, Will never reaches the client, no em dashes, no secrets in git).
 
-**Status:** founder actions closed 2026-10-10. Track A not started; waiting for founder go-ahead on A0.
+**Status (2026-10-10):** Track A code complete on branch `track-a` (A0 to A15 and A17). A16 is the founder's deploy, following `docs/launch_checklist.md`. Track B not started.
 
 ---
 
@@ -143,8 +143,10 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - **Done when:** all Phase 1a DoD items in Build Plan v2.2 Section 1 pass. Met in tests and the local browser run; the platform OG check is the last open item and belongs to the deploy (A16).
 
 ### A16 Soft launch
-- [ ] Redeploy with the env vars from A10.
-- [ ] Keep-awake monitor (F3): cron-job.org or UptimeRobot hits `/health` every 10 minutes and alerts the founder on downtime. No other free Render service on the account.
+- [x] Production build verified locally (`NODE_ENV=production`, test database): health, SPA and assets, CSP, share page with OG tags and working assets, SPA fallback, API with Secure cookies. (2026-10-10)
+- [x] Step-by-step runbook for the founder: `docs/launch_checklist.md` (keys, Render, Vercel, keep-awake monitor, admin role, deploy checks, cohort, rollback). (2026-10-10)
+- [ ] Founder: Cloudflare image keys, email fix, Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, merge `track-a`, redeploy.
+- [ ] OG check on Discord, X and WhatsApp on the public domain.
 - [ ] Small invited cohort; watch cost, quota and funnel dashboards for a week; then open.
 - [ ] Record the Gate 1a evaluation date (4 to 6 weeks out).
 
