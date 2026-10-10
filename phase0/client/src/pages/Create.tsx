@@ -20,6 +20,7 @@ import { mapSpellToCardProps, type SpellCardProps } from "@/lib/adapters";
 import { shareUrlFor } from "@/lib/share";
 import { useNameGate } from "@/components/NameDialog";
 import { ForgeQueuePanel } from "@/components/ForgeQueue";
+import { EXAMPLE_PROMPTS } from "@/lib/example-prompts";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
   Wand2,
@@ -126,6 +127,7 @@ export default function Create() {
         await Promise.all([
           utils.spells.sparkBalance.invalidate(),
           utils.spells.mySpells.invalidate(),
+          utils.spells.stoneBalance.invalidate(),
         ]);
         setPhase("done");
       } else if (result.code === "queued") {
@@ -206,6 +208,28 @@ export default function Create() {
               </div>
               <Panel title="Create Your Spell" gold className="mx-auto max-w-2xl">
                 <form onSubmit={handleCreate} className="space-y-5">
+                  <div className="space-y-2">
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Not sure where to begin? Start from one of these</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {EXAMPLE_PROMPTS.map((example) => (
+                        <button
+                          key={example.name}
+                          type="button"
+                          onClick={() => {
+                            setName(example.name);
+                            setElement(example.element);
+                            setCategory(example.category);
+                            setDescription(example.description);
+                          }}
+                          className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                        >
+                          <ElementIcon element={example.element} size={12} />
+                          {example.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="spell-name">Spell Name</Label>
                     <Input
@@ -341,6 +365,9 @@ export default function Create() {
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
                   Forged from 1 Spark. {balance} remaining.
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  It yielded 1 Refinement Stone. Open the card to refine the spell.
                 </p>
               </div>
 

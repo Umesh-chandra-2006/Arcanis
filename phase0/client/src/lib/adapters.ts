@@ -37,6 +37,8 @@ export function mapSpellToCardProps(spell: Phase0Spell) {
     castTimeMs: spell.castTimeMs,
     potentialTier: spell.potentialTier,
     isBase: spell.isPlatformSpell,
+    ownerId: spell.ownerId,
+    refinedFromId: spell.refinedFromId,
     mpCost: spell.mpCost,
     interruptionThreshold: spell.interruptionThreshold,
     drainRatio: spell.drainRatio,

@@ -7,7 +7,9 @@ import { SpellCard as GameSpellCard } from "@/components/game/spell-card";
 import { ElementIcon } from "@/components/game/element-icon";
 import type { SpellCardProps } from "@/lib/adapters";
 import { CAST_TIME_MS, TIER_CAPS, type CastType, type Tier } from "@shared/taxonomy";
-import { Share2, Lock } from "lucide-react";
+import { Share2, Lock, Hammer } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { RefineDialog } from "@/components/RefineDialog";
 
 interface SpellCardWrapperProps {
   spell: SpellCardProps;
@@ -65,7 +67,11 @@ export function SpellStats({ spell }: { spell: SpellCardProps }) {
 
 export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrapperProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [refining, setRefining] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // Only a spell the player forged can be refined (Master Doc 6.7): never a base spell.
+  const canRefine = !!user && spell.ownerId === user.id && !spell.isBase;
 
   const open = () => {
     setIsOpen(true);
@@ -98,6 +104,7 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
               <Badge variant="outline">{spell.castType}</Badge>
               <Badge variant="outline" className="border-primary/40 text-primary">{spell.tier} form</Badge>
               {spell.isBase && <Badge variant="outline">Base spell</Badge>}
+              {spell.refinedFromId && <Badge variant="outline">Refined</Badge>}
             </div>
 
             <PotentialNote tier={spell.tier} potential={spell.potentialTier} />
@@ -106,6 +113,18 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
 
             <SpellStats spell={spell} />
 
+            {canRefine && (
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setIsOpen(false);
+                  setRefining(true);
+                }}
+              >
+                <Hammer />
+                Refine this spell
+              </Button>
+            )}
             <Button
               variant="outline"
               className="w-full"
@@ -120,6 +139,7 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
           </div>
         </DialogContent>
       </Dialog>
+      {canRefine && <RefineDialog spell={spell} open={refining} onOpenChange={setRefining} />}
     </>
   );
 }
