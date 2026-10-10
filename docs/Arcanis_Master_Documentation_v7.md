@@ -26,7 +26,8 @@ Founder decisions on refining spells. The first changes the "two currencies, nev
 - The mending details first chosen during the build are confirmed: a mend of a spell still in research waits for the original; a mend counts toward the daily creation limit and is refused, not queued, while the forge cools; a mend is never a creation in a gate metric; the mended spell keeps the original's art and sealed-potential grade.
 - Refinement is a Phase 1 feature: mending in 1a, ascension in 1b.
 
-**Flagged, not resolved:** with Advanced at Circle 4 to 5, the Section 6.1 requirement for Mega (Circle 5) now sits inside the Advanced band. Founder to confirm Mega's Circle before Phase 1b.
+- Tiers and Circles (Sections 3, 6.1): Basic from Circle 1; Advanced from Circle 4; Mega from Circle 6 (was Circle 5, which sat inside the Advanced band and could never apply, because Element Mage needs an Awakened spell, the gate for Circle 5 to 6); Freestyle has no Circle. The affinity gates of Section 8.1 are unchanged. The Will capacity needed per tier is not set here; it is tuned with the battle harness in Phase 1b.
+- The Phase 0 cost sheet is refreshed in Phase 1, from soft-launch traffic (Phase Plan v2.3 Section 4): it predates the stronger stat guidance of v7.4 and mending.
 
 ---
 
@@ -253,7 +254,7 @@ Circles represent overall magical development. Maximum is 10. This is never disc
 |---|---|---|
 | 1-3 | Apprentice | Basic spells. Summon available from Circle 1. Smooth progression. |
 | 4-5 | Journeyman | Advanced spells unlock. Multi-cast unlocks at Circle 4 (V2 only). |
-| 6 | Adept | Near the ceiling most dedicated players reach. |
+| 6 | Adept | Mega spells unlock (v7.6). Near the ceiling most dedicated players reach. |
 | 7 | Legend | Community-known rarity. Multi-year commitment. |
 | 8-10 | Mythic | Effectively unreachable at V1 launch. |
 
@@ -555,8 +556,8 @@ Validation layer caps for summon stats per spell tier. Prevents LLM generating b
 | Tier | MP Cost | Circle Required | Will Range | Notes |
 |---|---|---|---|---|
 | Basic | 8-20 MP | Circle 1 | 10-25 | One platform spell per element in base pool |
-| Advanced | 20-45 MP | Circle 4 to 5 (v7.6, founder; was Circle 3, which contradicted Section 3) | 30-60 | Craftable from Channeler affinity (Threshold 3) |
-| Mega | 40-80 MP | Circle 5 | 70-120 | Craftable from Element Mage affinity (Threshold 5) |
+| Advanced | 20-45 MP | Circle 4 (v7.6, founder; was Circle 3, which contradicted Section 3). Circles 4 to 5 are the band where Advanced is the top tier | 30-60 | Craftable from Channeler affinity (Threshold 3) |
+| Mega | 40-80 MP | Circle 6 (v7.6, founder; was Circle 5) | 70-120 | Craftable from Element Mage affinity (Threshold 5) |
 | Freestyle | 13-17 MP | None | 15-30 | User types any move. No LLM in battle. |
 
 ## 6.2 Hard Stat Caps (Validation Layer)
@@ -1525,7 +1526,8 @@ Architecture is complete and reflects the commercial pivot. All major structural
 - Whether Lemon Squeezy can onboard and pay out to an India-based seller (founder verifying; Paddle is the fallback). Prerequisite for Phase 2.
 - Exact Will band edges and the strain descriptor cut points (starting values in Section 2.1, tuned through the balance harness)
 - Reconciling Section 2.1 Will cost ranges with Section 6.2 Will floors/caps (they disagree; flagged in v7.1)
-- Ascension (Section 6.7): its Spark cost, and Mega's Circle requirement now that Advanced is Circle 4 to 5 (Section 6.1 still says Circle 5 for Mega)
+- Ascension (Section 6.7): its Spark cost
+- The Will capacity each tier requires (Section 2.1 says capacity gates tiers but gives no number per tier); tuned in Phase 1b
 - Refinement Stones: the final name, whether battles become a second source in Phase 1b, and whether a holding cap is needed
 
 ## 29.5 Key Terminology Quick Reference (Updated)

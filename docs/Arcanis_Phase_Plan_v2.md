@@ -10,6 +10,7 @@ Founder decisions on refinement (Master Doc v7.6, Sections 6.7 and 22.1):
 - **Phase 1a scope adds mending** (refine an own spell for 1 Refinement Stone; a stone is minted by each Spark-paid creation) and example prompts in the Lab.
 - **Phase 1b scope adds ascension** (refine a spell one tier up, for Spark, with full research, gated by the target tier's requirements). Design only until then.
 - **Gate 1a definitions are unchanged (Section 5).** A mend is not a creation: it does not count toward "signup to first creation" or "day-7 creation retention". Mends are logged as their own events and reported beside the gate, not inside it.
+- **Cost sheet refresh moves to Phase 1 (Section 4, founder 2026-10-11).** Phase 0 is closed on the 2026-10-10 cost sheet. That sheet predates the stronger stat guidance and mending, so it is redone in Phase 1a from the first week of soft-launch traffic (`pnpm cost-report --days 7 --write`, then update `docs/cost_sheet.md`), with cost per mend and cost per Spark spent added. No separate corpus rerun is planned.
 - **Cost criterion (Section 5):** a creation can now be followed by at most one stone-paid mend, so the cost report also shows cost per mend and cost per Spark spent (creation plus mends). The $0.08 line applies to cost per Spark spent.
 
 ## What changed in v2.2 (2026-10-10)

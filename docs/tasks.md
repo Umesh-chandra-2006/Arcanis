@@ -148,6 +148,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [ ] Founder: Render's outbound IPs added to Brevo (the founder's own IP is already authorised), Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, admin role for the founder's account, merge `track-a`, redeploy. (Cloudflare image keys are no longer needed: element art.)
 - [ ] OG check on Discord, X and WhatsApp on the public domain.
 - [ ] Small invited cohort; watch cost, quota and funnel dashboards for a week; then open.
+- [ ] Cost sheet refresh (moved here from Phase 0 by the founder, 2026-10-11): after the first week of traffic, `pnpm cost-report --days 7 --write`, then update `docs/cost_sheet.md` with cost per creation, cost per mend and cost per Spark spent. The 2026-10-10 sheet predates the stronger stat guidance and mending.
 - [ ] Record the Gate 1a evaluation date (4 to 6 weeks out).
 
 ---
@@ -173,7 +174,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [ ] T13 Founder tests T9 to T12 and T14, T15 locally. Migration 0017 is on the test database only; apply it to production (after `pnpm db:backup`) at the deploy.
 - [x] T8 (a) Refine, as mending (founder decisions 2026-10-11, Master Doc v7.6 Sections 6.7 and 22.1): a third currency, Refinement Stones, 1 minted per Spark-paid creation that passes verification (`p0_stone_ledger`, `server/stones.ts`); "Refine this spell" on an own spell's card spends 1 stone and makes a new linked spell (`refined_from_id`) with the class, tier and Power Budget locked, through the same verified generation as creation (`server/spell-mend.ts`, `spells.mend`); no research of its own; counts toward the daily creation limit; never counted as a creation in a gate metric. Migration 0018 (test database only). 12 tests in `server/spell-mend.test.ts`. (2026-10-11)
 - [x] T8 (b) Example prompts in the Lab: six fixed spell ideas that fill the form (`client/src/lib/example-prompts.ts`); no AI call, no Spark. (2026-10-11)
-- [ ] T8 (a2) Ascension, the higher-tier refinement: designed in Master Doc 6.7, built in Phase 1b as task B10. Refinement is a Phase 1 feature (mending 1a, ascension 1b). Advanced needs Circle 4 to 5 (founder, 2026-10-11). Open: its Spark cost, and Mega's Circle.
+- [ ] T8 (a2) Ascension, the higher-tier refinement: designed in Master Doc 6.7, built in Phase 1b as task B10. Refinement is a Phase 1 feature (mending 1a, ascension 1b). Advanced needs Circle 4, Mega Circle 6 (founder, 2026-10-11). Open: its Spark cost.
 - [ ] T8 (c) try-before-signup on the landing page, (d) public "newest spells" wall, (e) one update email to subscribers: not picked yet.
 - [ ] T17 Founder tests T8 locally: the example chips in the Lab, "Refine this spell" on a card, the stone count in the profile window's Spark tab.
 - **Done when:** the founder has re-tested and signed off, and the picked suggestions are built with tests.
@@ -227,7 +228,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 
 ### B10 Ascension (2) (Master Doc 6.7, v7.6)
 - [ ] Refine an own spell into a new linked spell one tier up: Spark cost (founder to set), full research, tier from code only, Two-Step Verified, open only to a player who meets the target tier's Circle, affinity and Will capacity requirements.
-- [ ] Founder first: the Spark cost, and Mega's Circle (Advanced is Circle 4 to 5, founder 2026-10-11; Master Doc 6.1 still lists Mega at Circle 5, inside that band).
+- [ ] Founder first: the Spark cost. Circles are settled (founder, 2026-10-11): Advanced from Circle 4, Mega from Circle 6.
 
 ### B9 Battle release (1)
 - [ ] Re-enable Trap and Charged in creation; battle analytics events; full Gate 1 tracking.

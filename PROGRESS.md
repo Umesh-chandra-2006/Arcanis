@@ -90,7 +90,8 @@
 | Mend rules | New linked spell (original never edited); element, category, cast type and tier locked; same Power Budget, so it reshapes and never strengthens; own spells only, unlimited; base spells cannot be mended. |
 | Example prompts | Fixed chips in the Lab that fill the form. Claude's call: six examples, no AI. |
 | Confirmed by the founder (2026-10-11) | A mend of a spell still in research becomes usable when the original does (otherwise 1 stone skips any wait). A mend counts toward the daily creation limit and is refused, not queued, while the forge cools. A mend is never a "creation" in Gate 1a metrics; cost is reported per Spark spent so mends are inside the $0.08 line. The mended spell keeps the original's art and sealed-potential grade. No stones for spells forged before migration 0018, and no retroactive grant. |
-| Advanced tier | Needs Circle 4 to 5 (Master Doc 6.1 corrected from Circle 3). |
+| Tiers and Circles | Basic from Circle 1, Advanced from Circle 4, Mega from Circle 6, Freestyle none (Master Doc 6.1 and 3 corrected). Will capacity per tier is tuned in 1b. |
+| Cost sheet | Phase 0 is closed on the 2026-10-10 sheet; it is refreshed in Phase 1a from the first week of soft-launch traffic (task under A16). |
 | Phase | Refinement is a Phase 1 feature: mending in 1a, ascension in 1b. |
 
 ### Founder decisions, 2026-10-10 (later)
@@ -120,7 +121,7 @@
 ### Still open (needs founder)
 1. **Base spell tiers:** the 36 base spells are seeded as each element's Basic, Advanced and Mega spell in Master Doc 5.6 list order, because the doc states no tier per spell. Confirm or correct.
 2. **Phase 0 suggestions:** (a) refine and (b) example prompts are built (T8). Not picked yet: (c) try-before-signup on the landing page, (d) a public "newest spells" wall, (e) one update email to subscribers before battles ship.
-2a. **Refinement, open:** the name "Refinement Stones"; ascension's Spark cost (how many Spark one ascension costs; a creation costs 1; Claude suggested 3); and Mega's Circle: Master Doc 6.1 lists Mega at Circle 5, which now sits inside the Advanced band of Circle 4 to 5.
+2a. **Refinement, open:** the name "Refinement Stones"; ascension's Spark cost (how many Spark one ascension costs; a creation costs 1; Claude suggested 3).
 3. **Spark pack sizes:** 10, 30 and 90 are placeholders in `SPARK_PACKS`; prices are hidden by founder decision, so this can wait.
 4. **Brevo authorised IPs:** this machine sends over IPv6 and the address rotates, so local sign-in emails keep failing with 401 until the current IPv6 address is authorised or "Authorised IPs" is turned off (recommended; Render needs the same).
 5. **Forge queue details** (see the decisions table): Spark timing, the cap of 3, in-app notice only, the name "the Arcanum".

@@ -27,15 +27,15 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://RENDER_API_ORIGIN/api/:path*"
+      "destination": "https://arcanis-jpm1.onrender.com/api/:path*"
     },
     {
       "source": "/health",
-      "destination": "https://RENDER_API_ORIGIN/health"
+      "destination": "https://arcanis-jpm1.onrender.com/health"
     },
     {
       "source": "/spell/:id/image",
-      "destination": "https://RENDER_API_ORIGIN/spell/:id/image"
+      "destination": "https://arcanis-jpm1.onrender.com/spell/:id/image"
     },
     {
       "source": "/spell/:id",
@@ -46,7 +46,7 @@
           "value": "(?i).*(bot|crawler|spider|facebookexternalhit|facebookcatalog|twitterbot|discordbot|slackbot|whatsapp|telegrambot|linkedinbot|embedly|pinterest|redditbot|skypeuripreview|vkshare|quora link preview|applebot|google-inspectiontool|iframely).*"
         }
       ],
-      "destination": "https://RENDER_API_ORIGIN/spell/:id"
+      "destination": "https://arcanis-jpm1.onrender.com/spell/:id"
     },
     {
       "source": "/(.*)",
