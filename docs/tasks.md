@@ -175,7 +175,10 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] T8 (a) Refine, as mending (founder decisions 2026-10-11, Master Doc v7.6 Sections 6.7 and 22.1): a third currency, Refinement Runes, 1 minted per Spark-paid creation that passes verification (`p0_stone_ledger`, `server/stones.ts`); "Refine this spell" on an own spell's card spends 1 rune and makes a new linked spell (`refined_from_id`) with the class, tier and Power Budget locked, through the same verified generation as creation (`server/spell-mend.ts`, `spells.mend`); no research of its own; counts toward the daily creation limit; never counted as a creation in a gate metric. Migration 0018 (test database only). 12 tests in `server/spell-mend.test.ts`. (2026-10-11)
 - [x] T8 (b) Example prompts in the Lab: six fixed spell ideas that fill the form (`client/src/lib/example-prompts.ts`); no AI call, no Spark. (2026-10-11)
 - [ ] T8 (a2) Ascension, the higher-tier refinement: designed in Master Doc 6.7, built in Phase 1b as task B10. Refinement is a Phase 1 feature (mending 1a, ascension 1b). Advanced needs Circle 4, Mega Circle 6 (founder, 2026-10-11). Open: its Spark cost.
-- [ ] T8 (c) try-before-signup on the landing page, (d) public "newest spells" wall, (e) one update email to subscribers: not picked yet.
+- [x] T8 (c) Try before signup: the landing page takes the first spell's name and description, keeps it in the browser (`client/src/lib/draft.ts`), and the Lab fills it in after sign-in. Nothing is stored on the server or generated before sign-in. (2026-10-11)
+- [x] T8 (d) The Codex: public wall of the newest player spells (`spells.recent`, `/codex`), plus a strip on the landing page from 3 spells up. (2026-10-11)
+- [ ] T8 (e) One update email to opted-in players: planned for the battle phase (founder, 2026-10-11).
+- [x] Sidebar: Home is labelled "Sanctum" (founder asked for something magical; "Tower" is reserved for the later system). (2026-10-11)
 - [x] T18 Founder test of T8 (2026-10-11), three changes, all built: (1) refinement is switched off for the soft launch (`FEATURES.refinement`; opens with battles, task B10; runes still minted); the currency is renamed Refinement Runes in all copy and docs. (2) Leaving the Lab while a spell forges now ends in a toast (forged, or under research, or the error) instead of silence. (3) Research comes first: a spell that needs research is sealed on the server and shown as a research tile, not a card, until it is granted; the player is told when it is. Test added to `server/spell-pipeline.test.ts`.
 - [ ] T17 Founder tests T8 locally: the example chips in the Lab, "Refine this spell" on a card, the rune count in the profile window's Spark tab.
 - **Done when:** the founder has re-tested and signed off, and the picked suggestions are built with tests.
@@ -230,7 +233,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 ### B10 Open refinement: mending and ascension (3) (Master Doc 6.7, v7.6)
 - [ ] Switch on `FEATURES.refinement` (mending is built and tested, T8); rename `p0_stone_ledger`, `server/stones.ts` and `STONES` to rune (a migration and a code rename).
 - [ ] Refine an own spell into a new linked spell one tier up: Spark cost (founder to set), full research, tier from code only, Two-Step Verified, open only to a player who meets the target tier's Circle, affinity and Will capacity requirements.
-- [ ] Founder first: ascension's cost (3 Spark rejected as too much; Refinement Runes proposed). Circles are settled (founder, 2026-10-11): Advanced from Circle 4, Mega from Circle 6.
+- [x] Founder (2026-10-11): ascension is paid in Refinement Runes, starting value 5. Circles are settled (founder, 2026-10-11): Advanced from Circle 4, Mega from Circle 6.
 
 ### B9 Battle release (1)
 - [ ] Re-enable Trap and Charged in creation; battle analytics events; full Gate 1 tracking.

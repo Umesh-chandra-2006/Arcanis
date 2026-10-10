@@ -2,24 +2,70 @@
 
 Everything in code is done and tested on branch `track-a` (A0 to A15, A17). These steps need the founder's accounts. Do them in order.
 
-## 1. Accounts and keys (`.env` locally, the same values in Render)
+## 1. Accounts and keys (`.env` locally, the same values in Render, Step B)
 
 - [x] **Images:** not needed. Phase 0/1a uses element art as the card face (founder decision 2026-10-10, `CARD_ART=element`).
 - [x] **Email:** Brevo IPs authorised by the founder and verified for local use. For production, also add Render's outbound IPs (service, Connect, Outbound). Alternatively, turn off "Authorised IPs" in Brevo (Settings, Security), or verify a sending domain in Resend and set `RESEND_FROM` to an address on it. Without one of these, sign-in emails reach only the founder's own inbox.
 - [ ] `FOUNDER_ALERT_EMAIL`: where the app emails the founder, once a day at most, when the daily breaker pauses creation. Value: the founder's own email (decided 2026-10-11). Set it in Render only; in the local `.env` it would send a real email from a dev server.
 - [ ] `JWT_SECRET`: a long random value (it peppers sign-in code hashes). Keep the current one if already set.
 
-## 2. Render (API)
+## 2. Fresh deploy, step by step (founder, 2026-10-11)
 
-- [ ] Root directory `phase0`. Build command `pnpm install --frozen-lockfile && pnpm build`. Start command `pnpm start`. Health check path `/health`.
-- [ ] Environment: `NODE_ENV=production`, `DATABASE_URL`, `JWT_SECRET`, all provider keys from `.env.example`, `EMAIL_PROVIDER`, `STORAGE_PROVIDER=cloudinary`, `MODERATION_PROVIDER=openai`, `FRONTEND_URL=https://<public domain>`, `CORS_ALLOWED_ORIGINS=https://<public domain>`, `TRUST_PROXY_HOPS=2`, `DAILY_SPEND_LIMIT_USD=2`, `DAILY_CREATION_LIMIT=50` (text quotas allow more; raise after the first week), `FOUNDER_ALERT_EMAIL`.
-- [ ] Free instance kept awake (decision F3): cron-job.org or UptimeRobot hitting `https://<render service>/health` every 10 minutes, alerting the founder on downtime. Run no other free Render service on the account.
+The API runs on Render and the client on Vercel. There is no custom domain yet, so the Vercel project's own address (`https://<project>.vercel.app`) is the public domain everywhere below. Both services deploy the same GitHub repo, `Umesh-chandra-2006/Arcanis`, root directory `phase0`, branch `main` (or `track-a` until it is merged). Do the steps in this order, because each service needs the other's address.
 
-## 3. Vercel (client)
+### Step A. Vercel: create the project (gives you the public address)
 
-- [x] `vercel.json` points at `https://arcanis-jpm1.onrender.com` (2026-10-11, committed; goes live with the push).
-- [ ] Root directory `phase0` in the Vercel project settings.
-- [ ] Environment: `VITE_PUBLIC_URL=https://<public domain>`. There is no custom domain yet (founder, 2026-10-11), so the public domain is the Vercel project's own `https://<project>.vercel.app` address, here and in Render's `FRONTEND_URL` and `CORS_ALLOWED_ORIGINS`. Remove `VITE_API_URL` if it exists (the client always calls `/api` on its own origin).
+- [ ] vercel.com, Add New, Project, import the `Arcanis` repo.
+- [ ] **Root Directory:** `phase0`. **Framework Preset:** Other. Leave the build command, output directory and install command empty: `phase0/vercel.json` already sets them (`pnpm build:client`, `dist/public`), and Vercel picks pnpm from the lockfile.
+- [ ] **Production Branch** (Settings, Git, after creation): `main`, or `track-a` until the merge.
+- [ ] Deploy once. Note the address Vercel gives the project: `https://<project>.vercel.app`. This first deploy works for browsing, but share links are wrong until Step C.
+
+### Step B. Render: configure the API service (`arcanis-jpm1`)
+
+- [ ] Settings: **Root Directory** `phase0`; **Branch** the same as Vercel; **Runtime** Node.
+- [ ] **Build Command:** `pnpm install --frozen-lockfile --prod=false && pnpm build`. The `--prod=false` matters: with `NODE_ENV=production` set, pnpm would otherwise skip the build tools (Vite, esbuild) and the build fails.
+- [ ] **Start Command:** `pnpm start`. **Health Check Path:** `/health`. **Instance type:** Free.
+- [ ] Environment, set fresh (decision F8). Delete anything left from the old app that is not in this list.
+
+| Key | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `NODE_VERSION` | `22` |
+| `DATABASE_URL` | the production value from the local `.env` |
+| `JWT_SECRET` | the value from the local `.env` (it peppers sign-in codes; keep it stable) |
+| `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS` | from the local `.env` (Groq, with Gemini as fallback) |
+| `GEMINI_API_KEY`, `OPENROUTER_API_KEY` | from the local `.env` |
+| `MODERATION_PROVIDER` | `openai` |
+| `OPENAI_API_KEY` | from the local `.env` |
+| `STORAGE_PROVIDER` | `cloudinary` |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | from the local `.env` |
+| `EMAIL_PROVIDER` | `brevo` |
+| `BREVO_API_KEY`, `BREVO_FROM` | from the local `.env` |
+| `CARD_ART` | `element` |
+| `FRONTEND_URL` | `https://<project>.vercel.app` (no trailing slash) |
+| `CORS_ALLOWED_ORIGINS` | `https://<project>.vercel.app` |
+| `TRUST_PROXY_HOPS` | `2` |
+| `DAILY_SPEND_LIMIT_USD` | `2` |
+| `DAILY_CREATION_LIMIT` | `50` (raise after the first week) |
+| `FOUNDER_ALERT_EMAIL` | the founder's email |
+
+Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provides it) or any `VITE_` key on Render.
+
+- [ ] Save, then Manual Deploy, Deploy latest commit. When it is live, `https://arcanis-jpm1.onrender.com/health` must answer `OK`.
+- [ ] Brevo: Render's outbound IPs were authorised in an earlier deploy (founder, 2026-10-11). If sign-in emails do not arrive, compare them with the service's Connect, Outbound list; they can change.
+
+### Step C. Vercel: set the public address and redeploy
+
+- [ ] Settings, Environment Variables: `VITE_PUBLIC_URL` = `https://<project>.vercel.app` (Production). No other variable is needed; the client always calls `/api` on its own origin, and `vercel.json` forwards that to Render.
+- [ ] Deployments, the latest one, Redeploy (the value is baked in at build time).
+
+### Step D. Keep the free Render instance awake (decision F3)
+
+- [ ] cron-job.org or UptimeRobot: GET `https://arcanis-jpm1.onrender.com/health` every 10 minutes, with an alert to the founder on failure. Run no other free Render service on the account.
+
+### Already done in the repo
+
+- [x] `vercel.json` points at `https://arcanis-jpm1.onrender.com` (2026-10-11).
 
 ## 4. Database
 

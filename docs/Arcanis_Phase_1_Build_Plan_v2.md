@@ -11,6 +11,8 @@
 - **Ascension:** designed in Master Doc 6.7, built in Track B (task B10). Not in Phase 1a.
 - **Research comes first (Section 7.5):** while `now < research_ready_at`, `toPublicSpell` returns a sealed view (the player's own name, element and category; blank text, art and stats), `getSpellPublic` returns nothing and the share routes answer 404. The client shows a research tile, not a card, and announces the grant when research completes.
 - **Example prompts (Section 10):** fixed spell ideas in the Lab that fill the form. No endpoint.
+- **Try before signup (Section 10):** the landing page keeps a visitor's first spell (name, description) in `localStorage` (`client/src/lib/draft.ts`, 24 hours); after sign-in Home redirects to the Lab, which fills the form once. No server storage and no unauthenticated generation path. Anonymous event `landing_draft_started` (no text sent).
+- **Codex (Section 10):** `spells.recent` (public) returns the 24 newest player spells that are visible, granted and not from a banned account; page `/codex`, and a strip on the landing page when there are 3 or more. Sidebar: Home is labelled "Sanctum".
 - **Cost sheet refresh (Section 15, A16):** redone in Phase 1a from the first week of soft-launch traffic, with cost per mend and cost per Spark spent (Phase Plan v2.3).
 
 ## What changed in v2.5 (2026-10-11)
@@ -633,7 +635,7 @@ Track A total: roughly 20 to 23 working days. v2.2: founder actions F1 to F11 ar
 | B7 | Persistence, rematch notifications (in-app inbox plus email digest) | 1.5 |
 | B8 | Balance harness battle simulation; tune Will bands and strain descriptor cut points; Will leakage tests | 2.5 |
 | B9 | Re-enable Trap and Charged in creation; battle analytics events | 1 |
-| B10 | v2.6: open refinement: switch on `FEATURES.refinement` (mending, already built and tested), rename the ledger and code from stone to rune, then ascension (Master Doc 6.7): one tier up, Spark cost, full research, gated by the target tier's Circle, affinity and Will capacity requirements; tier from code only. Advanced needs Circle 4, Mega Circle 6 (founder, 2026-10-11). Needs the founder's decision on ascension's cost first (3 Spark was rejected; Refinement Runes proposed) | 3 |
+| B10 | v2.6: open refinement: switch on `FEATURES.refinement` (mending, already built and tested), rename the ledger and code from stone to rune, then ascension (Master Doc 6.7): one tier up, Spark cost, full research, gated by the target tier's Circle, affinity and Will capacity requirements; tier from code only. Advanced needs Circle 4, Mega Circle 6 (founder, 2026-10-11). Ascension is paid in Refinement Runes (founder, 2026-10-11; starting value 5) | 3 |
 
 Track B total: roughly 27 to 30 working days.
 

@@ -31,7 +31,12 @@ Founder decisions on refining spells. The first changes the "two currencies, nev
 - **Refinement does not open with the creation soft launch.** Mending is built and tested but switched off; it opens with the battle release, together with ascension. Runes are still minted by every forged spell meanwhile, so players hold them on the day it opens.
 - **The currency is named Refinement Runes** (was the working name Refinement Stones). In code and in the database the ledger still says "stone"; renaming it is part of opening refinement.
 - **A fifth tier, Sovereign (Sections 6.1, 8.1).** Above Mega; hidden until a player unlocks it (never listed, named or hinted at in the UI before then). Its gate is the one Section 8.1 already gives: Element Sovereign (Threshold 7) and Circle 7. Its stat caps and Power Budget are not designed yet.
-- **Still open:** the name of the entity that grants queued and researched spells (the founder finds "the Arcanum" reads as a place and wants a name that reads as a being; "the Arcanum" stays in the app until one is picked), and ascension's cost (3 Spark was rejected as too much; Refinement Runes or another currency is being considered).
+- **"The Arcanum" is confirmed** as the name of the will that grants queued and researched spells (founder, after considering alternatives).
+- **Ascension is paid in Refinement Runes, not Spark (Section 6.7).** Starting value 5 runes per ascension. No fourth currency. Every rune traces back to a Spark spent, so cost stays bounded.
+- **Try before signup (Sections 18.2, 23.2).** The landing page asks a visitor for their first spell's name and description before any account exists. The design is kept in the visitor's browser only; after sign-in it is waiting in the Lab, and nothing is generated until the signed-in player presses Create. The founder's alternative (store the request on the server for a not-yet-signed-in visitor and email a time-limited link) was considered and not built: it would add an unauthenticated write path and stored anonymous text to moderate, for a gain (finishing on a different device) that the 6-digit code already covers.
+- **The Codex (Section 23).** A public page of the newest player spells, and a strip of them on the landing page once there are at least 3. Only verified spells; none in research, taken down, or from banned accounts.
+- **Navigation:** the home entry in the sidebar is named "Sanctum". ("Tower" was the founder's other candidate; it is the name of a later system and is kept out of Phase 1 copy, per the v7.1 decision.)
+- **One update email to opted-in players** is planned for the battle phase, not now.
 - The Phase 0 cost sheet is refreshed in Phase 1, from soft-launch traffic (Phase Plan v2.3 Section 4): it predates the stronger stat guidance of v7.4 and mending.
 
 ---
@@ -650,7 +655,7 @@ A player can refine a spell they created. There are two refinements, and they ar
 
 - The spell becomes a new spell one tier higher (Basic to Advanced, Advanced to Mega) that keeps its element, category and identity and tops the original within the higher tier's Power Budget and caps.
 - Open only to a player who already meets the target tier's requirements (Section 6.1: Circle, affinity, and the Will capacity gate of Section 2.1). Ascension is a way to carry a loved spell upward, never a way to buy a tier: progression cannot be bought (Section 14).
-- Cost: open (Section 29.4). Spark at 3 per ascension was judged too much by the founder; Refinement Runes or another currency is being considered.
+- Cost: Refinement Runes, not Spark (founder, 2026-10-11). Starting value 5 runes per ascension, tuned when it ships. Reserved, committed and refunded on the rune ledger like a mend.
 - Full research, by the normal rule (Section 6.3), with no exemption.
 - It is not built until circles, affinity and Will capacity exist to gate it. It is separate from Awakened spells (Section 7.3), which are earned through proficiency and stay in their tier.
 
@@ -1217,7 +1222,7 @@ The currency of mending (Section 6.7). Named by the founder on 2026-10-11; first
 
 - **Minted only by Spark-paid creation:** 1 rune each time a creation passes verification and its Spark is committed. A refunded creation mints nothing. A mend mints nothing.
 - **Never purchasable, never granted free, never earned from play that did not spend Spark.** If a second source is ever added (battle wins were discussed for Phase 1b), it needs a founder decision and a cap, because it would put an earnable currency onto a generation call.
-- **Spent only on mending:** 1 rune per mend. Reserved before generation, committed on success or on a player-caused rejection, returned on our failure, on the same append-only ledger rules as Spark.
+- **Spent on refinement:** 1 rune per mend; ascension costs runes too (starting value 5, Section 6.7). Reserved before generation, committed on success or on a player-caused rejection, returned on our failure, on the same append-only ledger rules as Spark.
 - **No holding cap in Phase 1a.** Supply is already bounded by Spark spent.
 - **No retroactive grant.** A spell forged before runes existed mints nothing later (founder, 2026-10-11).
 - Never converted to or from Spark or Aether Shards.
@@ -1536,8 +1541,7 @@ Architecture is complete and reflects the commercial pivot. All major structural
 - The Will capacity each tier requires (Section 2.1 says capacity gates tiers but gives no number per tier); tuned in Phase 1b
 - Refinement Runes: whether battles become a second source in Phase 1b, and whether a holding cap is needed
 - The Sovereign tier: its stat caps, MP and Will ranges and Power Budget
-- The name of the entity that grants queued and researched spells ("the Arcanum" is a placeholder)
-- Ascension's cost: 3 Spark was judged too much; Refinement Runes or another currency is being considered
+- Ascension's exact rune cost (starting value 5)
 
 ## 29.5 Key Terminology Quick Reference (Updated)
 
