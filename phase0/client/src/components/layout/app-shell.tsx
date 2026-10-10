@@ -8,8 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SparkDots } from "@/components/SparkDots";
 import { Button } from "@/components/ui/button";
 
-// Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle, Tower,
-// Quests and the rest arrive with their phases.
+// Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle and the
+// other game areas arrive with their phases.
 const PLAYER_NAV = [
   { to: "/", label: "Home", icon: Castle, auth: false },
   { to: "/create", label: "Lab", icon: FlaskConical, auth: true },
