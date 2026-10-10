@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { SpellCreationInputSchema, SpellMendInputSchema } from "../../shared/validation";
-import { mendSpell } from "../spell-mend";
+import { mendSpell, type SpellMendResult } from "../spell-mend";
+import { FEATURES, VALIDATION_MESSAGES } from "../../shared/constants";
 import { getStoneBalance } from "../stones";
 import {
   getBaseSpells,
@@ -93,7 +94,9 @@ export const spellsRouter = router({
   }),
 
   /** Mending (Master Doc 6.7): refine an own spell into a new linked spell for one Refinement Stone. */
-  mend: protectedProcedure.input(SpellMendInputSchema).mutation(async ({ ctx, input }) => {
+  mend: protectedProcedure.input(SpellMendInputSchema).mutation(async ({ ctx, input }): Promise<SpellMendResult> => {
+    // Built, but not open until the battle release (FEATURES in shared/constants.ts).
+    if (!FEATURES.refinement) return { success: false, code: "not_allowed", error: VALIDATION_MESSAGES.MEND_NOT_OPEN };
     await trackEvent({ eventType: "mend_started", userId: ctx.user.id, sessionId: ctx.sessionId, metadata: { spellId: input.spellId } });
     const result = await mendSpell(ctx.user.id, input, { sessionId: ctx.sessionId });
     const outcome = result.success

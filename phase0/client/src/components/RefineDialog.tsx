@@ -31,7 +31,7 @@ interface RefineTarget {
 /**
  * Mending (Master Doc 6.7): the player says what should change; the forge
  * reshapes the spell inside the same class, tier and power. One Refinement
- * Stone, no Spark. The result is a new spell; the original stays as it was.
+ * Rune, no Spark. The result is a new spell; the original stays as it was.
  */
 export function RefineDialog({ spell, open, onOpenChange }: { spell: RefineTarget; open: boolean; onOpenChange: (open: boolean) => void }) {
   const [note, setNote] = useState("");
@@ -132,14 +132,14 @@ export function RefineDialog({ spell, open, onOpenChange }: { spell: RefineTarge
             <div className="flex items-center justify-between gap-3 pt-1">
               <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <Gem className="size-3.5 text-primary" />
-                Costs {STONES.mendCost} Refinement Stone{balance !== undefined ? `. You have ${balance}.` : ""}
+                Costs {STONES.mendCost} Refinement Rune{balance !== undefined ? `. You have ${balance}.` : ""}
               </span>
               <Button type="submit" disabled={mend.isPending || empty}>
                 {mend.isPending ? <Loader2 className="animate-spin" /> : <Hammer />}
                 {mend.isPending ? "Refining…" : "Refine"}
               </Button>
             </div>
-            {empty && <p className="text-xs text-muted-foreground">Each spell you forge yields one Refinement Stone.</p>}
+            {empty && <p className="text-xs text-muted-foreground">Each spell you forge yields one Refinement Rune.</p>}
           </form>
         )}
       </DialogContent>

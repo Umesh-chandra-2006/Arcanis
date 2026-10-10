@@ -4,7 +4,7 @@ import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { p0GenerationRuns, p0ModerationEvents, p0Spells, p0Users } from "../drizzle/schema";
-import { createSpell, type PipelineDeps } from "./spell-pipeline";
+import { createSpell, getMySpells, getSpellPublic, type PipelineDeps } from "./spell-pipeline";
 import { getSparkBalance, grantSpark } from "./spark";
 import { getBreakerStatus } from "./spend-breaker";
 import { AllProvidersFailedError, ProviderError } from "./providers/errors";
@@ -204,6 +204,24 @@ describeDb("creation pipeline", () => {
     const b = await createSpell(user.id, { ...INPUT, name: "Second" }, { deps: deps() });
     const c = await createSpell(user.id, { ...INPUT, name: "Third" }, { deps: deps() });
     expect([a.spell!.researching, b.spell!.researching, c.spell!.researching]).toEqual([false, false, true]);
+
+    // Research comes first: until it completes nothing the forge made leaves the server.
+    const sealed = { flavorText: "", loreLine: "", imageUrl: "", damageMin: 0, damageMax: 0, mpCost: 0, castTimeMs: 0, potentialTier: null };
+    expect(c.spell).toMatchObject({ name: "Third", element: "Fire", category: "Attack", ...sealed });
+    expect(a.spell!.flavorText).not.toBe("");
+    const mine = await getMySpells(user.id);
+    expect(mine.find((s) => s.id === c.spell!.id)).toMatchObject(sealed);
+    expect(mine.find((s) => s.id === a.spell!.id)!.damageMax).toBeGreaterThan(0);
+    // No public page until it is granted.
+    expect(await getSpellPublic(c.spell!.id)).toBeNull();
+    expect(await getSpellPublic(a.spell!.id)).not.toBeNull();
+
+    // When the research is complete the spell is granted whole.
+    await (await getDb())!.update(p0Spells).set({ researchReadyAt: new Date(Date.now() - 60_000) }).where(eq(p0Spells.id, c.spell!.id));
+    const granted = await getSpellPublic(c.spell!.id);
+    expect(granted).toMatchObject({ researching: false, name: "Third" });
+    expect(granted!.flavorText).not.toBe("");
+    expect(granted!.damageMax).toBeGreaterThan(0);
   });
 
   it("backs off and retries when providers are only rate-limited", async () => {

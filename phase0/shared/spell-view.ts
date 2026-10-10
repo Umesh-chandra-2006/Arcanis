@@ -63,12 +63,49 @@ export interface PublicSpell {
   isPlatformSpell: boolean;
   /** The spell this one was mended from, if any (Master Doc 6.7). */
   refinedFromId: string | null;
-  /** True while research runs. No time is ever disclosed (Master Doc 6.3). */
+  /**
+   * True while research runs. No time is ever disclosed (Master Doc 6.3). A
+   * researching spell is sealed: its stats, text and art are blank until granted.
+   */
   researching: boolean;
   createdAt: string;
 }
 
 export function toPublicSpell(spell: SpellRowLike, now = new Date()): PublicSpell {
+  const researching = spell.researchReadyAt ? spell.researchReadyAt.getTime() > now.getTime() : false;
+  if (researching) {
+    // Research comes first (Master Doc 6.3, v7.6): until it is complete the spell
+    // has not been granted, so nothing the forge made leaves the server. Only what
+    // the player wrote themselves (name, element, category) is sent back.
+    return {
+      id: spell.id,
+      ownerId: spell.ownerId,
+      name: spell.name,
+      element: spell.element,
+      category: spell.category,
+      secondaryCategory: spell.secondaryCategory ?? null,
+      castType: spell.castType,
+      tier: spell.tier,
+      damageMin: 0,
+      damageMax: 0,
+      mpCost: 0,
+      strain: "light",
+      castTimeMs: 0,
+      interruptionThreshold: null,
+      maintenanceCostPerTurn: null,
+      drainRatio: null,
+      potentialTier: null,
+      flavorText: "",
+      loreLine: "",
+      imageUrl: "",
+      dominantColor: null,
+      shareCount: 0,
+      isPlatformSpell: spell.isPlatformSpell,
+      refinedFromId: spell.refinedFromId ?? null,
+      researching: true,
+      createdAt: spell.createdAt.toISOString(),
+    };
+  }
   return {
     id: spell.id,
     ownerId: spell.ownerId,
@@ -95,7 +132,7 @@ export function toPublicSpell(spell: SpellRowLike, now = new Date()): PublicSpel
     shareCount: spell.shareCount,
     isPlatformSpell: spell.isPlatformSpell,
     refinedFromId: spell.refinedFromId ?? null,
-    researching: spell.researchReadyAt ? spell.researchReadyAt.getTime() > now.getTime() : false,
+    researching: false,
     createdAt: spell.createdAt.toISOString(),
   };
 }

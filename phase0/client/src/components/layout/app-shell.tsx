@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ProfileDialog } from "@/components/ProfileDialog";
 import { Onboarding } from "@/components/Onboarding";
 import { ForgeQueueWatcher } from "@/components/ForgeQueue";
+import { ResearchWatcher } from "@/components/Research";
 import { Button } from "@/components/ui/button";
 
 // Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle and the
@@ -89,6 +90,7 @@ export function AppShell() {
 
       <Onboarding />
       <ForgeQueueWatcher />
+      <ResearchWatcher />
 
       <main className={cn("min-w-0 flex-1 pt-14 transition-[margin] duration-300 lg:pt-0", collapsed ? "lg:ml-16" : "lg:ml-56")}>
         <AnimatePresence mode="wait">

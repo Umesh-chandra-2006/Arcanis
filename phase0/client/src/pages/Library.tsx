@@ -5,6 +5,7 @@ import { Page } from "@/components/layout/page";
 import { useAuth } from "@/contexts/AuthContext";
 import { Panel } from "@/components/game/panel";
 import { SpellCardWrapper } from "@/components/SpellCard";
+import { ResearchTile } from "@/components/Research";
 import { ElementIcon } from "@/components/game/element-icon";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -42,15 +43,8 @@ function SpellGrid({ spells }: { spells: Phase0Spell[] }) {
     <div className="flex flex-wrap justify-center gap-5 sm:justify-start">
       {spells.map((spell) =>
         spell.researching ? (
-          // Research: dimmed, no countdown, no time, no lock language (Master Doc 6.3).
-          <div key={spell.id} className="relative">
-            <div className="opacity-50 saturate-50">
-              <SpellCardWrapper spell={mapSpellToCardProps(spell)} />
-            </div>
-            <span className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full border border-primary/40 bg-background/90 px-3 py-0.5 text-[11px] uppercase tracking-[0.2em] text-primary">
-              Researching
-            </span>
-          </div>
+          // Research comes first: not a card yet. No countdown, no time, no lock language (Master Doc 6.3).
+          <ResearchTile key={spell.id} name={spell.name} element={spell.element} />
         ) : (
           <SpellCardWrapper key={spell.id} spell={mapSpellToCardProps(spell)} />
         )

@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { SparkPacksDialog } from "@/components/SparkPacks";
 import { inviteUrl } from "@/lib/share";
 import { cn } from "@/lib/utils";
-import { SPARK, STONES } from "@shared/constants";
+import { FEATURES, SPARK, STONES } from "@shared/constants";
 import { UserRound, Sparkles, Users, Bell, ShieldCheck, Copy, LogOut, Check } from "lucide-react";
 import { toast } from "sonner";
 
@@ -132,7 +132,7 @@ function ProfileTab({ overview: o }: { overview: Overview | undefined }) {
 
 function SparkTab({ overview: o, loading }: { overview: Overview | undefined; loading: boolean }) {
   const [packs, setPacks] = useState(false);
-  const stones = trpc.spells.stoneBalance.useQuery();
+  const stones = trpc.spells.stoneBalance.useQuery(undefined, { enabled: FEATURES.refinement });
   if (loading || !o) return <Spinner />;
   return (
     <div className="space-y-5">
@@ -152,15 +152,17 @@ function SparkTab({ overview: o, loading }: { overview: Overview | undefined; lo
       <Button variant="outline" size="sm" onClick={() => setPacks(true)}>
         <Sparkles /> Spark packs (coming soon)
       </Button>
-      <div className="arc-panel flex items-center justify-between p-4">
-        <div>
-          <p className="font-serif text-2xl text-primary">{stones.data?.balance ?? 0}</p>
-          <p className="text-xs text-muted-foreground">Refinement Stones</p>
+      {FEATURES.refinement && (
+        <div className="arc-panel flex items-center justify-between p-4">
+          <div>
+            <p className="font-serif text-2xl text-primary">{stones.data?.balance ?? 0}</p>
+            <p className="text-xs text-muted-foreground">Refinement Runes</p>
+          </div>
+          <p className="max-w-52 text-right text-xs text-muted-foreground">
+            Each spell you forge yields {STONES.perCreation}. Refining a spell costs {STONES.mendCost}.
+          </p>
         </div>
-        <p className="max-w-52 text-right text-xs text-muted-foreground">
-          Each spell you forge yields {STONES.perCreation}. Refining a spell costs {STONES.mendCost}.
-        </p>
-      </div>
+      )}
       <SparkPacksDialog open={packs} onOpenChange={setPacks} source="chip" balance={o.spark.balance} />
       <div>
         <p className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">Recent</p>

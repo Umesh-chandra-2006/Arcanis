@@ -5,6 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Panel } from "@/components/game/panel";
 import { Page } from "@/components/layout/page";
 import { SpellCardWrapper } from "@/components/SpellCard";
+import { ResearchTile } from "@/components/Research";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { SignInForm } from "@/components/SignInForm";
@@ -79,9 +80,13 @@ function MageHome({ name }: { name: string | null }) {
           <Spinner />
         ) : recent.length ? (
           <div className="flex flex-wrap justify-center gap-5 sm:justify-start">
-            {recent.map((spell) => (
-              <SpellCardWrapper key={spell.id} spell={mapSpellToCardProps(spell)} size="sm" />
-            ))}
+            {recent.map((spell) =>
+              spell.researching ? (
+                <ResearchTile key={spell.id} name={spell.name} element={spell.element} size="sm" />
+              ) : (
+                <SpellCardWrapper key={spell.id} spell={mapSpellToCardProps(spell)} size="sm" />
+              )
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-6 text-center">

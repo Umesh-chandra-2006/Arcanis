@@ -559,9 +559,14 @@ export function isTakenDown(spell: Pick<Phase0Spell, "isPublic" | "removedAt">):
   return !spell.isPublic || spell.removedAt !== null;
 }
 
+/** Research comes first: until it completes the spell has not been granted and has no public page. */
+export function isResearching(spell: Pick<Phase0Spell, "researchReadyAt">, now = new Date()): boolean {
+  return spell.researchReadyAt.getTime() > now.getTime();
+}
+
 export async function getSpellPublic(spellId: string): Promise<PublicSpell | null> {
   const spell = await getSpellRow(spellId);
-  return spell && !isTakenDown(spell) ? toPublicSpell(spell) : null;
+  return spell && !isTakenDown(spell) && !isResearching(spell) ? toPublicSpell(spell) : null;
 }
 
 export async function getFeaturedSpells(limit = 5): Promise<PublicSpell[]> {

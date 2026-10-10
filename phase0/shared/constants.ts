@@ -12,8 +12,19 @@ export const SPARK = {
 } as const;
 
 /**
- * Refinement Stones (Master Doc v7.6 22.1). Minted only by a Spark-paid
- * creation that passes verification; spent only on mending.
+ * Features that are built but not open to players yet. Refinement (Master Doc
+ * 6.7) opens with the battle release, not the creation soft launch (founder,
+ * 2026-10-11). While it is off, `spells.mend` refuses and no refine button or
+ * rune count is shown; runes are still minted, so players have them on day one.
+ */
+export const FEATURES: { refinement: boolean } = {
+  refinement: false,
+};
+
+/**
+ * Refinement Runes (Master Doc v7.6 22.1; the code and the ledger table still
+ * say "stone", the first working name). Minted only by a Spark-paid creation
+ * that passes verification; spent only on mending.
  */
 export const STONES = {
   perCreation: 1,
@@ -139,10 +150,11 @@ export const VALIDATION_MESSAGES = {
   INVALID_LLM_OUTPUT: "The forge could not shape that spell. Your Spark was returned; please try again.",
   CONTENT_MODERATED: "That description can't be forged. Please rephrase it.",
   INPUT_REJECTED: "That description breaks the forge's rules, so it can't be made. The Spark was spent.",
-  NO_STONES: "You have no Refinement Stones. Each spell you forge yields one.",
+  NO_STONES: "You have no Refinement Runes. Each spell you forge yields one.",
   MEND_NOT_ALLOWED: "Only a spell you forged yourself can be refined.",
-  MEND_REJECTED: "That request breaks the forge's rules, so it can't be made. The Refinement Stone was spent.",
-  MEND_FAILED: "The forge could not reshape that spell. Your Refinement Stone was returned; please try again.",
+  MEND_NOT_OPEN: "Refining spells is not open yet.",
+  MEND_REJECTED: "That request breaks the forge's rules, so it can't be made. The Refinement Rune was spent.",
+  MEND_FAILED: "The forge could not reshape that spell. Your Refinement Rune was returned; please try again.",
   ACCOUNT_RESTRICTED: "Your account can't create spells right now.",
   GENERATION_FAILED: "The forge is busy. Please try again in a moment.",
 } as const;

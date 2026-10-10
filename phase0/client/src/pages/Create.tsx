@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
@@ -21,6 +21,7 @@ import { shareUrlFor } from "@/lib/share";
 import { useNameGate } from "@/components/NameDialog";
 import { ForgeQueuePanel } from "@/components/ForgeQueue";
 import { EXAMPLE_PROMPTS } from "@/lib/example-prompts";
+import { FEATURES } from "@shared/constants";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
   Wand2,
@@ -31,6 +32,7 @@ import {
   Loader2,
   BookOpen,
   LogOut,
+  Hourglass,
 } from "lucide-react";
 import { CREATION_ENABLED, type CreationCategory, type Element } from "@shared/taxonomy";
 
@@ -67,6 +69,13 @@ export default function Create() {
   const myCode = trpc.referrals.myCode.useQuery(undefined, { enabled: isAuthenticated, staleTime: Infinity });
   const trackEvent = trpc.analytics.track.useMutation();
   const utils = trpc.useUtils();
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     // Wait for the session check; a reload must not bounce a signed-in player.
@@ -122,14 +131,33 @@ export default function Create() {
         description: description.trim(),
       });
 
+      // The player may have left the Lab while the forge worked. The outcome is
+      // then told by a toast, wherever they are, instead of on this page.
+      const away = !mounted.current;
+
       if (result.success && result.spell) {
-        setCreated(result.spell);
+        const spell = result.spell;
+        setCreated(spell);
         await Promise.all([
           utils.spells.sparkBalance.invalidate(),
           utils.spells.mySpells.invalidate(),
           utils.spells.stoneBalance.invalidate(),
         ]);
         setPhase("done");
+        if (away) {
+          if (spell.researching) {
+            toast.message(`${spell.name} is being researched`, {
+              description: "It will be granted to you when the research is complete.",
+              duration: 12_000,
+            });
+          } else {
+            toast.success(`${spell.name} is forged`, {
+              description: "It waits in your Spellbook.",
+              duration: 12_000,
+              action: { label: "Open", onClick: () => navigate("/library") },
+            });
+          }
+        }
       } else if (result.code === "queued") {
         // The forge is cooling: the design rests before the Arcanum and is granted later.
         setPhase("form");
@@ -139,7 +167,7 @@ export default function Create() {
         toast.message("The forge is cooling", { description: result.error, duration: 9000 });
       } else {
         setPhase("form");
-        if (result.code === "no_spark") setZeroOpen(true);
+        if (result.code === "no_spark" && !away) setZeroOpen(true);
         else toast.error(result.error ?? "The forge could not shape that spell. Please try again.");
       }
     } catch (error: any) {
@@ -352,7 +380,37 @@ export default function Create() {
             </motion.div>
           )}
 
-          {phase === "done" && created && (
+          {phase === "done" && created && created.researching && (
+            // Research comes first: nothing of the spell is shown until it is granted (Master Doc 6.3).
+            <motion.div key="research" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-md py-10 text-center">
+              <div className="mx-auto flex size-16 items-center justify-center rounded-full border border-primary/40 bg-card">
+                <Hourglass className="size-7 text-primary" />
+              </div>
+              <h2 className="mt-5 font-serif text-2xl font-semibold text-primary">Your design is being researched</h2>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {created.name} is not yours yet. A spell of this weight must be studied before it can be granted. When the research is complete it
+                will appear in your Spellbook, and you will be told.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">The research took 1 Spark. {balance} remaining.</p>
+              <div className="mt-8 flex justify-center gap-3">
+                <Button
+                  onClick={() => {
+                    setPhase("form");
+                    setName("");
+                    setDescription("");
+                    setCreated(null);
+                  }}
+                >
+                  <Wand2 /> Create Another Spell
+                </Button>
+                <Button variant="ghost" onClick={() => navigate("/library")}>
+                  View Spellbook
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
+          {phase === "done" && created && !created.researching && (
             <motion.div
               key="done"
               initial={{ opacity: 0, y: 12 }}
@@ -366,9 +424,11 @@ export default function Create() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   Forged from 1 Spark. {balance} remaining.
                 </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  It yielded 1 Refinement Stone. Open the card to refine the spell.
-                </p>
+                {FEATURES.refinement && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    It yielded 1 Refinement Rune. Open the card to refine the spell.
+                  </p>
+                )}
               </div>
 
               <div className="mx-auto flex max-w-3xl flex-col items-center gap-6 md:flex-row md:items-start">

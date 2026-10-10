@@ -9,7 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { getDb } from "../db";
 import { serveStatic, setupVite } from "./vite";
-import { getSpellRow, isTakenDown } from "../spell-pipeline";
+import { getSpellRow, isResearching, isTakenDown } from "../spell-pipeline";
 import { ENV } from "./env";
 import { findProjectRoot } from "./paths";
 import { deviceCookieMiddleware } from "./cookies";
@@ -82,7 +82,9 @@ export async function registerOgRoutes(app: Express) {
 
   app.get("/spell/:spellId/image", async (req, res) => {
     try {
-      const spell = await getSpellRow(req.params.spellId);
+      const found = await getSpellRow(req.params.spellId);
+      // A spell still in research has not been granted: it has no share image yet.
+      const spell = found && !isResearching(found) ? found : null;
       if (!spell) {
         return res.status(404).send("Not found");
       }
@@ -124,7 +126,8 @@ export async function registerOgRoutes(app: Express) {
     // People in dev get the Vite SPA; it renders the page client-side.
     if (!isBot && !prodIndexHtml) return next();
     try {
-      const spell = await getSpellRow(req.params.spellId);
+      const found = await getSpellRow(req.params.spellId);
+      const spell = found && !isResearching(found) ? found : null;
       const baseUrl = await getBaseUrl(req);
 
       if (!spell || isTakenDown(spell)) {

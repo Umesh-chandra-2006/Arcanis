@@ -9,6 +9,7 @@ import type { SpellCardProps } from "@/lib/adapters";
 import { CAST_TIME_MS, TIER_CAPS, type CastType, type Tier } from "@shared/taxonomy";
 import { Share2, Lock, Hammer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { FEATURES } from "@shared/constants";
 import { RefineDialog } from "@/components/RefineDialog";
 
 interface SpellCardWrapperProps {
@@ -71,7 +72,7 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
   const navigate = useNavigate();
   const { user } = useAuth();
   // Only a spell the player forged can be refined (Master Doc 6.7): never a base spell.
-  const canRefine = !!user && spell.ownerId === user.id && !spell.isBase;
+  const canRefine = FEATURES.refinement && !!user && spell.ownerId === user.id && !spell.isBase;
 
   const open = () => {
     setIsOpen(true);
