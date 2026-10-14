@@ -16,7 +16,6 @@ import { SPARK } from "@shared/constants";
 import { Wand2, Sparkles, Share2, Castle } from "lucide-react";
 
 export default function Home() {
-  const { isLoading } = useAuth();
   const [params] = useSearchParams();
   const track = trpc.analytics.track.useMutation();
   const captureReferral = trpc.referrals.capture.useMutation();
@@ -29,14 +28,9 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex h-dvh items-center justify-center">
-        <Spinner className="size-6" />
-      </div>
-    );
-  }
   // The landing page is the same for everyone (founder, 2026-10-15); a signed-in mage's home is the Sanctum.
+  // It never waits for the session check: if the API is slow to wake, a visitor still sees the page,
+  // as signed out, and the welcome panel replaces the sign-in form once the check answers.
   return <Landing />;
 }
 
