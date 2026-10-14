@@ -220,6 +220,7 @@ describeDb("creation pipeline", () => {
     expect(wall).toContain(a.spell!.id);
     expect(wall).not.toContain(c.spell!.id);
     expect(wall).not.toContain(b.spell!.id); // its owner never agreed
+    await setCodexShared(user.id, a.spell!.id, false); // the test database is shared with local dev
     expect(await getSpellPublic(c.spell!.id)).toBeNull();
     expect(await getSpellPublic(a.spell!.id)).not.toBeNull();
 

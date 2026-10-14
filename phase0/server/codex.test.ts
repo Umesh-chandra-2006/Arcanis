@@ -1,4 +1,4 @@
-import { it, expect } from "vitest";
+import { it, expect, afterAll } from "vitest";
 import { nanoid } from "nanoid";
 import { inArray } from "drizzle-orm";
 import { getDb } from "./db";
@@ -8,8 +8,18 @@ import { hasGivenFeedback, recentFeedback, saveFeedback } from "./feedback";
 import { describeDb } from "./test/db";
 import { createTestUser } from "./test/factories";
 
+// The test database is shared with local dev: what these tests put in the Codex is removed afterwards.
+const made: string[] = [];
+afterAll(async () => {
+  if (!made.length) return;
+  const db = (await getDb())!;
+  await db.delete(p0SpellVotes).where(inArray(p0SpellVotes.spellId, made));
+  await db.delete(p0Spells).where(inArray(p0Spells.id, made));
+});
+
 async function spellOf(ownerId: number, over: Partial<typeof p0Spells.$inferInsert> = {}) {
   const id = nanoid();
+  made.push(id);
   await (await getDb())!.insert(p0Spells).values({
     id,
     ownerId,
@@ -104,7 +114,6 @@ describeDb("Codex", () => {
     await voteOnSpell(voters[0].id, low, -1);
     const top = ids(await listCodex({ sort: "top", limit: 60 }));
     expect(top.indexOf(high)).toBeLessThan(top.indexOf(low));
-    await (await getDb())!.delete(p0SpellVotes).where(inArray(p0SpellVotes.spellId, [low, high]));
   });
 });
 
