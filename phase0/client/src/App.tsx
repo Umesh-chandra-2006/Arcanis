@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/app-shell";
 
 const Home = lazy(() => import("./pages/Home"));
+const Sanctum = lazy(() => import("./pages/Sanctum"));
 const AuthVerify = lazy(() => import("./pages/AuthVerify"));
 const SignIn = lazy(() => import("./pages/SignIn"));
 const Create = lazy(() => import("./pages/Create"));
@@ -36,6 +37,7 @@ function App() {
           <Route path="/signin" element={<SignIn />} />
           <Route element={<AppShell />}>
             <Route path="/" element={<Home />} />
+            <Route path="/sanctum" element={<Sanctum />} />
             <Route path="/create" element={<Create />} />
             <Route path="/library" element={<Library />} />
             <Route path="/codex" element={<Codex />} />

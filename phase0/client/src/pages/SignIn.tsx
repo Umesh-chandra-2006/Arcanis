@@ -13,7 +13,7 @@ export default function SignIn() {
   const [params] = useSearchParams();
 
   useEffect(() => {
-    if (isAuthenticated) navigate("/");
+    if (isAuthenticated) navigate("/sanctum");
   }, [isAuthenticated, navigate]);
 
   return (

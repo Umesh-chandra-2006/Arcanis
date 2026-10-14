@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Castle, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, LogIn, ChevronsUpDown, ScrollText, Feather, Inbox } from "lucide-react";
+import { Castle, House, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, LogIn, ChevronsUpDown, ScrollText, Feather, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,8 +14,10 @@ import { Button } from "@/components/ui/button";
 // Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle and the
 // other game areas arrive with their phases.
 const PLAYER_NAV = [
-  // The mage's home. The founder's other candidate name belongs to a later system and stays out of Phase 1 copy (decision G2).
-  { to: "/", label: "Sanctum", icon: Castle, auth: false },
+  // The landing page is common to everyone; the Sanctum is shown only to signed-in mages (founder, 2026-10-15).
+  // The founder's other candidate name for home belongs to a later system and stays out of Phase 1 copy (decision G2).
+  { to: "/", label: "Home", icon: House, auth: false },
+  { to: "/sanctum", label: "Sanctum", icon: Castle, auth: true },
   { to: "/create", label: "Lab", icon: FlaskConical, auth: true },
   { to: "/library", label: "Spellbook", icon: BookOpen, auth: true },
   { to: "/codex", label: "Codex", icon: ScrollText, auth: false },

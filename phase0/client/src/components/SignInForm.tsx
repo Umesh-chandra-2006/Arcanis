@@ -15,7 +15,7 @@ import { toast } from "sonner";
  * 6-digit code and a link by email. The form never reveals whether an account
  * exists.
  */
-export function SignInForm({ initialEmail = "", redirectTo = "/" }: { initialEmail?: string; redirectTo?: string }) {
+export function SignInForm({ initialEmail = "", redirectTo = "/sanctum" }: { initialEmail?: string; redirectTo?: string }) {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState(initialEmail);

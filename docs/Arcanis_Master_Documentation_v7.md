@@ -18,7 +18,7 @@ Founder decisions after testing the soft launch locally, before the deploy.
 - **Codex votes (Section 23.7).** Signed-in mages vote a Codex spell up or down, one vote per mage per spell, changeable and withdrawable, never on their own spell. The Codex sorts by newest or by score (up minus down).
 - **Spending Spark is confirmed (Section 22).** The Lab asks before every creation ("Research this spell? This spends 1 Spark"). The creation button reads "Research Spell".
 - **Feedback (Section 23.8).** A feedback page for signed-in players, read by admins, and a one-time request for feedback after a player's first spell.
-- **The Sanctum is no longer a second Spellbook (Section 19).** Home shows the mage's standing (spells written, spells in the Codex, honours received, page opens), a short path of first steps, spells under research, and what is rising in the Codex. Spells themselves live in the Spellbook.
+- **The Sanctum is no longer a second Spellbook (Section 19).** Home shows the mage's standing (spells written, spells in the Codex, honours received, page opens), a short path of first steps, spells under research, and what is rising in the Codex. Spells themselves live in the Spellbook. The landing page at the root address is the same for everyone, signed in or not; the Sanctum has its own address and appears in the sidebar only for signed-in mages, and signing in leads there.
 - **Try before signup keeps typing.** The landing page keeps the design as it is typed, so any route to sign-in keeps it; it is cleared only when the spell is made.
 - **Closed (founder, 2026-10-15):** base spell tiers (Basic, Advanced, Mega in Section 5.6 list order) are confirmed; runes keep being minted while refinement is off; "Sanctum" stays the name of Home.
 

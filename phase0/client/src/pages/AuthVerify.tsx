@@ -25,7 +25,7 @@ export default function AuthVerify() {
       .mutateAsync({ token })
       .then((result) => {
         login(result.user, { viaEmail: true });
-        navigate("/", { replace: true });
+        navigate("/sanctum", { replace: true });
       })
       .catch((err: { message?: string }) => setError(err?.message ?? "This link is invalid or has expired."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
