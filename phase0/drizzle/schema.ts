@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/mysql-core";
 import { sql } from "drizzle-orm";
 import { CAST_TYPES, CATEGORIES, ELEMENTS, TIERS } from "../shared/taxonomy";
+import { FEEDBACK_KINDS } from "../shared/constants";
 
 export const p0Users = mysqlTable(
   "p0_users",
@@ -93,11 +94,18 @@ export const p0Spells = mysqlTable(
     isPlatformSpell: boolean("is_platform_spell").notNull().default(false),
     /** The spell this one was mended from (Master Doc 6.7). The original is never edited. */
     refinedFromId: varchar("refined_from_id", { length: 36 }),
+    /**
+     * Set when the owner agrees to show the spell in the Codex (Master Doc 23,
+     * v7.7); null means it is not in the Codex. For a spell still in research it
+     * is the moment research completes, so it never appears sealed.
+     */
+    codexSharedAt: timestamp("codex_shared_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (table) => ({
     ownerIdx: index("p0_spells_owner_idx").on(table.ownerId),
     createdAtIdx: index("p0_spells_created_at_idx").on(table.createdAt),
+    codexIdx: index("p0_spells_codex_idx").on(table.codexSharedAt),
   })
 );
 
@@ -394,6 +402,42 @@ export const p0ForgeQueue = mysqlTable(
   (table) => ({
     statusIdx: index("p0_forge_queue_status_idx").on(table.status, table.createdAt),
     userIdx: index("p0_forge_queue_user_idx").on(table.userId, table.status),
+  })
+);
+
+// Codex votes (Master Doc 23, v7.7): one row per player per spell, +1 or -1.
+// Withdrawing a vote deletes the row.
+export const p0SpellVotes = mysqlTable(
+  "p0_spell_votes",
+  {
+    spellId: varchar("spell_id", { length: 36 }).notNull(),
+    userId: int("user_id").notNull(),
+    value: int("value").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
+  },
+  (table) => ({
+    userSpellIdx: uniqueIndex("p0_spell_votes_user_spell_idx").on(table.userId, table.spellId),
+    spellIdx: index("p0_spell_votes_spell_idx").on(table.spellId),
+  })
+);
+
+// Player feedback (v7.7): the feedback page and the prompt after a first spell.
+// Read only by admins.
+export const p0Feedback = mysqlTable(
+  "p0_feedback",
+  {
+    id: varchar("id", { length: 36 }).primaryKey(),
+    userId: int("user_id").notNull(),
+    kind: mysqlEnum("kind", FEEDBACK_KINDS).notNull().default("other"),
+    rating: int("rating"),
+    message: text("message").notNull(),
+    /** Where it was given: "page" or "first_spell". */
+    source: varchar("source", { length: 24 }).notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => ({
+    createdIdx: index("p0_feedback_created_idx").on(table.createdAt),
   })
 );
 

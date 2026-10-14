@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Castle, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, LogIn, ChevronsUpDown, ScrollText } from "lucide-react";
+import { Castle, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, LogIn, ChevronsUpDown, ScrollText, Feather, Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,10 +20,12 @@ const PLAYER_NAV = [
   { to: "/library", label: "Spellbook", icon: BookOpen, auth: true },
   { to: "/codex", label: "Codex", icon: ScrollText, auth: false },
   { to: "/reviews", label: "Reviews", icon: MessageSquareMore, auth: false },
+  { to: "/feedback", label: "Feedback", icon: Feather, auth: true },
 ];
 const ADMIN_NAV = [
   { to: "/admin/metrics", label: "Gate dashboard", icon: BarChart3 },
   { to: "/admin/moderation", label: "Moderation", icon: ShieldAlert },
+  { to: "/admin/feedback", label: "Feedback", icon: Inbox },
 ];
 
 const COLLAPSED_KEY = "arc_sidebar_collapsed";

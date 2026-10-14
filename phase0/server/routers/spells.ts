@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { SpellCreationInputSchema, SpellMendInputSchema } from "../../shared/validation";
 import { mendSpell, type SpellMendResult } from "../spell-mend";
@@ -8,13 +9,13 @@ import {
   getBaseSpells,
   getFeaturedSpells,
   getMySpells,
-  getRecentSpells,
   getSpellPublic,
   incrementShareCount,
 } from "../spell-pipeline";
 import { getSparkBalance, recentSparkEntries } from "../spark";
 import { trackEvent } from "../analytics";
 import { hitRateLimit } from "../db-rate-limit";
+import { CodexError, codexStanding, listCodex, setCodexShared, voteOnSpell } from "../codex";
 import { acknowledgeForged, createOrQueue, forgeQueueFor, withdrawQueued } from "../forge-queue";
 
 const SHARE_DEDUP_WINDOW_MS = 60 * 60 * 1000;
@@ -136,8 +137,42 @@ export const spellsRouter = router({
 
   baseSpells: publicProcedure.query(() => getBaseSpells()),
 
-  /** The public wall of newest player spells. */
-  recent: publicProcedure.query(() => getRecentSpells(24)),
+  /** The Codex: player spells their owners chose to show, with votes. No sign-in needed to look. */
+  codex: publicProcedure
+    .input(z.object({ sort: z.enum(["new", "top"]).default("new"), limit: z.number().int().min(1).max(60).default(24) }).optional())
+    .query(({ ctx, input }) => listCodex({ sort: input?.sort ?? "new", limit: input?.limit ?? 24, viewerId: ctx.user?.id ?? null })),
+
+  /** The owner shows a spell in the Codex, or takes it out. */
+  setCodexShared: protectedProcedure
+    .input(z.object({ spellId: z.string().min(1).max(36), shared: z.boolean(), from: z.enum(["lab", "spellbook"]).default("spellbook") }))
+    .mutation(async ({ ctx, input }) => {
+      try {
+        const result = await setCodexShared(ctx.user.id, input.spellId, input.shared);
+        await trackEvent({ eventType: "codex_shared", userId: ctx.user.id, sessionId: ctx.sessionId, metadata: { spellId: input.spellId, shared: input.shared, from: input.from } });
+        return result;
+      } catch (error) {
+        if (error instanceof CodexError) throw new TRPCError({ code: error.code === "not_owner" ? "FORBIDDEN" : "NOT_FOUND", message: error.message });
+        throw error;
+      }
+    }),
+
+  vote: protectedProcedure
+    .input(z.object({ spellId: z.string().min(1).max(36), value: z.union([z.literal(1), z.literal(-1), z.literal(0)]) }))
+    .mutation(async ({ ctx, input }) => {
+      const limit = await hitRateLimit(`vote:${ctx.user.id}`, 120, 3600);
+      if (!limit.allowed) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "Slow down a little, then vote again." });
+      try {
+        const result = await voteOnSpell(ctx.user.id, input.spellId, input.value);
+        await trackEvent({ eventType: "codex_voted", userId: ctx.user.id, sessionId: ctx.sessionId, metadata: { spellId: input.spellId, value: input.value } });
+        return result;
+      } catch (error) {
+        if (error instanceof CodexError) throw new TRPCError({ code: error.code === "own_spell" ? "BAD_REQUEST" : "NOT_FOUND", message: error.message });
+        throw error;
+      }
+    }),
+
+  /** The mage's standing for the Sanctum: spells made, shown in the Codex, votes, link opens. */
+  standing: protectedProcedure.query(({ ctx }) => codexStanding(ctx.user.id)),
 
   featured: publicProcedure.query(async () => {
     return getFeaturedSpells(5);

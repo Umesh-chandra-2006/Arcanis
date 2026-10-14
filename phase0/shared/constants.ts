@@ -21,6 +21,11 @@ export const FEATURES: { refinement: boolean } = {
   refinement: false,
 };
 
+/** Player feedback (v7.7): what a note is about. */
+export const FEEDBACK_KINDS = ["idea", "problem", "praise", "other"] as const;
+export type FeedbackKind = (typeof FEEDBACK_KINDS)[number];
+export const FEEDBACK_MAX_LENGTH = 2000;
+
 /**
  * Refinement Runes (Master Doc v7.6 22.1; the code and the ledger table still
  * say "stone", the first working name). Minted only by a Spark-paid creation

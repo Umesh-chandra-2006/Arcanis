@@ -12,8 +12,8 @@ Never use em dashes anywhere: code, comments, commit messages, docs, UI copy. Us
 
 Docs live in `docs/`. Precedence on conflict:
 
-1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.6)
-2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.6; Section 15 is the current build order)
+1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.7)
+2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.7; Section 15 is the current build order)
 3. `docs/Arcanis_Phase_Plan_v2.md` (content is v2.3; Gate 1a definitions)
 4. `docs/handover.md` (decision history; its phase status may be stale, trust the repo)
 5. `docs/archive/` (superseded, reference only, never build from it)
@@ -124,6 +124,7 @@ Reports go to `tools/balance-harness/reports/` and `tools/cost-report/reports/`.
 - A creation refused by the daily breaker joins the forge queue (`server/forge-queue.ts`, `p0_forge_queue`): no Spark is reserved while it waits, and it is forged through `createSpell` unchanged when the breaker reopens. Players create through `createOrQueue`.
 - Mending is `server/spell-mend.ts` (`spells.mend`). It shares creation's verification through `screenPlayerInput` and `generateVerifiedIdentity` in `server/spell-pipeline.ts`: any new generation path must go through those two, not a copy. The mended spell carries `refined_from_id`; its run row has `kind = mend`, and a mend is never counted as a creation in a gate metric. Mends count toward the daily creation limit.
 - A spell in research leaves the server sealed: `toPublicSpell` blanks everything the forge made while `now < research_ready_at`, and `getSpellPublic` and the share routes treat it as not found. The client shows `ResearchTile`, never a card, for a researching spell.
+- The Codex is opt-in (v7.7): a spell is shown only when `p0_spells.codex_shared_at` is set by its owner (`server/codex.ts`, `spells.setCodexShared`); votes are `p0_spell_votes`. Feedback is `p0_feedback` (`server/feedback.ts`), admin-only to read.
 - Refinement Rune operations go through `phase0/server/stones.ts` only (`p0_stone_ledger`, same rules as Spark).
 - Spark operations go through `phase0/server/spark.ts` only (append-only ledger, READ COMMITTED transactions); analytics through `trackEvent()` in `phase0/server/analytics.ts`; every provider call through `server/providers/*` (telemetry is automatic).
 - Drizzle: camelCase in TS; snake_case column names.

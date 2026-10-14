@@ -46,4 +46,7 @@ export const SERVER_EVENTS = [
   "spark_pack_intent",
   "spark_waitlist_joined",
   "spark_zero_reached",
+  "codex_shared", // props: spellId, shared, from (lab | spellbook)
+  "codex_voted", // props: spellId, value
+  "feedback_given", // props: kind, source, rating
 ] as const;

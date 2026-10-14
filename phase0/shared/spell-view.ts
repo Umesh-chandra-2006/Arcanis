@@ -33,6 +33,7 @@ export interface SpellRowLike {
   isPlatformSpell: boolean;
   refinedFromId?: string | null;
   researchReadyAt?: Date | null;
+  codexSharedAt?: Date | null;
   createdAt: Date;
 }
 
@@ -68,6 +69,8 @@ export interface PublicSpell {
    * researching spell is sealed: its stats, text and art are blank until granted.
    */
   researching: boolean;
+  /** The owner agreed to show it in the Codex (v7.7). */
+  inCodex: boolean;
   createdAt: string;
 }
 
@@ -103,6 +106,7 @@ export function toPublicSpell(spell: SpellRowLike, now = new Date()): PublicSpel
       isPlatformSpell: spell.isPlatformSpell,
       refinedFromId: spell.refinedFromId ?? null,
       researching: true,
+      inCodex: spell.codexSharedAt != null,
       createdAt: spell.createdAt.toISOString(),
     };
   }
@@ -133,6 +137,7 @@ export function toPublicSpell(spell: SpellRowLike, now = new Date()): PublicSpel
     isPlatformSpell: spell.isPlatformSpell,
     refinedFromId: spell.refinedFromId ?? null,
     researching: false,
+    inCodex: spell.codexSharedAt != null,
     createdAt: spell.createdAt.toISOString(),
   };
 }

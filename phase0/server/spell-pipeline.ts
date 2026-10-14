@@ -2,7 +2,7 @@
 // here runs after a Spark reservation and ends in exactly one of: commit
 // (success, or a user-caused input rejection) or refund (anything else).
 import { nanoid } from "nanoid";
-import { and, count, desc, eq, lte, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { requireDb } from "./db";
 import { p0GenerationRuns, p0ProviderCalls, p0Spells, p0Users, type Phase0Spell } from "../drizzle/schema";
 import { AllProvidersFailedError, generateText } from "./providers/text";
@@ -584,23 +584,6 @@ export async function getFeaturedSpells(limit = 5): Promise<PublicSpell[]> {
  * here already passed verification; taken-down spells, spells still in
  * research and spells of banned accounts are left out.
  */
-export async function getRecentSpells(limit = 24, now = new Date()): Promise<PublicSpell[]> {
-  const rows = await requireDb()
-    .select()
-    .from(p0Spells)
-    .where(
-      and(
-        eq(p0Spells.isPlatformSpell, false),
-        visible,
-        lte(p0Spells.researchReadyAt, now),
-        sql`${p0Spells.ownerId} NOT IN (SELECT id FROM p0_users WHERE banned_at IS NOT NULL)`
-      )
-    )
-    .orderBy(desc(p0Spells.createdAt))
-    .limit(Math.max(1, Math.min(limit, 60)));
-  return rows.map((r) => toPublicSpell(r, now));
-}
-
 /** The platform base spells (Master Doc 5.6), in a stable element and tier order. */
 export async function getBaseSpells(): Promise<PublicSpell[]> {
   const rows = await requireDb()

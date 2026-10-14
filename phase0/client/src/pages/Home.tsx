@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { readDraft, saveDraft } from "@/lib/draft";
+import { hasUndeliveredDraft, readDraft, saveDraft } from "@/lib/draft";
 import { motion } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { Panel } from "@/components/game/panel";
@@ -15,7 +15,9 @@ import { SignInForm } from "@/components/SignInForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapSpellToCardProps } from "@/lib/adapters";
 import { SPARK } from "@shared/constants";
-import { Wand2, Sparkles, Share2, BookOpen } from "lucide-react";
+import { Wand2, Sparkles, Share2, BookOpen, ScrollText, ChevronUp, CheckCircle2, Circle } from "lucide-react";
+import { CodexVotes } from "@/components/Codex";
+import { ForgeQueuePanel } from "@/components/ForgeQueue";
 
 export default function Home() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -39,24 +41,40 @@ export default function Home() {
     );
   }
   // A visitor who wrote a spell on the landing page and then signed in goes straight to the Lab, where it waits.
-  if (isAuthenticated && user && readDraft()) return <Navigate to="/create" replace />;
+  if (isAuthenticated && user && hasUndeliveredDraft()) return <Navigate to="/create" replace />;
   return isAuthenticated && user ? <MageHome name={user.nameChosen ? user.username : null} /> : <Landing />;
 }
 
-/** Home for a signed-in mage: what to do next, their latest spells, the base set. */
+/**
+ * The Sanctum: a signed-in mage's home. It does not repeat the Spellbook (which
+ * holds the spells): it shows standing, the next steps, what is under research,
+ * and what is rising in the Codex (founder, 2026-10-15).
+ */
 function MageHome({ name }: { name: string | null }) {
+  const { user } = useAuth();
   const mySpells = trpc.spells.mySpells.useQuery();
-  const baseSpells = trpc.spells.baseSpells.useQuery(undefined, { staleTime: 10 * 60_000 });
   const spark = trpc.spells.sparkBalance.useQuery();
-  const recent = (mySpells.data ?? []).slice(0, 4);
-  const sample = (baseSpells.data ?? []).filter((s) => s.tier === "Basic").slice(0, 6);
+  const standing = trpc.spells.standing.useQuery();
+  const feedback = trpc.feedback.given.useQuery(undefined, { staleTime: Infinity });
+  const rising = trpc.spells.codex.useQuery({ sort: "top", limit: 4 }, { staleTime: 60_000 });
+  const researching = (mySpells.data ?? []).filter((s) => s.researching);
+  const s = standing.data;
+
+  const path = [
+    { done: !!user?.nameChosen, label: "Choose your mage name", hint: "Open your profile at the bottom of the sidebar.", to: null },
+    { done: (s?.created ?? 0) > 0, label: "Research your first spell", hint: "Describe it in the Lab.", to: "/create" },
+    { done: (s?.inCodex ?? 0) > 0, label: "Inscribe a spell in the Codex", hint: "Open a spell in your Spellbook.", to: "/library" },
+    { done: (s?.shareOpens ?? 0) > 0, label: "Have another mage open your spell's page", hint: "Share its link anywhere.", to: "/library" },
+    { done: !!feedback.data?.given, label: "Tell the makers what you think", hint: "A minute on the feedback page.", to: "/feedback" },
+  ];
+  const pathDone = path.every((p) => p.done);
 
   return (
-    <Page title={name ? `Welcome back, ${name}` : "Welcome, mage"} subtitle="Describe a spell. Arcanis forges the rest.">
+    <Page title={name ? `Welcome back, ${name}` : "Welcome, mage"} subtitle="Your sanctum. Your spells live in the Spellbook; here is where you stand.">
       <Panel gold>
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-serif text-xl font-semibold">What will you forge next?</p>
+            <p className="font-serif text-xl font-semibold">What will you research next?</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {spark.data
                 ? spark.data.balance > 0
@@ -67,55 +85,87 @@ function MageHome({ name }: { name: string | null }) {
           </div>
           <Link to="/create">
             <Button size="lg">
-              <Wand2 /> Forge a spell
+              <Wand2 /> Research a spell
             </Button>
           </Link>
         </div>
       </Panel>
 
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { icon: BookOpen, label: "Spells written", value: s?.created },
+          { icon: ScrollText, label: "In the Codex", value: s?.inCodex },
+          { icon: ChevronUp, label: "Honours received", value: s?.upvotes },
+          { icon: Share2, label: "Page opens", value: s?.shareOpens },
+        ].map((tile) => (
+          <div key={tile.label} className="arc-panel p-4">
+            <tile.icon className="size-4 text-primary" />
+            <p className="mt-2 font-serif text-2xl font-semibold tabular-nums">{tile.value ?? "-"}</p>
+            <p className="text-xs text-muted-foreground">{tile.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {!pathDone && (
+        <Panel title="The path of the initiate">
+          <ol className="space-y-2.5">
+            {path.map((step) => (
+              <li key={step.label} className="flex items-start gap-3">
+                {step.done ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-primary" /> : <Circle className="mt-0.5 size-4 shrink-0 text-muted-foreground/60" />}
+                <div className="min-w-0">
+                  {step.to && !step.done ? (
+                    <Link to={step.to} className="text-sm hover:text-primary hover:underline">
+                      {step.label}
+                    </Link>
+                  ) : (
+                    <p className={step.done ? "text-sm text-muted-foreground line-through" : "text-sm"}>{step.label}</p>
+                  )}
+                  {!step.done && <p className="text-xs text-muted-foreground">{step.hint}</p>}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </Panel>
+      )}
+
+      <div className="empty:hidden">
+        <ForgeQueuePanel />
+      </div>
+
+      {researching.length > 0 && (
+        <Panel title="Under research">
+          <p className="mb-3 text-sm text-muted-foreground">These designs are being studied. Each is granted to you when its research is complete.</p>
+          <div className="flex flex-wrap justify-center gap-5 sm:justify-start">
+            {researching.map((spell) => (
+              <ResearchTile key={spell.id} name={spell.name} element={spell.element} size="sm" />
+            ))}
+          </div>
+        </Panel>
+      )}
+
       <Panel
-        title="Your latest spells"
+        title="Rising in the Codex"
         action={
-          <Link to="/library" className="text-xs text-primary hover:underline">
-            Open spellbook
+          <Link to="/codex" className="text-xs text-primary hover:underline">
+            Open the Codex
           </Link>
         }
       >
-        {mySpells.isLoading ? (
+        {rising.isLoading ? (
           <Spinner />
-        ) : recent.length ? (
+        ) : rising.data?.length ? (
           <div className="flex flex-wrap justify-center gap-5 sm:justify-start">
-            {recent.map((spell) =>
-              spell.researching ? (
-                <ResearchTile key={spell.id} name={spell.name} element={spell.element} size="sm" />
-              ) : (
-                <SpellCardWrapper key={spell.id} spell={mapSpellToCardProps(spell)} size="sm" />
-              )
-            )}
+            {rising.data.map((entry) => (
+              <div key={entry.spell.id} className="flex flex-col items-center gap-2">
+                <SpellCardWrapper spell={mapSpellToCardProps(entry.spell)} size="sm" />
+                <CodexVotes key={`${entry.spell.id}:${entry.up}:${entry.down}:${entry.myVote}`} spellId={entry.spell.id} ownerId={entry.spell.ownerId} up={entry.up} down={entry.down} myVote={entry.myVote} />
+              </div>
+            ))}
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <BookOpen className="size-8 text-muted-foreground/50" />
-            <p className="text-sm text-muted-foreground">Nothing yet. Your first spell is one description away.</p>
-          </div>
-        )}
-      </Panel>
-
-      <Panel
-        title="Base spells"
-        action={
-          <Link to="/library" className="text-xs text-primary hover:underline">
-            See all 36
-          </Link>
-        }
-      >
-        {baseSpells.isLoading ? (
-          <Spinner />
-        ) : (
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {sample.map((spell) => (
-              <SpellCardWrapper key={spell.id} spell={mapSpellToCardProps(spell)} size="sm" />
-            ))}
+            <ScrollText className="size-8 text-muted-foreground/50" />
+            <p className="text-sm text-muted-foreground">No spell has been inscribed yet. Yours could be the first the realm remembers.</p>
           </div>
         )}
       </Panel>
@@ -126,12 +176,16 @@ function MageHome({ name }: { name: string | null }) {
 function Landing() {
   const featured = trpc.spells.baseSpells.useQuery(undefined, { staleTime: 10 * 60_000 });
   const examples = (featured.data ?? []).filter((s) => s.tier === "Mega").slice(0, 6);
-  const recent = trpc.spells.recent.useQuery(undefined, { staleTime: 60_000 });
-  const fresh = (recent.data ?? []).slice(0, 6);
+  const codex = trpc.spells.codex.useQuery({ sort: "top", limit: 6 }, { staleTime: 60_000 });
+  const fresh = (codex.data ?? []).map((e) => e.spell);
   const track = trpc.analytics.track.useMutation();
-  const [draftName, setDraftName] = useState("");
-  const [draftText, setDraftText] = useState("");
-  const [drafted, setDrafted] = useState<string | null>(() => readDraft()?.name ?? null);
+  // What the visitor types is kept as they type it, so following any sign-in link keeps it too.
+  const [draftName, setDraftName] = useState(() => readDraft()?.name ?? "");
+  const [draftText, setDraftText] = useState(() => readDraft()?.description ?? "");
+  const [drafted, setDrafted] = useState<string | null>(() => readDraft()?.name || null);
+  useEffect(() => {
+    saveDraft({ name: draftName, description: draftText });
+  }, [draftName, draftText]);
 
   // Try before signup: the design stays in this browser until the visitor has signed in and presses Create.
   const keepDraft = (e: React.FormEvent) => {
@@ -212,7 +266,7 @@ function Landing() {
       {fresh.length >= 3 && (
         <section className="mx-auto max-w-5xl px-4 py-10">
           <Panel
-            title="Freshly forged by mages"
+            title="Honoured in the Codex"
             action={
               <Link to="/codex" className="text-xs text-primary hover:underline">
                 Open the Codex

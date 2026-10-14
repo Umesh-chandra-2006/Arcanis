@@ -1,6 +1,6 @@
 # Arcanis: Phase Plan v2.3
 
-**Companion to: Arcanis Master Documentation v7.6 (the bible)**
+**Companion to: Arcanis Master Documentation v7.7 (the bible)**
 **Status:** Commercial product. Supersedes the build order in the old Phased Build Plan v1.0 and Section 24 of Master Doc v6.0. File name keeps "v2" so links stay stable.
 
 ## What changed in v2.3 (2026-10-11)

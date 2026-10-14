@@ -1,7 +1,18 @@
-# Arcanis: Phase 1 Build Plan v2.6
+# Arcanis: Phase 1 Build Plan v2.7
 
-**Agent-facing implementation document. Companion to Master Documentation v7.6 (the bible) and Phase Plan v2.3.**
+**Agent-facing implementation document. Companion to Master Documentation v7.7 (the bible) and Phase Plan v2.3.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.7 (2026-10-15)
+
+Founder changes to the soft launch after a local test (Master Doc v7.7). Migration 0019.
+
+- **Codex opt-in and votes:** `p0_spells.codex_shared_at` (null means not in the Codex) and `p0_spell_votes` (one row per player and spell, value 1 or -1). `server/codex.ts`: `listCodex` (newest or top, with counts and the viewer's vote), `setCodexShared` (owner only), `voteOnSpell` (never on one's own spell), `codexStanding`. Procedures `spells.codex` (public, replaces `spells.recent`), `spells.setCodexShared`, `spells.vote`, `spells.standing`. The Lab asks after every creation (`CodexAsk`); the spell detail view has the owner's switch.
+- **Feedback:** `p0_feedback`, `server/feedback.ts`, `feedback.submit` (10 a day per player), `feedback.given`, `feedback.list` (admin). Page `/feedback`, admin page `/admin/feedback`, and a one-time dialog after a player's first spell.
+- **Lab:** every creation is confirmed in a dialog that names the Spark cost; the button reads "Research Spell".
+- **Sanctum:** standing tiles, the path of the initiate, spells under research, rising in the Codex. No spell grids that repeat the Spellbook.
+- **Try before signup:** the landing draft is saved as it is typed, sends a signed-in player to the Lab once, and is cleared only when the spell is made.
+- **New events:** `codex_shared`, `codex_voted`, `feedback_given`.
 
 ## What changed in v2.6 (2026-10-11)
 

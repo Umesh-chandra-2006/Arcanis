@@ -1,12 +1,26 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.6*
+*Complete Vision Blueprint | Version 7.7*
 
 Author: Umesh Chandra Tirumani
 Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.6 supersedes all prior versions, including v7.5, v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.7 supersedes all prior versions, including v7.6, v7.5, v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.7, WHAT CHANGED FROM v7.6 (2026-10-15)
+
+Founder decisions after testing the soft launch locally, before the deploy.
+
+- **The Codex is opt-in (Section 23.7).** A spell appears in the Codex only when its creator agrees. The Lab asks right after every creation, in the game's voice; the creator can inscribe or withdraw a spell later from its detail view. Spells made before this change are not in the Codex. A share link still works for any granted spell: sharing a link is the creator's own act.
+- **Codex votes (Section 23.7).** Signed-in mages vote a Codex spell up or down, one vote per mage per spell, changeable and withdrawable, never on their own spell. The Codex sorts by newest or by score (up minus down).
+- **Spending Spark is confirmed (Section 22).** The Lab asks before every creation ("Research this spell? This spends 1 Spark"). The creation button reads "Research Spell".
+- **Feedback (Section 23.8).** A feedback page for signed-in players, read by admins, and a one-time request for feedback after a player's first spell.
+- **The Sanctum is no longer a second Spellbook (Section 19).** Home shows the mage's standing (spells written, spells in the Codex, honours received, page opens), a short path of first steps, spells under research, and what is rising in the Codex. Spells themselves live in the Spellbook.
+- **Try before signup keeps typing.** The landing page keeps the design as it is typed, so any route to sign-in keeps it; it is cleared only when the spell is made.
+- **Closed (founder, 2026-10-15):** base spell tiers (Basic, Advanced, Mega in Section 5.6 list order) are confirmed; runes keep being minted while refinement is off; "Sanctum" stays the name of Home.
 
 ---
 
@@ -1280,6 +1294,16 @@ The growth loop is unvalidated until real data exists. Track, at minimum:
 - First-creation → share rate
 - Share-click → new-signup rate
 - **Viral coefficient (k-factor), standard definition (v7.1):** k = invites per user x invite conversion rate, where "invites per user" is shares sent per active user in the period and "invite conversion rate" is new signups attributed to a share divided by shares sent. k is the single number that determines whether the loop compounds (k at or above 1) or leaks. v7.0 called share-click to signup "the viral coefficient"; that is only the conversion half.
+
+## 23.7 The Codex (v7.7)
+
+The Codex is the public wall of player spells. A spell is shown there only when its creator agreed: the Lab asks right after a creation ("Shall the might of this spell be known throughout the realm?"), and the creator can inscribe or withdraw it later. Only verified, granted spells appear; never one in research (an agreed spell appears when its research completes), taken down, or from a banned account. Base spells are never in the Codex.
+
+Signed-in mages vote a Codex spell up or down: one vote per mage per spell, changeable, withdrawable, never on their own spell. Viewing needs no account. The Codex sorts by newest or by score (up minus down), and the landing page shows the top-scored spells once there are at least 3.
+
+## 23.8 Player Feedback (v7.7)
+
+A feedback page for signed-in players (a rating from 1 to 5, what it is about, and free text), and a one-time request for feedback after a player's first spell. Feedback is read by admins only and is never shown to other players.
 
 ---
 

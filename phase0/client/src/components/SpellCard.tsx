@@ -11,6 +11,7 @@ import { Share2, Lock, Hammer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { FEATURES } from "@shared/constants";
 import { RefineDialog } from "@/components/RefineDialog";
+import { CodexToggle } from "@/components/Codex";
 
 interface SpellCardWrapperProps {
   spell: SpellCardProps;
@@ -73,6 +74,8 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
   const { user } = useAuth();
   // Only a spell the player forged can be refined (Master Doc 6.7): never a base spell.
   const canRefine = FEATURES.refinement && !!user && spell.ownerId === user.id && !spell.isBase;
+  // Only the creator decides whether a spell is shown in the Codex (v7.7).
+  const ownsSpell = !!user && spell.ownerId === user.id && !spell.isBase;
 
   const open = () => {
     setIsOpen(true);
@@ -126,6 +129,7 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
                 Refine this spell
               </Button>
             )}
+            {ownsSpell && <CodexToggle spellId={spell.id} inCodex={spell.inCodex} />}
             <Button
               variant="outline"
               className="w-full"

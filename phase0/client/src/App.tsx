@@ -14,6 +14,8 @@ const ShareSpell = lazy(() => import("./pages/ShareSpell"));
 const ReviewsPage = lazy(() => import("./pages/ReviewsPage"));
 const AdminMetrics = lazy(() => import("./pages/AdminMetrics"));
 const AdminModeration = lazy(() => import("./pages/AdminModeration"));
+const Feedback = lazy(() => import("./pages/Feedback"));
+const AdminFeedback = lazy(() => import("./pages/Feedback").then((m) => ({ default: m.AdminFeedback })));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function LoadingFallback() {
@@ -43,6 +45,8 @@ function App() {
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/admin/metrics" element={<AdminMetrics />} />
             <Route path="/admin/moderation" element={<AdminModeration />} />
+            <Route path="/feedback" element={<Feedback />} />
+            <Route path="/admin/feedback" element={<AdminFeedback />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

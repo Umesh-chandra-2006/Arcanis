@@ -21,8 +21,11 @@ import { shareUrlFor } from "@/lib/share";
 import { useNameGate } from "@/components/NameDialog";
 import { ForgeQueuePanel } from "@/components/ForgeQueue";
 import { EXAMPLE_PROMPTS } from "@/lib/example-prompts";
-import { clearDraft, readDraft } from "@/lib/draft";
-import { FEATURES } from "@shared/constants";
+import { clearDraft, markDraftDelivered, readDraft } from "@/lib/draft";
+import { FEATURES, SPARK } from "@shared/constants";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CodexAsk } from "@/components/Codex";
+import { FirstSpellFeedbackDialog } from "@/components/Feedback";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
   Wand2,
@@ -59,11 +62,17 @@ export default function Create() {
   const [stepIndex, setStepIndex] = useState(0);
   const [created, setCreated] = useState<Phase0Spell | null>(null);
   const [copied, setCopied] = useState(false);
+  // Spending Spark is always confirmed first (founder, 2026-10-15).
+  const [confirming, setConfirming] = useState(false);
+  const [firstSpell, setFirstSpell] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const sparkBalance = trpc.spells.sparkBalance.useQuery(undefined, {
     enabled: isAuthenticated,
   });
   const createSpell = trpc.spells.create.useMutation();
+  const mySpells = trpc.spells.mySpells.useQuery(undefined, { enabled: isAuthenticated });
+  const feedbackGiven = trpc.feedback.given.useQuery(undefined, { enabled: isAuthenticated, staleTime: Infinity });
   const { gate, dialog: nameDialog } = useNameGate();
   const [zeroOpen, setZeroOpen] = useState(false);
   const [zeroShown, setZeroShown] = useState(false);
@@ -85,15 +94,16 @@ export default function Create() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // Try before signup: a design written on the landing page waits here, once.
+  // Try before signup: a design written on the landing page waits here. It is
+  // cleared only once the spell is made, so a reload or a detour does not lose it.
   useEffect(() => {
     if (!isAuthenticated) return;
     const draft = readDraft();
     if (!draft) return;
-    clearDraft();
+    markDraftDelivered();
     setName(draft.name);
     setDescription(draft.description);
-    toast.message("Your design is waiting", { description: "Choose its element and category, then press Create Spell.", duration: 9000 });
+    toast.message("Your design is waiting", { description: "Choose its element and category, then press Research Spell.", duration: 9000 });
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -119,7 +129,7 @@ export default function Create() {
     }
   }, [sparkBalance.data?.balance, zeroShown, phase]);
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !description.trim()) {
       toast.error("Give your spell a name and a description");
@@ -130,7 +140,13 @@ export default function Create() {
       toast.error("You're out of Spark");
       return;
     }
+    setConfirming(true);
+  };
 
+  const confirmCreate = async () => {
+    setConfirming(false);
+    // The first spell a player makes is followed by a request for feedback.
+    setFirstSpell((mySpells.data?.length ?? 1) === 0 && feedbackGiven.data?.given === false);
     setPhase("forging");
     setStepIndex(0);
 
@@ -149,6 +165,7 @@ export default function Create() {
 
       if (result.success && result.spell) {
         const spell = result.spell;
+        clearDraft();
         setCreated(spell);
         await Promise.all([
           utils.spells.sparkBalance.invalidate(),
@@ -175,6 +192,7 @@ export default function Create() {
         setPhase("form");
         setName("");
         setDescription("");
+        clearDraft();
         await utils.spells.forgeQueue.invalidate();
         toast.message("The forge is cooling", { description: result.error, duration: 9000 });
       } else {
@@ -234,6 +252,31 @@ export default function Create() {
     <div>
 
       <SparkPacksDialog open={zeroOpen} onOpenChange={setZeroOpen} source="zero_spark" balance={0} />
+      <FirstSpellFeedbackDialog
+        open={feedbackOpen}
+        onOpenChange={(open) => {
+          setFeedbackOpen(open);
+          if (!open) setFirstSpell(false);
+        }}
+      />
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent className="max-w-sm border-border bg-card text-foreground">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-xl">Research {name.trim() || "this spell"}?</DialogTitle>
+            <DialogDescription>
+              This spends {SPARK.creationCost} Spark. You have {balance}. If the forge fails on its side, the Spark comes back to you.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="ghost" onClick={() => setConfirming(false)}>
+              Not yet
+            </Button>
+            <Button onClick={confirmCreate} autoFocus>
+              <Sparkles /> Spend {SPARK.creationCost} Spark
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Page title="Lab" subtitle="Describe a spell. The forge balances it, writes its lore and paints its card.">
         <AnimatePresence mode="wait">
           {phase === "form" && (
@@ -353,7 +396,7 @@ export default function Create() {
                       disabled={createSpell.isPending || balance < 1}
                     >
                       <Wand2 />
-                      Create Spell
+                      Research Spell
                     </Button>
                   </div>
                 </form>
@@ -404,6 +447,9 @@ export default function Create() {
                 will appear in your Spellbook, and you will be told.
               </p>
               <p className="mt-2 text-xs text-muted-foreground">The research took 1 Spark. {balance} remaining.</p>
+              <div className="mt-6 text-left">
+                <CodexAsk spellId={created.id} researching onAnswered={() => firstSpell && setFeedbackOpen(true)} />
+              </div>
               <div className="mt-8 flex justify-center gap-3">
                 <Button
                   onClick={() => {
@@ -451,6 +497,10 @@ export default function Create() {
                   <p className="text-sm leading-relaxed text-foreground/90">{created.flavorText}</p>
                   <SpellStats spell={mapSpellToCardProps(created)} />
                 </div>
+              </div>
+
+              <div className="mt-8">
+                <CodexAsk spellId={created.id} researching={false} onAnswered={() => firstSpell && setFeedbackOpen(true)} />
               </div>
 
               {nameDialog}
