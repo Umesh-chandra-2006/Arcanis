@@ -39,7 +39,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 ### A1 Database backup (0.5)
 - [x] Before any schema work: logical dump of the current TiDB database stored outside the repo (`D:\Arcanis-backups`); restored into a scratch DB with every table's row count matching. (2026-10-10)
 - [x] `pnpm db:backup` and `pnpm db:restore-check` (`phase0/scripts/`), documented in `CLAUDE.md`. (2026-10-10)
-- [ ] Founder, best effort: find which TiDB Cloud account owns host `gateway06.us-east-1.prod.aws.tidbcloud.com` (try each likely email at tidbcloud.com).
+- [x] Dropped by the founder (2026-10-15): not pursued. Was: find which TiDB Cloud account owns host `gateway06.us-east-1.prod.aws.tidbcloud.com` (try each likely email at tidbcloud.com).
 - **Done when:** a verified restore exists and the dump script is documented. The host move itself is B0.
 
 ### A2 Provider interfaces and cost telemetry (2)

@@ -74,7 +74,7 @@ Without the `DATABASE_URL` line `pnpm dev` uses the production database. Every s
 | Welcome step and profile window | One skippable dialog (name, optional password, update emails); profile window with 5 tabs. Changes "straight to creation". |
 | Signup grant 3 | Was 5. |
 | Sealed potential | Display-only concept grade (Basic/Advanced/Mega) plus stronger Layer 1 stat guidance, so a grand description reads as grand without breaking the tier rule. |
-| Base spells | 36 seeded and shown in the Spellbook with filters. Tier per spell assumed (Basic/Advanced/Mega in list order): **founder to confirm**. |
+| Base spells | 36 seeded and shown in the Spellbook with filters. Tier per spell Basic/Advanced/Mega in list order, confirmed by the founder (2026-10-15). |
 
 ### Founder decisions, 2026-10-11 (second local test)
 
@@ -138,7 +138,7 @@ Without the `DATABASE_URL` line `pnpm dev` uses the production database. Every s
 | F11 | Lemon Squeezy parked until after the soft launch. |
 
 ### Still open (needs founder)
-1. **Base spell tiers:** the 36 base spells are seeded as each element's Basic, Advanced and Mega spell in Master Doc 5.6 list order, because the doc states no tier per spell. Asked on 2026-10-11; the founder did not object but did not say yes either. Treated as accepted unless corrected.
+1. Closed 2026-10-15: the base spell tiers (Basic, Advanced, Mega in Master Doc 5.6 list order) are confirmed by the founder.
 2. **Growth suggestions:** all adopted. Built: example prompts, try before signup (browser-kept draft), the Codex (public newest-spells wall). Built but off: mending. Planned for the battle phase: one update email to opted-in players.
 2a. Closed 2026-10-11: ascension is paid in Refinement Runes (starting value 5).
 2b. **Sovereign tier:** stat caps, MP and Will ranges and Power Budget are not designed.
@@ -148,8 +148,8 @@ Without the `DATABASE_URL` line `pnpm dev` uses the production database. Every s
 6. **Deploy inputs:** given on 2026-10-11 (Render URL `https://arcanis-jpm1.onrender.com`, now in `vercel.json`; Render's IPs already authorised in Brevo; alert email and admin are the founder's own email). Still needed: the Vercel project's `.vercel.app` address (the founder has not created the project yet), which stands in for the public domain until there is a custom one.
 7. Closed 2026-10-11: the fusion cost line moved from Phase 0 to Phase 1 in the Phase Plan.
 8. **Try before signup, server version:** the founder floated storing a visitor's request on the server with an emailed time-limited link. Not built (it adds an unauthenticated write path); the browser-kept draft was built instead. The founder has not replied to that reasoning.
-9. **Runes minted while refinement is off:** every forged spell still mints a Refinement Rune silently. Told to the founder; not explicitly confirmed.
-10. **"Sanctum"** as the sidebar name for Home: Claude's pick after "Tower" was ruled out by decision G2. The founder has not reacted yet.
+9. Closed 2026-10-15: runes keep being minted silently while refinement is off (founder).
+10. Closed 2026-10-15: "Sanctum" is confirmed as the name for Home (founder).
 
 ## 3. Task List
 
