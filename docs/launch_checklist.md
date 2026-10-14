@@ -15,7 +15,8 @@ The API runs on Render and the client on Vercel. There is no custom domain yet, 
 
 ### Step A. Vercel: create the project (gives you the public address)
 
-- [ ] vercel.com, Add New, Project, import the `Arcanis` repo.
+- [x] Done 2026-10-15: project created, Production Branch `track-a`, address **https://arcanis-three.vercel.app**.
+- [x] vercel.com, Add New, Project, import the `Arcanis` repo.
 - [ ] **Root Directory:** `phase0`. **Framework Preset:** Other. Leave the build command, output directory and install command empty: `phase0/vercel.json` already sets them (`pnpm build:client`, `dist/public`), and Vercel picks pnpm from the lockfile.
 - [ ] **Production Branch** (Settings, Git, after creation): `main`, or `track-a` until the merge.
 - [ ] Deploy once. Note the address Vercel gives the project: `https://<project>.vercel.app`. This first deploy works for browsing, but share links are wrong until Step C.
@@ -39,11 +40,11 @@ The API runs on Render and the client on Vercel. There is no custom domain yet, 
 | `OPENAI_API_KEY` | from the local `.env` |
 | `STORAGE_PROVIDER` | `cloudinary` |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | from the local `.env` |
-| `EMAIL_PROVIDER` | `brevo` |
-| `BREVO_API_KEY`, `BREVO_FROM` | from the local `.env` |
+| `EMAIL_PROVIDER` | `brevo,resend` (Brevo first, Resend as fallback) |
+| `BREVO_API_KEY`, `BREVO_FROM`, `RESEND_API_KEY` | from the local `.env` |
 | `CARD_ART` | `element` |
-| `FRONTEND_URL` | `https://<project>.vercel.app` (no trailing slash) |
-| `CORS_ALLOWED_ORIGINS` | `https://<project>.vercel.app` |
+| `FRONTEND_URL` | `https://arcanis-three.vercel.app` (no trailing slash) |
+| `CORS_ALLOWED_ORIGINS` | `https://arcanis-three.vercel.app` |
 | `TRUST_PROXY_HOPS` | `2` |
 | `DAILY_SPEND_LIMIT_USD` | `2` |
 | `DAILY_CREATION_LIMIT` | `50` (raise after the first week) |
@@ -56,7 +57,7 @@ Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provi
 
 ### Step C. Vercel: set the public address and redeploy
 
-- [ ] Settings, Environment Variables: `VITE_PUBLIC_URL` = `https://<project>.vercel.app` (Production). No other variable is needed; the client always calls `/api` on its own origin, and `vercel.json` forwards that to Render.
+- [ ] Settings, Environment Variables: `VITE_PUBLIC_URL` = `https://arcanis-three.vercel.app` (Production). No other variable is needed; the client always calls `/api` on its own origin, and `vercel.json` forwards that to Render.
 - [ ] Deployments, the latest one, Redeploy (the value is baked in at build time).
 
 ### Step D. Keep the free Render instance awake (decision F3)
@@ -70,6 +71,7 @@ Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provi
 ## 4. Database
 
 - [x] Production migrated to **0018** on 2026-10-11 (0017: forge queue table, session method column; 0018: Refinement Rune ledger, `p0_spells.refined_from_id`, `p0_generation_runs.kind`), after a backup that passed `db:restore-check` (`D:\Arcanis-backups\arcanis-...-2026-10-10T21-00-56-850Z.sql`). Any later migration: `cd phase0 && pnpm db:backup`, then `pnpm db:migrate`.
+- [x] Production migrated to **0019** on 2026-10-15 (Codex column, votes, feedback), after a backup that passed `db:restore-check` (`D:\Arcanis-backups\arcanis-...-2026-10-14T20-31-58-884Z.sql`).
 - [x] Spells forged before 0018 minted no Refinement Rune, and there is no retroactive grant (founder, 2026-10-11). Existing players earn their first rune with their next spell.
 - [x] The 36 base spells are seeded in production (2026-10-11). `pnpm seed` is idempotent if it needs re-running.
 - [x] The founder's account is an admin in production (2026-10-11; the admin pages are `/admin/metrics` and `/admin/moderation`). It has no password yet, so its next sign-in is by emailed code and then asks for one.
