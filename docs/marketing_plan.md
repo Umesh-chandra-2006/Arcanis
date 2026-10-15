@@ -1,6 +1,8 @@
-# Arcanis: Marketing Plan (v1.0, 2026-10-15)
+# Arcanis: Marketing Plan (v1.1, 2026-10-15)
 
-**Status:** draft agreed in conversation with the founder on 2026-10-15; the four decisions in Section 8 are still open. The working checklist is Track M in `docs/tasks.md`. **Founder rule (2026-10-15): no other work (Track B battles or anything else) starts until Track M and the Phase 1a launch are done.**
+**v1.1 (2026-10-15):** the four decisions in Section 8 are made (M1 closed). Creation limit raised to 200 on free tiers; main text model switched to Gemini flash-lite.
+
+**Status:** agreed with the founder on 2026-10-15; Section 8 decisions made. The working checklist is Track M in `docs/tasks.md`. **Founder rule (2026-10-15): no other work (Track B battles or anything else) starts until Track M and the Phase 1a launch are done.**
 
 Wording: the founder calls the creation soft launch "Phase 0" and the battle release "Phase 1"; the docs call them Phase 1a and Phase 1b. This plan uses the docs' names.
 
@@ -69,9 +71,11 @@ Watch daily during the cohort: `/admin/metrics`, `/admin/feedback`, `pnpm cost-r
 
 Phase 1a counts as launched when: `track-a` is merged into `main` and both services deploy from `main`; the domain is live with share links verified; the invited cohort has used it for a week with the cost and quota numbers watched; and the site is opened to the public (Phase B channels start). Then record the Gate 1a evaluation date (4 to 6 weeks after opening) in `PROGRESS.md`.
 
-## 8. Open founder decisions
+## 8. Founder decisions (M1, closed 2026-10-15)
 
-1. **Provider budget:** a capped payment method on the text provider so the creation limit can rise? Recommendation: yes, $10 to $20 monthly cap.
-2. **Domain:** buy one now? Recommendation: yes, before any public link.
-3. **Timing:** keep the big launch for battles; treat now as cohort plus steady organic growth? Recommendation: yes.
-4. **First build:** share buttons, weekly challenge, or attribution? Recommendation: share buttons first.
+1. **Provider budget:** no payment method now. The quota re-audit (`docs/provider_quotas.md`, 2026-10-15) showed the free tiers carry about 200 creations a day once card art stopped calling an image model, and `DAILY_CREATION_LIMIT` is now 200 on Render. Add a capped card (hard cap, $10 to $20 a month, checked per provider first) when daily creations near 200 or a week before a planned spike (task M4). Extra provider accounts or keys to get around free limits are ruled out.
+2. **Domain:** `arcanis.world`, registered at Spaceship for one year with auto-renew on (task M3). Chosen over `arcanis.co.in` for a global audience.
+3. **Timing:** yes. The big launch (Product Hunt, Show HN, press, the large subreddits) is kept for battles; now is the invited cohort plus steady organic growth.
+4. **First builds:** share buttons (M5) and channel attribution (M6) now. The weekly forge challenge (M7) is planned with the founder before it is built (theme cadence, reward, start date); it is not built yet.
+
+Also decided 2026-10-15: the main text model is Gemini `gemini-flash-lite-latest` with Groq `gpt-oss-120b` as fallback, after a 30-call comparison (flash-lite wrote the most vivid text; the newest Gemini Flash failed 5 of 10 calls and allows about 20 free calls a day).

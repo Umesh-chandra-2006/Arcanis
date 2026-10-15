@@ -4,6 +4,20 @@
 
 All providers run on free tiers with no payment method attached (founder decision F1). Real spend is $0; cost telemetry records list-price shadow cost (`server/providers/pricing.ts`).
 
+## Re-audit, 2026-10-15 (task M1): `DAILY_CREATION_LIMIT` raised from 50 to 200
+
+The 50 below was set because images were the binding limit. Card faces are now element art (`CARD_ART=element`), so a creation makes no image call and text is the binding limit. Measured from `p0_provider_calls` in the test database (no live calls):
+
+- **Tokens per Layer 1 call:** about 680 on Groq `gpt-oss-120b` (450 in, 235 out; 284 calls), about 640 on Gemini lite. About 1.05 Layer 1 calls per creation (`docs/cost_sheet.md`).
+- **Groq binds on tokens, not requests.** The free tier is 1,000 requests and 200,000 tokens a day per organisation (Groq docs; limits are per organisation, so extra keys add nothing). On 2026-10-09 Groq returned `quota` after 219 successful calls (about 150,000 tokens). Groq alone: about **220 creations a day**.
+- **Gemini `gemini-flash-lite-latest`:** 104 successes on 2026-10-09 and still answering (its errors that day were per-minute). Daily cap at least 100; third-party sources say 500 to 1,000.
+- **Gemini `gemini-flash-latest` (newest Flash):** 12 successes, then `quota`. Third-party sources report about 20 free requests a day for the 3.x Flash models. Not usable as a primary on the free tier.
+- **Email:** Brevo free, 300 a day: about 300 new signups a day.
+
+**Setting (founder, 2026-10-15): `DAILY_CREATION_LIMIT=200` on Render**, about 90% of Groq alone, with Gemini lite as headroom. Creations over the limit wait in the forge queue. Going higher needs a capped payment method (task M4); at 680 tokens a creation, 10,000 creations cost about $3 on Groq at list price. Opening extra provider accounts to get around per-account limits breaks the providers' terms and is ruled out.
+
+**Main text model switched (founder, 2026-10-15):** Render now has `SPELL_LLM_PROVIDER=gemini:gemini-flash-lite-latest` and `SPELL_LLM_FALLBACK_PROVIDERS=groq,openrouter` (`SPELL_LLM_API_KEY` stays the Groq key). Basis: a 30-call Layer 1 comparison on the test database (10 prompts, 3 models). Gemini flash-lite: 10 of 10, 1.8 to 4.5 s, the most vivid and specific text. Groq `gpt-oss-120b`: 10 of 10, 1.0 to 2.6 s, serviceable but generic. Newest Gemini Flash (`gemini-flash-latest`): 5 of 10 (server errors, timeouts, one cut-off JSON), 7 to 16 s. Capacity is unchanged in total: when flash-lite's daily cap (unconfirmed, at least 100) runs out, creations fall through to Groq. Check `pnpm cost-report --days 1` after the first day to see where lite ran out.
+
 ## Per provider
 
 | Surface | Provider and model | Free limit | Source | Status 2026-10-10 |
