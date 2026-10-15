@@ -16,7 +16,7 @@ Plan and reasoning: `docs/marketing_plan.md`. Work top to bottom; items marked (
 
 - [ ] M0 (benched by the founder until marketing is done, 2026-10-15) Close the verification loose ends: feedback reaches `/admin/feedback` (it was empty after the founder's run); the 11 old archivist seed spells deleted (founder runs `D:\Arcanis-backups\delete-old-seeds.mjs`; archivist count 36).
 - [x] M1 (founder) Decide the four open questions in `docs/marketing_plan.md` Section 8: provider budget, domain, timing, first build. (2026-10-15: no card yet, limit 200 on free tiers; `arcanis.world` at Spaceship; big launch kept for battles; M5 and M6 now, M7 planned first. Main text model switched to Gemini flash-lite.)
-- [ ] M2 Merge `track-a` into `main` (fast-forward) after the founder's yes; switch Vercel and Render to `main`; deploy; check `/health` and CI.
+- [ ] M2 Merge `track-a` into `main` (fast-forward) after the founder's yes; switch Vercel and Render to `main`; deploy; check `/health` and CI. (2026-10-15: `main` fast-forwarded to `193d1fc`; the service switch, `/health` and CI check are open.)
 - [ ] M3 (founder) Domain: buy, point at Vercel; update `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` (Render), `VITE_PUBLIC_URL` (Vercel); redeploy; re-check share links on Discord, X and WhatsApp. **Done when:** a share link on the new domain shows the card on all three.
 - [ ] M4 (founder) Provider budget: capped payment method on the text provider (and fallback), check `docs/provider_quotas.md`, raise `DAILY_CREATION_LIMIT` on Render to match. **Done when:** the new limit and the monthly cap are written in `docs/provider_quotas.md`.
 - [ ] M5 Share buttons on the reveal (X and WhatsApp, prefilled text, share link with `?ref=`). Tests with fake providers; client build.
