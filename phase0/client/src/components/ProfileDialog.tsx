@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { SparkPacksDialog } from "@/components/SparkPacks";
@@ -336,7 +337,7 @@ function SecurityTab() {
                   Forgot it? Email me a sigil
                 </button>
               </div>
-              <Input id="pf-current" type="password" autoComplete="current-password" maxLength={72} value={current} onChange={(e) => setCurrent(e.target.value)} />
+              <PasswordInput id="pf-current" autoComplete="current-password" maxLength={72} value={current} onChange={(e) => setCurrent(e.target.value)} />
             </div>
           )}
           {user.hasPassword && user.canResetPassword && (
@@ -345,7 +346,7 @@ function SecurityTab() {
           <div className="space-y-1.5">
             <Label htmlFor="pf-password">{user.hasPassword ? "New password" : "Password"}</Label>
             <div className="flex gap-2">
-              <Input id="pf-password" type="password" autoComplete="new-password" minLength={8} maxLength={72} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <PasswordInput id="pf-password" autoComplete="new-password" minLength={8} maxLength={72} placeholder="At least 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} />
               <Button type="submit" disabled={set.isPending || password.length < 8 || (needsCurrent && !current)}>
                 {user.hasPassword ? "Change" : "Set"}
               </Button>

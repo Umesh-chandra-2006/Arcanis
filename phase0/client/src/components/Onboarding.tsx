@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SPARK } from "@shared/constants";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ export function Onboarding() {
   const { user, login, resetOffer, dismissResetOffer } = useAuth();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [again, setAgain] = useState("");
   const [updates, setUpdates] = useState(true);
   const complete = trpc.profile.completeOnboarding.useMutation();
   const setNew = trpc.profile.setPassword.useMutation();
@@ -30,7 +32,8 @@ export function Onboarding() {
   if (!mode) return null;
 
   const busy = complete.isPending || setNew.isPending;
-  const passwordOk = password.length >= 8;
+  const mismatch = again.length > 0 && again !== password;
+  const passwordOk = password.length >= 8 && again === password;
   const nameOk = name.trim().length === 0 || name.trim().length >= 3;
 
   const submit = async (e: React.FormEvent) => {
@@ -46,6 +49,7 @@ export function Onboarding() {
         }
       }
       setPassword("");
+      setAgain("");
     } catch (error: any) {
       toast.error(error?.message ?? "Could not save that");
     }
@@ -94,9 +98,8 @@ export function Onboarding() {
           )}
           <div className="space-y-1.5">
             <Label htmlFor="onb-password">{mode === "reset" ? "New password" : "Password"}</Label>
-            <Input
+            <PasswordInput
               id="onb-password"
-              type="password"
               autoComplete="new-password"
               autoFocus={mode !== "welcome"}
               required
@@ -107,6 +110,19 @@ export function Onboarding() {
               onChange={(e) => setPassword(e.target.value)}
             />
             {mode !== "reset" && <p className="text-[11px] text-muted-foreground">If you ever forget it, an emailed sigil lets you choose a new one.</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="onb-password-again">Retype password</Label>
+            <PasswordInput
+              id="onb-password-again"
+              autoComplete="new-password"
+              required
+              maxLength={72}
+              aria-invalid={mismatch}
+              value={again}
+              onChange={(e) => setAgain(e.target.value)}
+            />
+            {mismatch && <p className="text-[11px] text-destructive">The two passwords do not match.</p>}
           </div>
           {mode === "welcome" && (
             <label className="flex items-start gap-2 text-sm">

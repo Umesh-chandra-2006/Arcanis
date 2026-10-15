@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Spinner } from "@/components/ui/spinner";
 import { ArrowRight, KeyRound, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -82,7 +83,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum" }: { ini
               Forgot it?
             </button>
           </div>
-          <Input id="signin-password" type="password" autoComplete="current-password" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={72} />
+          <PasswordInput id="signin-password" autoComplete="current-password" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} maxLength={72} />
         </div>
         <Button type="submit" className="w-full" disabled={busy}>
           {withPassword.isPending ? <Spinner /> : <KeyRound />}
