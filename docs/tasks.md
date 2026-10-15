@@ -4,7 +4,27 @@
 
 **How to use:** work top to bottom within a track. Tick `[x]` when every acceptance check passes, and note the date and commit in the task line. Estimates are working days. Every task keeps the engineering rules in `CLAUDE.md` (Two-Step Verification and a Spark path on any AI call, auth on any spend path, Will never reaches the client, no em dashes, no secrets in git).
 
-**Status (2026-10-11):** Track A code complete on branch `track-a` (A0 to A15 and A17), plus the first local test round (T1 to T6, below). Open: T7 (founder re-test), T8 (suggestions the founder picks), A16 (the founder's deploy, `docs/launch_checklist.md`). Track B not started; B2 was done early.
+**Gate (founder, 2026-10-15): marketing and the Phase 1a launch come first.** Until every task in Track M below is ticked (which includes the Phase 1a launch as defined in `docs/marketing_plan.md` Section 7), do not start or continue any other work: no Track B (battles), no B10 refinement, no new features outside Track M. Fixes to bugs found on the live site are allowed. If a task elsewhere seems urgent, ask the founder first.
+
+**Status (2026-10-15):** Track A done and deployed from `track-a`, verified by the founder (A16 open items: the merge and the cohort). Track M (marketing and launch) is the current work. Track B is parked by the gate above; B2 was done early.
+
+---
+
+## Track M: Marketing and the Phase 1a launch (current work)
+
+Plan and reasoning: `docs/marketing_plan.md`. Work top to bottom; items marked (founder) need the founder's accounts or decision.
+
+- [ ] M0 Close the verification loose ends: feedback reaches `/admin/feedback` (it was empty after the founder's run); the 11 old archivist seed spells deleted (founder runs `D:\Arcanis-backups\delete-old-seeds.mjs`; archivist count 36).
+- [ ] M1 (founder) Decide the four open questions in `docs/marketing_plan.md` Section 8: provider budget, domain, timing, first build.
+- [ ] M2 Merge `track-a` into `main` (fast-forward) after the founder's yes; switch Vercel and Render to `main`; deploy; check `/health` and CI.
+- [ ] M3 (founder) Domain: buy, point at Vercel; update `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` (Render), `VITE_PUBLIC_URL` (Vercel); redeploy; re-check share links on Discord, X and WhatsApp. **Done when:** a share link on the new domain shows the card on all three.
+- [ ] M4 (founder) Provider budget: capped payment method on the text provider (and fallback), check `docs/provider_quotas.md`, raise `DAILY_CREATION_LIMIT` on Render to match. **Done when:** the new limit and the monthly cap are written in `docs/provider_quotas.md`.
+- [ ] M5 Share buttons on the reveal (X and WhatsApp, prefilled text, share link with `?ref=`). Tests with fake providers; client build.
+- [ ] M6 Channel attribution: capture UTM or a channel tag at first visit, carry it to signup, show signups per channel on `/admin/metrics`.
+- [ ] M7 Weekly forge challenge: a theme, Codex votes, a featured slot on the landing page. Prizes never Spark (founder to confirm the reward).
+- [ ] M8 (founder) Invited cohort of 20 to 30 (friends, classmates, known Discord servers, a campus or fest event). Watch `/admin/metrics`, `/admin/feedback` and `pnpm cost-report --days 1` daily for a week.
+- [ ] M9 (founder) Content engine started: short videos, build in public on X, spell of the day. Community accounts joined and contributing before any post.
+- [ ] M10 Open to the public (Phase B channels in the plan). Record the Gate 1a evaluation date (4 to 6 weeks out) in `PROGRESS.md`. Refresh the cost sheet after the first week (`pnpm cost-report --days 7 --write`, `docs/cost_sheet.md`). **This is the Phase 1a launch; the gate above lifts here.**
 
 ---
 
@@ -186,7 +206,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 
 ---
 
-## Track B: Phase 1b async battles (parallel once A0 to A3 land)
+## Track B: Phase 1b async battles (parked until Track M is done, founder gate 2026-10-15)
 
 ### B0 Infrastructure move (2 to 3) (start of 1b; F2, F5)
 - [ ] Provision a new, founder-owned database host (MySQL-compatible keeps Drizzle as is; Postgres means a dialect port, decide then); migrate data from the A1 dump plus a final cutover dump; switch `DATABASE_URL`; verify.

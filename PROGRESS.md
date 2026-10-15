@@ -24,6 +24,8 @@
 | Live provider calls | **Founder rule (CLAUDE.md): none without the founder's permission in that session.** The dev-startup model check is now opt-in and the forge queue loop skips test accounts. |
 
 ### Exact next step
+**Founder gate (2026-10-15): marketing and the Phase 1a launch come first; no other work until Track M in `docs/tasks.md` is done.** The plan is `docs/marketing_plan.md` (read it; its Section 8 has four open decisions). Items 1 to 3 below are M0 and M2 of Track M; item 4 is replaced by Track M.
+
 **The deploy is done and verified (2026-10-15).** Steps A to D of `docs/launch_checklist.md` section 2 are done: Vercel builds `track-a` with `VITE_PUBLIC_URL` = `https://arcanis-three.vercel.app`; Render `arcanis-jpm1` answers `/health` with `OK`; cron-job.org pings it every 10 minutes with failure alerts to the founder. The founder clicked through checklist section 5 and reported all green, with two loose ends found in the production data:
 
 1. **Feedback not confirmed.** After the founder's run, `p0_feedback` held **0 rows**, so no feedback (page or first-spell prompt) reached production. Ask the founder to send one line from the feedback page and check `/admin/feedback`. If it does not arrive, it is a bug: debug `server/feedback.ts`, the feedback router and the client page, fix, push to `track-a`. Settle this before the merge.
@@ -137,6 +139,10 @@ Without the `DATABASE_URL` line `pnpm dev` uses the production database. Every s
 | F9 | `phase0/` is not promoted to the repo root. Disclaimer added to `docs/status_report.md`. |
 | F10 | Avatar selection never shows Will. Master Doc 2.1 Will cost ranges = typical targets; 6.2 floors and caps = hard limits. |
 | F11 | Lemon Squeezy parked until after the soft launch. |
+
+### Founder decisions, 2026-10-15 (marketing)
+- Marketing plan written (`docs/marketing_plan.md`): cohort now, steady organic growth after the creation limit is lifted, the big launch kept for battles. Its four decisions (provider budget, domain, timing, first build) are open.
+- **Gate:** no work outside Track M (marketing and the Phase 1a launch) until it is done; Track B is parked. Build Plan Section 15 still says Track B runs in parallel; not yet updated, because `track-b` already claims Build Plan v2.8 (see the Docs row). Update it when `track-b` is rebased, or ask the founder.
 
 ### Still open (needs founder)
 1. Closed 2026-10-15: the base spell tiers (Basic, Advanced, Mega in Master Doc 5.6 list order) are confirmed by the founder.
