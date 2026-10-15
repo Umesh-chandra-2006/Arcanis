@@ -139,14 +139,15 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] Abuse: disposable emails refused, same-device and same-network grant farming, rate limits on sign-in, codes, reports and analytics, abuse strikes to restriction and ban. (2026-10-10)
 - [x] Will leakage scan of every spell-returning payload (`server/leakage.test.ts`). (2026-10-10)
 - [x] Production CSP on Render (helmet, explicit directives) and security headers on Vercel (`vercel.json`: CSP, nosniff, referrer policy, HSTS); production build verified to have no inline scripts. Stale password-era `e2e.mjs` removed. (2026-10-10)
-- [ ] OG check on real platforms (Discord, X, WhatsApp): needs the deployed public domain; moved to A16.
+- [x] OG check on real platforms (Discord, X, WhatsApp): done in A16 (2026-10-15).
 - **Done when:** all Phase 1a DoD items in Build Plan v2.2 Section 1 pass. Met in tests and the local browser run; the platform OG check is the last open item and belongs to the deploy (A16).
 
 ### A16 Soft launch
 - [x] Production build verified locally (`NODE_ENV=production`, test database): health, SPA and assets, CSP, share page with OG tags and working assets, SPA fallback, API with Secure cookies. (2026-10-10)
 - [x] Step-by-step runbook for the founder: `docs/launch_checklist.md` (keys, Render, Vercel, keep-awake monitor, admin role, deploy checks, cohort, rollback). (2026-10-10)
-- [ ] Founder: Render's outbound IPs added to Brevo (the founder's own IP is already authorised), Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, admin role for the founder's account, merge `track-a`, redeploy. (Cloudflare image keys are no longer needed: element art.)
-- [ ] OG check on Discord, X and WhatsApp on the public domain.
+- [x] (2026-10-15, except the merge) Founder: Render's outbound IPs added to Brevo (the founder's own IP is already authorised), Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, admin role for the founder's account, merge `track-a`, redeploy. (Cloudflare image keys are no longer needed: element art.)
+- [x] OG check on Discord, X and WhatsApp on the public domain. (2026-10-15)
+- [ ] Merge `track-a` into `main` and switch both services to `main`.
 - [ ] Small invited cohort; watch cost, quota and funnel dashboards for a week; then open.
 - [ ] Cost sheet refresh (moved here from Phase 0 by the founder, 2026-10-11): after the first week of traffic, `pnpm cost-report --days 7 --write`, then update `docs/cost_sheet.md` with cost per creation, cost per mend and cost per Spark spent. The 2026-10-10 sheet predates the stronger stat guidance and mending.
 - [ ] Record the Gate 1a evaluation date (4 to 6 weeks out).

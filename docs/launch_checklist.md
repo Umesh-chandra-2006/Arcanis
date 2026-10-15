@@ -17,16 +17,18 @@ The API runs on Render and the client on Vercel. There is no custom domain yet, 
 
 - [x] Done 2026-10-15: project created, Production Branch `track-a`, address **https://arcanis-three.vercel.app**.
 - [x] vercel.com, Add New, Project, import the `Arcanis` repo.
-- [ ] **Root Directory:** `phase0`. **Framework Preset:** Other. Leave the build command, output directory and install command empty: `phase0/vercel.json` already sets them (`pnpm build:client`, `dist/public`), and Vercel picks pnpm from the lockfile.
-- [ ] **Production Branch** (Settings, Git, after creation): `main`, or `track-a` until the merge.
-- [ ] Deploy once. Note the address Vercel gives the project: `https://<project>.vercel.app`. This first deploy works for browsing, but share links are wrong until Step C.
+- [x] **Root Directory:** `phase0`. **Framework Preset:** Other. Leave the build command, output directory and install command empty: `phase0/vercel.json` already sets them (`pnpm build:client`, `dist/public`), and Vercel picks pnpm from the lockfile.
+- [x] **Production Branch** (Settings, Git, after creation): `main`, or `track-a` until the merge.
+- [x] Deploy once. Note the address Vercel gives the project: `https://<project>.vercel.app`. This first deploy works for browsing, but share links are wrong until Step C.
 
 ### Step B. Render: configure the API service (`arcanis-jpm1`)
 
-- [ ] Settings: **Root Directory** `phase0`; **Branch** the same as Vercel; **Runtime** Node.
-- [ ] **Build Command:** `pnpm install --frozen-lockfile --prod=false && pnpm build`. The `--prod=false` matters: with `NODE_ENV=production` set, pnpm would otherwise skip the build tools (Vite, esbuild) and the build fails.
-- [ ] **Start Command:** `pnpm start`. **Health Check Path:** `/health`. **Instance type:** Free.
-- [ ] Environment, set fresh (decision F8). Delete anything left from the old app that is not in this list.
+- [x] Done 2026-10-15: `/health` answers `OK`, and Vercel forwards `/api` to it.
+
+- [x] Settings: **Root Directory** `phase0`; **Branch** the same as Vercel; **Runtime** Node.
+- [x] **Build Command:** `pnpm install --frozen-lockfile --prod=false && pnpm build`. The `--prod=false` matters: with `NODE_ENV=production` set, pnpm would otherwise skip the build tools (Vite, esbuild) and the build fails.
+- [x] **Start Command:** `pnpm start`. **Health Check Path:** `/health`. **Instance type:** Free.
+- [x] Environment, set fresh (decision F8). Delete anything left from the old app that is not in this list.
 
 | Key | Value |
 |---|---|
@@ -52,17 +54,17 @@ The API runs on Render and the client on Vercel. There is no custom domain yet, 
 
 Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provides it) or any `VITE_` key on Render.
 
-- [ ] Save, then Manual Deploy, Deploy latest commit. When it is live, `https://arcanis-jpm1.onrender.com/health` must answer `OK`.
+- [x] Save, then Manual Deploy, Deploy latest commit. When it is live, `https://arcanis-jpm1.onrender.com/health` must answer `OK`.
 - [ ] Brevo: Render's outbound IPs were authorised in an earlier deploy (founder, 2026-10-11). If sign-in emails do not arrive, compare them with the service's Connect, Outbound list; they can change.
 
 ### Step C. Vercel: set the public address and redeploy
 
-- [ ] Settings, Environment Variables: `VITE_PUBLIC_URL` = `https://arcanis-three.vercel.app` (Production). No other variable is needed; the client always calls `/api` on its own origin, and `vercel.json` forwards that to Render.
-- [ ] Deployments, the latest one, Redeploy (the value is baked in at build time).
+- [x] (2026-10-15) Settings, Environment Variables: `VITE_PUBLIC_URL` = `https://arcanis-three.vercel.app` (Production). No other variable is needed; the client always calls `/api` on its own origin, and `vercel.json` forwards that to Render.
+- [x] Deployments, the latest one, Redeploy (the value is baked in at build time).
 
 ### Step D. Keep the free Render instance awake (decision F3)
 
-- [ ] cron-job.org or UptimeRobot: GET `https://arcanis-jpm1.onrender.com/health` every 10 minutes, with an alert to the founder on failure. Run no other free Render service on the account.
+- [x] (2026-10-15, cron-job.org) cron-job.org or UptimeRobot: GET `https://arcanis-jpm1.onrender.com/health` every 10 minutes, with an alert to the founder on failure. Run no other free Render service on the account.
 
 ### Already done in the repo
 
@@ -78,10 +80,12 @@ Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provi
 
 ## 5. Deploy and verify
 
-- [ ] Merge `track-a` to `main` (CI runs type-check, tests against a MySQL container, build).
-- [ ] Sign up on the public domain with a real inbox; enter the code; choose a password at the welcome step; create a spell; the card shows its element art. Sign out and back in with the password. Try "Forgot it?" once. Forge a third spell: it must show as "research under way" (no card), and be granted with a notice some minutes later. There must be no refine button (refinement opens with battles).
-- [ ] Paste a share link into Discord, X and WhatsApp: the card (1200x630, spell name, Arcanis frame) must show. This closes the last A15 item.
-- [ ] `/admin/metrics`: breaker open, today's counts move.
+- [x] Sign up on the public domain with a real inbox; enter the code; choose a password at the welcome step; create a spell; the card shows its element art. Sign out and back in with the password. Try "Forgot it?" once. Forge a third spell: it must show as "research under way" (no card), and be granted with a notice some minutes later. There must be no refine button (refinement opens with battles).
+- [x] Paste a share link into Discord, X and WhatsApp: the card (1200x630, spell name, Arcanis frame) must show. This closes the last A15 item.
+- [x] `/admin/metrics`: breaker open, today's counts move.
+- [x] Also verified by the founder (2026-10-15, all green): Spark confirmation, the Codex question and votes, the Sanctum at `/sanctum`, the landing page signed in and out, the password show/hide toggle and retype.
+- [ ] Feedback page and first-spell prompt reach `/admin/feedback`: `p0_feedback` was still empty after the run, so this is unconfirmed.
+- [ ] Merge `track-a` to `main` after verification (fast-forward: `git push origin track-a:main`), switch Vercel and Render to `main`, deploy each once, check CI on github.com.
 
 ## 6. Soft launch
 
