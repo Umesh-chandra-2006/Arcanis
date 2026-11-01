@@ -69,8 +69,9 @@ export const profileRouter = router({
   }),
 
   /**
-   * The one-step welcome (v7.5): a password (required until the account has
-   * one), plus an optional name and update emails.
+   * The one-step welcome (v7.5; shown after the first spell since v7.8): a
+   * password (required until the account has one), plus an optional name and
+   * update emails.
    */
   completeOnboarding: protectedProcedure
     .input(z.object({ name: MageNameSchema.optional(), updatesOptIn: z.boolean().default(false), password: PasswordSchema.optional() }))

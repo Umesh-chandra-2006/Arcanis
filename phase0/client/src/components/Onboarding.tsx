@@ -6,31 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { SPARK } from "@shared/constants";
 import { toast } from "sonner";
 
 /**
  * The dialogs that follow a sign-in (Master Doc v7.5).
- * - Welcome: shown once after the first sign-in. A password is required (it
- *   saves an email on every later sign-in); the name and update emails are
- *   optional.
+ * - Welcome (v7.8): shown once, after the player's first spell, when they move
+ *   on from the card. A password is required unless they already set one in
+ *   their profile (it saves an email on every later sign-in); the name and
+ *   update emails are optional.
  * - Set a password: an older account that has none yet.
  * - New password: offered after an emailed sign-in to an account that already
  *   has one, which is the forgot-password path. This one can be dismissed.
  */
 export function Onboarding() {
-  const { user, login, resetOffer, dismissResetOffer } = useAuth();
+  const { user, login, resetOffer, dismissResetOffer, holdWelcome } = useAuth();
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [again, setAgain] = useState("");
   const [updates, setUpdates] = useState(true);
   const complete = trpc.profile.completeOnboarding.useMutation();
   const setNew = trpc.profile.setPassword.useMutation();
+  const spells = trpc.spells.mySpells.useQuery(undefined, { enabled: !!user && !user.onboarded });
 
   if (!user) return null;
-  const mode = !user.onboarded ? "welcome" : !user.hasPassword ? "password" : resetOffer ? "reset" : null;
+  const welcomeDue = (spells.data?.length ?? 0) > 0 && !holdWelcome;
+  const mode = !user.onboarded ? (welcomeDue ? "welcome" : null) : !user.hasPassword ? "password" : resetOffer ? "reset" : null;
   if (!mode) return null;
 
+  // A player can set a password in their profile before the welcome appears.
+  const askPassword = mode !== "welcome" || !user.hasPassword;
   const busy = complete.isPending || setNew.isPending;
   const mismatch = again.length > 0 && again !== password;
   const passwordOk = password.length >= 8 && again === password;
@@ -40,7 +44,7 @@ export function Onboarding() {
     e.preventDefault();
     try {
       if (mode === "welcome") {
-        login(await complete.mutateAsync({ name: name.trim() || undefined, password, updatesOptIn: updates }));
+        login(await complete.mutateAsync({ name: name.trim() || undefined, password: askPassword ? password : undefined, updatesOptIn: updates }));
       } else {
         login(await setNew.mutateAsync({ password }));
         if (mode === "reset") {
@@ -58,7 +62,9 @@ export function Onboarding() {
   const copy = {
     welcome: {
       title: "Welcome to Arcanis",
-      description: `You have ${SPARK.signupGrant} Spark to forge your first spells. Choose a password first, so you can return without waiting for an email.`,
+      description: askPassword
+        ? "Your first spell is yours. Choose a password, so you can return without waiting for an email."
+        : "Your first spell is yours. Choose a name for your mage, if you like.",
       action: "Enter Arcanis",
     },
     password: {
@@ -96,6 +102,8 @@ export function Onboarding() {
               <p className="text-[11px] text-muted-foreground">Shown on your spells and reviews. You can change it later.</p>
             </div>
           )}
+          {askPassword && (
+          <>
           <div className="space-y-1.5">
             <Label htmlFor="onb-password">{mode === "reset" ? "New password" : "Password"}</Label>
             <PasswordInput
@@ -124,6 +132,8 @@ export function Onboarding() {
             />
             {mismatch && <p className="text-[11px] text-destructive">The two passwords do not match.</p>}
           </div>
+          </>
+          )}
           {mode === "welcome" && (
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1" checked={updates} onChange={(e) => setUpdates(e.target.checked)} />
@@ -139,7 +149,7 @@ export function Onboarding() {
                 Keep my current one
               </Button>
             )}
-            <Button type="submit" className="flex-1" disabled={busy || !passwordOk || !nameOk}>
+            <Button type="submit" className="flex-1" disabled={busy || (askPassword && !passwordOk) || !nameOk}>
               {copy.action}
             </Button>
           </div>

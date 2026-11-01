@@ -294,7 +294,7 @@ export async function revokeSession(token: string | null | undefined): Promise<v
   await requireDb().update(p0Sessions).set({ revokedAt: new Date() }).where(eq(p0Sessions.tokenHash, sha256(token)));
 }
 
-// ---- Passwords (Master Doc v7.5: required for every account) ----
+// ---- Passwords (Master Doc v7.5: required for every account; v7.8: asked after the first spell) ----
 // Returning players sign in with a password, which sends no email. New
 // accounts are always created through the emailed code or link, which is what
 // verifies the address, and the same code is the "forgot password" path.

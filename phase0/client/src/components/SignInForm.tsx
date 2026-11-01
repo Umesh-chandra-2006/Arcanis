@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,11 @@ import { toast } from "sonner";
  * One sign-in flow (Master Doc v7.5). Returning mages enter their password,
  * which sends no email. New mages, and anyone who forgot their password, get a
  * 6-digit code and a link by email. The form never reveals whether an account
- * exists.
+ * exists. On the landing page (newcomer) the code comes first and the password
+ * lives on /signin, so a first-time visitor is not met by a password box. The
+ * same request runs for any email, so this reveals nothing either.
  */
-export function SignInForm({ initialEmail = "", redirectTo = "/sanctum" }: { initialEmail?: string; redirectTo?: string }) {
+export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcomer = false }: { initialEmail?: string; redirectTo?: string; newcomer?: boolean }) {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [email, setEmail] = useState(initialEmail);
@@ -69,6 +71,34 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum" }: { ini
     }
   };
 
+  if (!sentTo && newcomer) {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendCode();
+        }}
+        className="space-y-3"
+      >
+        <div className="space-y-1.5">
+          <Label htmlFor="signin-email">Email address</Label>
+          <Input id="signin-email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        </div>
+        <Button type="submit" className="w-full" disabled={busy}>
+          {request.isPending ? <Spinner /> : <Mail />}
+          Email me a code
+        </Button>
+        <p className="text-[11px] text-muted-foreground">We send a 6-digit code to start. You choose a password after your first spell.</p>
+        <p className="text-center text-xs text-muted-foreground">
+          Already a mage?{" "}
+          <Link to="/signin" className="inline-block py-1.5 text-primary underline">
+            Sign in with your password
+          </Link>
+        </p>
+      </form>
+    );
+  }
+
   if (!sentTo) {
     return (
       <form onSubmit={submit} className="space-y-3">
@@ -99,7 +129,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum" }: { ini
           Summon my sigil
         </Button>
         <p className="text-[11px] text-muted-foreground">
-          Enter your email and we send a sigil (a 6-digit code). You choose your password once inside.
+          Enter your email and we send a sigil (a 6-digit code). You choose your password after your first spell.
         </p>
       </form>
     );

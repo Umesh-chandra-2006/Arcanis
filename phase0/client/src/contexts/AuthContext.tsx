@@ -30,6 +30,9 @@ interface AuthContextValue {
   /** True right after an emailed sign-in to an account that already has a password. */
   resetOffer: boolean;
   dismissResetOffer: () => void;
+  /** The Lab sets this while a spell is forging or on show, so the welcome dialog (v7.8) waits until the player moves on. */
+  holdWelcome: boolean;
+  setHoldWelcome: (hold: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const me = trpc.auth.me.useQuery(undefined, { staleTime: 5 * 60_000, retry: false });
   const logoutMutation = trpc.auth.logout.useMutation();
   const [resetOffer, setResetOffer] = useState(false);
+  const [holdWelcome, setHoldWelcome] = useState(false);
 
   const login = useCallback(
     (user: AuthUser, options?: { viaEmail?: boolean }) => {
@@ -60,8 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const user = (me.data ?? null) as AuthUser | null;
   const value = useMemo(
-    () => ({ user, isAuthenticated: user !== null, isLoading: me.isLoading, login, logout, resetOffer, dismissResetOffer }),
-    [user, me.isLoading, login, logout, resetOffer, dismissResetOffer]
+    () => ({ user, isAuthenticated: user !== null, isLoading: me.isLoading, login, logout, resetOffer, dismissResetOffer, holdWelcome, setHoldWelcome }),
+    [user, me.isLoading, login, logout, resetOffer, dismissResetOffer, holdWelcome]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

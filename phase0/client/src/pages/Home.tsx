@@ -3,6 +3,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { readDraft, saveDraft } from "@/lib/draft";
+import { EXAMPLE_PROMPTS } from "@/lib/example-prompts";
+import { ElementIcon } from "@/components/game/element-icon";
 import { motion } from "framer-motion";
 import { trpc } from "@/lib/trpc";
 import { Panel } from "@/components/game/panel";
@@ -45,10 +47,11 @@ function Landing() {
   // What the visitor types is kept as they type it, so following any sign-in link keeps it too.
   const [draftName, setDraftName] = useState(() => readDraft()?.name ?? "");
   const [draftText, setDraftText] = useState(() => readDraft()?.description ?? "");
+  const [draftKind, setDraftKind] = useState(() => ({ element: readDraft()?.element, category: readDraft()?.category }));
   const [drafted, setDrafted] = useState<string | null>(() => readDraft()?.name || null);
   useEffect(() => {
-    saveDraft({ name: draftName, description: draftText });
-  }, [draftName, draftText]);
+    saveDraft({ name: draftName, description: draftText, ...draftKind });
+  }, [draftName, draftText, draftKind]);
 
   // Try before signup: the design stays in this browser until the visitor has signed in and presses Create.
   const keepDraft = (e: React.FormEvent) => {
@@ -56,7 +59,7 @@ function Landing() {
     const name = draftName.trim();
     const description = draftText.trim();
     if (!name || !description) return;
-    saveDraft({ name, description });
+    saveDraft({ name, description, ...draftKind });
     setDrafted(name);
     // A signed-in mage goes straight to the Lab, where the design waits.
     if (isAuthenticated) {
@@ -65,6 +68,7 @@ function Landing() {
     }
     track.mutate({ eventType: "landing_draft_started", metadata: {} }, { onError: () => {} });
     document.getElementById("signup")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById("signin-email")?.focus({ preventScroll: true });
   };
 
   return (
@@ -80,11 +84,29 @@ function Landing() {
               <span className="text-primary">Share them.</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-sm text-muted-foreground sm:text-base">
-              Describe a spell in your own words. Arcanis forges its stats and lore, and gives it a page to share. {SPARK.signupGrant} free Spark on
-              signup.
+              Arcanis is a magic game where you invent the spells: describe one in your own words and it becomes a balanced card you can share.
             </p>
+            <p className="mx-auto mt-2 max-w-xl text-xs text-muted-foreground">{SPARK.signupGrant} free spells ({SPARK.creationCost} Spark each)</p>
             <form onSubmit={keepDraft} className="arc-panel arc-panel-gold mx-auto mt-8 max-w-xl space-y-3 p-4 text-left">
               <p className="font-serif text-base font-semibold">Start now: what is your first spell?</p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Try one:</span>
+                {EXAMPLE_PROMPTS.slice(0, 3).map((example) => (
+                  <button
+                    key={example.name}
+                    type="button"
+                    onClick={() => {
+                      setDraftName(example.name);
+                      setDraftText(example.description);
+                      setDraftKind({ element: example.element, category: example.category });
+                    }}
+                    className="flex min-h-9 items-center gap-1.5 rounded-full border border-border px-3 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+                  >
+                    <ElementIcon element={example.element} size={12} />
+                    {example.name}
+                  </button>
+                ))}
+              </div>
               <Input placeholder="Its name, for example Ember Lance" value={draftName} maxLength={64} onChange={(e) => setDraftName(e.target.value)} aria-label="Spell name" />
               <Textarea
                 placeholder="Describe it in your own words. What does it look like? What does it do?"
@@ -144,7 +166,7 @@ function Landing() {
                 Your design is kept on this device. Sign in and it will be waiting in the Lab, with {SPARK.signupGrant} free Spark to forge it.
               </p>
             )}
-            <SignInForm />
+            <SignInForm newcomer />
           </Panel>
         )}
       </section>

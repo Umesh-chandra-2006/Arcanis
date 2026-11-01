@@ -7,9 +7,26 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#0d0d12" />
-    <title>Arcanis | Create spells. Share them.</title>
+    <title>Arcanis: the magic game where you invent the spells</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="description" content="Describe a spell. Arcanis forges its stats, lore and artwork. Share it with the world." />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="description" content="Describe a spell in your own words and Arcanis forges it into a balanced card with stats and lore, ready to share. Free to start." />
+    <!-- No rel=canonical here: every SPA route is served this file, so it would point /codex and /reviews at the home page. -->
+    <!-- A shared /spell/:id link never sees these: Vercel sends preview bots to Render's own tags (server/_core/app.ts). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Arcanis" />
+    <meta property="og:url" content="https://arcanis.world/" />
+    <meta property="og:title" content="Arcanis: the magic game where you invent the spells" />
+    <meta property="og:description" content="Describe a spell in your own words and it becomes a balanced card you can share." />
+    <meta property="og:image" content="https://arcanis.world/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Arcanis: describe a spell, the forge makes it real." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Arcanis: the magic game where you invent the spells" />
+    <meta name="twitter:description" content="Describe a spell in your own words and it becomes a balanced card you can share." />
+    <meta name="twitter:image" content="https://arcanis.world/og.jpg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

@@ -8,6 +8,9 @@ const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 export interface SpellDraft {
   name: string;
   description: string;
+  /** Set when the design started from an example, so the Lab does not open it as the default Fire Attack. */
+  element?: string;
+  category?: string;
 }
 
 export function saveDraft(draft: SpellDraft): void {
@@ -30,7 +33,13 @@ function readRaw(): (SpellDraft & { delivered: boolean }) | null {
     if (typeof parsed.name !== "string" || typeof parsed.description !== "string") return null;
     if (!parsed.savedAt || Date.now() - parsed.savedAt > MAX_AGE_MS) return null;
     if (!parsed.name.trim() && !parsed.description.trim()) return null;
-    return { name: parsed.name.slice(0, 64), description: parsed.description.slice(0, 1000), delivered: parsed.delivered === true };
+    return {
+      name: parsed.name.slice(0, 64),
+      description: parsed.description.slice(0, 1000),
+      element: typeof parsed.element === "string" ? parsed.element : undefined,
+      category: typeof parsed.category === "string" ? parsed.category : undefined,
+      delivered: parsed.delivered === true,
+    };
   } catch {
     return null;
   }
@@ -39,7 +48,7 @@ function readRaw(): (SpellDraft & { delivered: boolean }) | null {
 /** The kept design, if any. It stays until the spell is made, so a reload or a detour through sign-in never loses it. */
 export function readDraft(): SpellDraft | null {
   const draft = readRaw();
-  return draft ? { name: draft.name, description: draft.description } : null;
+  return draft ? { name: draft.name, description: draft.description, element: draft.element, category: draft.category } : null;
 }
 
 /** A kept design the Lab has not opened yet: signing in sends the player straight to it, once. */

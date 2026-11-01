@@ -50,13 +50,25 @@ const FORGE_STEPS = [
   "Sealing the card…",
 ];
 
+/**
+ * The element and category of a design that began as a landing page example.
+ * Read from this browser's storage, so only values the form offers are taken.
+ * These must be the form's first values: the Select blanks a value set right after it mounts.
+ */
+function exampleKind(): { element: string; category: string } | null {
+  const draft = readDraft();
+  if (!draft?.element || !draft.category) return null;
+  const known = (ELEMENTS as readonly string[]).includes(draft.element) && (CATEGORIES as readonly string[]).includes(draft.category);
+  return known ? { element: draft.element, category: draft.category } : null;
+}
+
 export default function Create() {
-  const { user, isAuthenticated, isLoading, logout } = useAuth();
+  const { user, isAuthenticated, isLoading, logout, setHoldWelcome } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
-  const [element, setElement] = useState<string>("Fire");
-  const [category, setCategory] = useState<string>("Attack");
+  const [element, setElement] = useState<string>(() => exampleKind()?.element ?? "Fire");
+  const [category, setCategory] = useState<string>(() => exampleKind()?.category ?? "Attack");
   const [description, setDescription] = useState("");
   const [phase, setPhase] = useState<"form" | "forging" | "done">("form");
   const [stepIndex, setStepIndex] = useState(0);
@@ -103,7 +115,10 @@ export default function Create() {
     markDraftDelivered();
     setName(draft.name);
     setDescription(draft.description);
-    toast.message("Your design is waiting", { description: "Choose its element and category, then press Research Spell.", duration: 9000 });
+    toast.message("Your design is waiting", {
+      description: exampleKind() ? "Change anything you like, then press Research Spell." : "Choose its element and category, then press Research Spell.",
+      duration: 9000,
+    });
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -120,6 +135,12 @@ export default function Create() {
   }, [phase]);
 
   const balance = sparkBalance.data?.balance ?? 5;
+
+  // The first spell comes before the password (v7.8): nothing covers the forge or the card.
+  useEffect(() => {
+    setHoldWelcome(phase !== "form");
+    return () => setHoldWelcome(false);
+  }, [phase, setHoldWelcome]);
 
   // Fake door: the first time the player is at zero Spark on this visit, show the packs.
   useEffect(() => {
