@@ -85,7 +85,7 @@ Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provi
 - [x] `/admin/metrics`: breaker open, today's counts move.
 - [x] Also verified by the founder (2026-10-15, all green): Spark confirmation, the Codex question and votes, the Sanctum at `/sanctum`, the landing page signed in and out, the password show/hide toggle and retype.
 - [ ] Feedback page and first-spell prompt reach `/admin/feedback`: `p0_feedback` was still empty after the run, so this is unconfirmed.
-- [ ] Merge `track-a` to `main` after verification (fast-forward: `git push origin track-a:main`), switch Vercel and Render to `main`, deploy each once, check CI on github.com.
+- [x] Merge `track-a` to `main` after verification (fast-forward: `git push origin track-a:main`), switch Vercel and Render to `main`, deploy each once, check CI on github.com. (2026-10-24: both services deploy from `main`; `/health` OK; CI green at `193d1fc`.)
 
 ## 6. Soft launch
 

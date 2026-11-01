@@ -12,9 +12,9 @@ Never use em dashes anywhere: code, comments, commit messages, docs, UI copy. Us
 
 Docs live in `docs/`. Precedence on conflict:
 
-1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.7)
-2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.7; Section 15 is the current build order)
-3. `docs/Arcanis_Phase_Plan_v2.md` (content is v2.3; Gate 1a definitions)
+1. `docs/Arcanis_Master_Documentation_v7.md` (the bible; every system, number, and locked decision; content is v7.8)
+2. `docs/Arcanis_Phase_1_Build_Plan_v2.md` (content is v2.8; Section 15 is the current build order)
+3. `docs/Arcanis_Phase_Plan_v2.md` (content is v2.4; Gate 1a definitions)
 4. `docs/handover.md` (decision history; its phase status may be stale, trust the repo)
 5. `docs/archive/` (superseded, reference only, never build from it)
 
@@ -30,7 +30,7 @@ When a decision changes: update the Master Doc first, then the Phase Plan, then 
 - **Three currencies, never merged (v7.6, founder; was two).** Spark: hard currency, never earned through gameplay, append-only ledger, atomic reserve/commit/refund. Generation cost is paid by Spark, or by Refinement Runes, which only a Spark-paid creation can mint. Refinement Runes (the code and the `p0_stone_ledger` table still say "stone", the first name): 1 minted when a creation passes verification, 1 spent per mend, never bought, never granted free, own ledger with the Spark rules; adding any other source needs the founder. Aether Shards: soft, earned, cosmetic and social only, never touch generation cost. No currency converts into another. XP is progression only and never purchasable.
 - **Research comes first (Master Doc 6.3, v7.6).** A spell that needs research is not shown or granted until the research completes: no card, stats, text, art or public page before then, only the player's own name, element and category.
 - **Refinement (Master Doc 6.7).** Built but switched off for the creation soft launch (`FEATURES.refinement` in `shared/constants.ts`); it opens with the battle release. Do not switch it on without the founder. Mending: own spells only, 1 rune, a new linked spell (the original is never edited), element, category, cast type and tier locked, same Power Budget (reshapes, never strengthens), no research of its own, mints no rune. Ascension (one tier up, Spark, full research, only for a player who already meets that tier's requirements) is designed and is built in Phase 1b, not before.
-- **Identity.** Accounts are created only through magic-link auth, with a 6-digit code in the same email for in-app browsers (v7.1). Every account then sets a password and signs in with it, which sends no email (v7.5, founder decision, to save email quota; the emailed code always still works and is the forgot-password path). Changing a password needs the current one, or a session opened by an emailed code or link in the last 15 minutes. Sign-in must never reveal whether an email has an account. Session in an httpOnly cookie. Viewing is anonymous; any generation requires a session, checked at the gateway before any provider is called. Per-identity, per-device, and per-IP rate limits. First free Spark grant once per device.
+- **Identity.** Accounts are created only through magic-link auth, with a 6-digit code in the same email for in-app browsers (v7.1). Every account then sets a password, asked after the first spell (v7.8, founder decision; it cannot be skipped once asked), and signs in with it, which sends no email (v7.5, founder decision, to save email quota; the emailed code always still works and is the forgot-password path). Changing a password needs the current one, or a session opened by an emailed code or link in the last 15 minutes. Sign-in must never reveal whether an email has an account. Session in an httpOnly cookie. Viewing is anonymous; any generation requires a session, checked at the gateway before any provider is called. Per-identity, per-device, and per-IP rate limits. First free Spark grant once per device.
 - **Classification system, elements, amicability, terrains, tiers and stat caps** are locked as specified in the Master Doc. The engine and validation support the full taxonomy even where the creation form exposes a subset.
 - **Provider abstraction.** Every external provider (text, image, moderation, email) sits behind an interface in `shared/`, selected by one env var. No provider request or response shape in business logic.
 
@@ -70,7 +70,7 @@ cd phase0 && pnpm install
 
 ### Environment
 
-One `.env` at the repo root; `.env.example` lists every key. `phase0/server/_core/env.ts` loads `../.env`. Tests load it too, but `server/test/setup-env.ts` replaces `DATABASE_URL` with `TEST_DATABASE_URL` (database `arcanis_test` on the same cluster locally, a MySQL container in CI) and refuses any URL that points at production; DB tests use `describeDb` from `server/test/db.ts` and skip when no test DB is configured. The database is MySQL on TiDB Cloud (us-east-1); kept through the soft launch with logical backups (task A1), migrated to a new founder-owned host in Phase 1b (task B0). Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (image storage for the soft launch; R2 in Phase 1b). `OPENAI_API_KEY` (for `omni-moderation`), `TEST_DATABASE_URL`. All providers run on free-tier keys with no payment method attached. phase0 also reads `MODEL_CHECK_ON_START` (`1` runs a live check of every configured model when the dev server starts; off by default, see the engineering rules), `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `TRUST_PROXY_HOPS`, `CARD_ART` (`element` default, or `generated`), and client-side `VITE_PUBLIC_URL` (share link base); the client always calls `/api` on its own origin. None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). The `.env` still holds leftover keys from the archived root app (`BUILT_IN_FORGE_*`, `OAUTH_SERVER_URL`, `OWNER_*`, `VITE_APP_*`, `VITE_OAUTH_PORTAL_URL`, `VITE_ANALYTICS_*`); nothing reads them.
+One `.env` at the repo root; `.env.example` lists every key. `phase0/server/_core/env.ts` loads `../.env`. Tests load it too, but `server/test/setup-env.ts` replaces `DATABASE_URL` with `TEST_DATABASE_URL` (database `arcanis_test` on the same cluster locally, a MySQL container in CI) and refuses any URL that points at production; DB tests use `describeDb` from `server/test/db.ts` and skip when no test DB is configured. The database is MySQL on a founder-owned TiDB Cloud Starter cluster (us-west-2; databases `arcanis` and `arcanis_test`), since 2026-10-25. The old us-east-1 cluster, whose owning account was never found, started refusing its password by 2026-10-24 and is lost; production was restored from the 2026-10-15 04:21 UTC backup (everything after it is gone). That moved the database half of task B0 forward; B0 now covers only Cloudinary to R2. Keys in use (names only): `DATABASE_URL` (mysql), `JWT_SECRET`, `SPELL_LLM_PROVIDER`, `SPELL_LLM_API_KEY`, `SPELL_LLM_FALLBACK_PROVIDERS`, `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `IMAGE_GEN_API_KEY` (Hugging Face), `EMAIL_PROVIDER` (`resend` or `brevo`), `RESEND_API_KEY`, `BREVO_API_KEY`, `BREVO_FROM`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (image storage for the soft launch; R2 in Phase 1b). `OPENAI_API_KEY` (for `omni-moderation`), `TEST_DATABASE_URL`. All providers run on free-tier keys with no payment method attached. phase0 also reads `MODEL_CHECK_ON_START` (`1` runs a live check of every configured model when the dev server starts; off by default, see the engineering rules), `PORT` (default 3100), `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS`, `TRUST_PROXY_HOPS`, `CARD_ART` (`element` default, or `generated`), and client-side `VITE_PUBLIC_URL` (share link base); the client always calls `/api` on its own origin. None of `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` or `VITE_PUBLIC_URL` is in the local `.env`; their production values live in the Vercel and Render dashboards and could not be checked from the repo (no Vercel CLI or project link). The `.env` still holds leftover keys from the archived root app (`BUILT_IN_FORGE_*`, `OAUTH_SERVER_URL`, `OWNER_*`, `VITE_APP_*`, `VITE_OAUTH_PORTAL_URL`, `VITE_ANALYTICS_*`); nothing reads them.
 
 ### Run
 
@@ -97,10 +97,11 @@ Drizzle Kit against `DATABASE_URL` (MySQL). Tables are prefixed `p0_`; the produ
 cd phase0 && pnpm db:generate && pnpm db:migrate   # migrations in phase0/drizzle/
 cd phase0 && pnpm seed                              # the 36 base spells (Master Doc 5.6) + archivist user; idempotent
 cd phase0 && pnpm db:backup                         # mysqldump of DATABASE_URL to ../../Arcanis-backups (BACKUP_DIR)
-cd phase0 && pnpm db:restore-check                  # restore newest backup into a scratch DB, compare row counts, drop it
+cd phase0 && pnpm db:restore-check [file]           # restore newest backup (by file time) into a scratch DB, compare row counts, drop it
+cd phase0 && node scripts/db-restore.mjs <file>     # real restore into DATABASE_URL; refuses if that database has any table
 ```
 
-Run `db:backup` weekly and before every production migration. It needs the MySQL client tools (`mysqldump`, `mysql`) on PATH. TiDB rejects mysqldump savepoints, so the dump is not a single transaction; take it at low traffic.
+Run `db:backup` weekly and before every production migration. It needs the MySQL client tools (`mysqldump`, `mysql`) on PATH. TiDB rejects mysqldump savepoints, so the dump is not a single transaction; take it at low traffic. Backup names start with the database name (`arcanis-arcanis-...` since the move; `arcanis-mVYV...` are the lost cluster's).
 
 ### Balance harness and cost report
 
@@ -115,6 +116,19 @@ cd phase0 && pnpm providers:check [--images]   # live check of every configured 
 ```
 
 Reports go to `tools/balance-harness/reports/` and `tools/cost-report/reports/`. The harness runs one request at a time with backoff because free tiers are per-minute limited. Battle simulation (win rates, Will band dwell time) is added in B8.
+
+### Launch video
+
+`phase0/tools/launch-video/` renders the marketing video (script: `docs/launch_video_script.md`). No provider or database calls; needs Chrome and ffmpeg. `scene.js` draws each frame as a pure function of time, `timeline.js` holds every cue (shared by picture and sound), `data.js` is generated by `build-data.ts` from the real Power Budget code (edit the cards there, never the numbers by hand).
+
+```
+cd phase0 && node_modules/.bin/tsx tools/launch-video/build-data.ts   # card data
+cd phase0/tools/launch-video && node audio.mjs                        # score to out/audio.wav (-14 LUFS)
+cd phase0/tools/launch-video && node render.mjs --stills 5.6,28       # preview PNGs in out/
+cd phase0/tools/launch-video && node render.mjs --out D:/x.mp4 --audio out/audio.wav [--url arcanis.world]
+```
+
+It renders at 60 fps with `arcanis.world` on the end card by default (`--fps`, `--url` override). Content videos (M9) share `lib.js` (captions, cards, Lab, seal, end card, background, effects) and `sound.mjs` (instruments, mixer, -14 LUFS). Each video is `videos/<id>.tl.js` (timeline, read by picture and sound), `videos/<id>.js` (scene) and `scores/<id>.mjs` (score); `node score.mjs <id>` writes `out/<id>_audio.wav`, `node render.mjs --v <id> --stills 1,5` previews, `sh sheet.sh <id> 8` tiles the stills. `sh render-all.sh [id ...]` renders every video (or the named ones) one at a time into `D:\arcanis content vids` with a 720p WhatsApp copy. The launch video (`scene.js`, `timeline.js`, `audio.mjs`) predates the library and keeps its own copy. The render is postable as is (about 15 MB); for WhatsApp re-encode to 720p, 30 fps, 3.6M.
 
 ### Conventions found in the code
 

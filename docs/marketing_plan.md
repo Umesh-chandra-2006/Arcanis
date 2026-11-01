@@ -74,7 +74,7 @@ Phase 1a counts as launched when: `track-a` is merged into `main` and both servi
 ## 8. Founder decisions (M1, closed 2026-10-15)
 
 1. **Provider budget:** no payment method now. The quota re-audit (`docs/provider_quotas.md`, 2026-10-15) showed the free tiers carry about 200 creations a day once card art stopped calling an image model, and `DAILY_CREATION_LIMIT` is now 200 on Render. Add a capped card (hard cap, $10 to $20 a month, checked per provider first) when daily creations near 200 or a week before a planned spike (task M4). Extra provider accounts or keys to get around free limits are ruled out.
-2. **Domain:** `arcanis.world`, registered at Spaceship for one year with auto-renew on (task M3). Chosen over `arcanis.co.in` for a global audience.
+2. **Domain:** `arcanis.world` at Spaceship (task M3), chosen over `arcanis.co.in` for a global audience. **Correction 2026-10-24:** the founder has not bought it yet and is still deciding; this line earlier said it was registered.
 3. **Timing:** yes. The big launch (Product Hunt, Show HN, press, the large subreddits) is kept for battles; now is the invited cohort plus steady organic growth.
 4. **First builds:** share buttons (M5) and channel attribution (M6) now. The weekly forge challenge (M7) is planned with the founder before it is built (theme cadence, reward, start date); it is not built yet.
 

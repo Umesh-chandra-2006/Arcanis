@@ -6,7 +6,7 @@
 
 **Gate (founder, 2026-10-15): marketing and the Phase 1a launch come first.** Until every task in Track M below is ticked (which includes the Phase 1a launch as defined in `docs/marketing_plan.md` Section 7), do not start or continue any other work: no Track B (battles), no B10 refinement, no new features outside Track M. Fixes to bugs found on the live site are allowed. If a task elsewhere seems urgent, ask the founder first.
 
-**Status (2026-10-15):** Track A done and deployed from `track-a`, verified by the founder (A16 open items: the merge and the cohort). Track M (marketing and launch) is the current work. Track B is parked by the gate above; B2 was done early.
+**Status (2026-10-15):** Track A done and deployed from `track-a`, verified by the founder (A16 open item: the cohort; the merge was done in M2, 2026-10-24). Track M (marketing and launch) is the current work. Track B is parked by the gate above; B2 was done early.
 
 ---
 
@@ -16,13 +16,15 @@ Plan and reasoning: `docs/marketing_plan.md`. Work top to bottom; items marked (
 
 - [ ] M0 (benched by the founder until marketing is done, 2026-10-15) Close the verification loose ends: feedback reaches `/admin/feedback` (it was empty after the founder's run); the 11 old archivist seed spells deleted (founder runs `D:\Arcanis-backups\delete-old-seeds.mjs`; archivist count 36).
 - [x] M1 (founder) Decide the four open questions in `docs/marketing_plan.md` Section 8: provider budget, domain, timing, first build. (2026-10-15: no card yet, limit 200 on free tiers; `arcanis.world` at Spaceship; big launch kept for battles; M5 and M6 now, M7 planned first. Main text model switched to Gemini flash-lite.)
-- [ ] M2 Merge `track-a` into `main` (fast-forward) after the founder's yes; switch Vercel and Render to `main`; deploy; check `/health` and CI. (2026-10-15: `main` fast-forwarded to `193d1fc`; the service switch, `/health` and CI check are open.)
-- [ ] M3 (founder) Domain: buy, point at Vercel; update `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` (Render), `VITE_PUBLIC_URL` (Vercel); redeploy; re-check share links on Discord, X and WhatsApp. **Done when:** a share link on the new domain shows the card on all three.
+- [x] M2 Merge `track-a` into `main` (fast-forward) after the founder's yes; switch Vercel and Render to `main`; deploy; check `/health` and CI. (2026-10-24: `main` at `193d1fc`; the founder switched Vercel and Render to `main` and redeployed both, site runs; `/health` answers `OK`; CI green on `main` at `193d1fc`.)
+- [ ] M3 (founder) Domain: buy, point at Vercel; update `FRONTEND_URL`, `CORS_ALLOWED_ORIGINS` (Render), `VITE_PUBLIC_URL` (Vercel); redeploy; re-check share links on Discord, X and WhatsApp. **Done when:** a share link on the new domain shows the card on all three. (2026-10-24: the founder has not bought `arcanis.world` yet and is deciding; no code hard-codes the old address.)
 - [ ] M4 (founder) Provider budget: capped payment method on the text provider (and fallback), check `docs/provider_quotas.md`, raise `DAILY_CREATION_LIMIT` on Render to match. **Done when:** the new limit and the monthly cap are written in `docs/provider_quotas.md`.
-- [ ] M5 Share buttons on the reveal (X and WhatsApp, prefilled text, share link with `?ref=`). Tests with fake providers; client build.
+- [ ] M5 Share buttons on the reveal (X and WhatsApp, prefilled text, share link with `?ref=`). Tests with fake providers; client build. (2026-10-24: planned, waiting for the founder's go; plan in the `PROGRESS.md` session log.)
+- [ ] M5b Launch video: v2 rendered 2026-10-24 (`D:\arcanis_launch_v2_vertical.mp4`, 60 fps, brighter motion-graphic style, end card `arcanis.world`; WhatsApp version `_whatsapp.mp4`, source `phase0/tools/launch-video/`, script `docs/launch_video_script.md`). **Done when:** the founder has listened and approved it, and the placeholders are replaced with spells forged on the live site and the final address.
 - [ ] M6 Channel attribution: capture UTM or a channel tag at first visit, carry it to signup, show signups per channel on `/admin/metrics`.
 - [ ] M7 (plan with the founder before building: theme cadence, reward, start date) Weekly forge challenge: a theme, Codex votes, a featured slot on the landing page. Prizes never Spark (founder to confirm the reward).
 - [ ] M8 (founder) Invited cohort of 20 to 30 (friends, classmates, known Discord servers, a campus or fest event). Watch `/admin/metrics`, `/admin/feedback` and `pnpm cost-report --days 1` daily for a week.
+- [ ] M9a Content videos 2, 3, 4, 5, 7 plus the launch video into `D:\arcanis content vids` (spells written by hand per the founder, stats from the Power Budget). 2026-10-24: all built and previewed; `2_moods` and `3_name` rendered; `4_rate`, `5_forge`, `7_elements`, `1_launch` still to render (the batch was stopped for low memory). **Done when:** all are rendered and the founder has watched and listened to each.
 - [ ] M9 (founder) Content engine started: short videos, build in public on X, spell of the day. Community accounts joined and contributing before any post.
 - [ ] M10 Open to the public (Phase B channels in the plan). Record the Gate 1a evaluation date (4 to 6 weeks out) in `PROGRESS.md`. Refresh the cost sheet after the first week (`pnpm cost-report --days 7 --write`, `docs/cost_sheet.md`). **This is the Phase 1a launch; the gate above lifts here.**
 
@@ -167,7 +169,7 @@ Order matters: A0 to A3 are foundations; A4 onward can overlap where noted.
 - [x] Step-by-step runbook for the founder: `docs/launch_checklist.md` (keys, Render, Vercel, keep-awake monitor, admin role, deploy checks, cohort, rollback). (2026-10-10)
 - [x] (2026-10-15, except the merge) Founder: Render's outbound IPs added to Brevo (the founder's own IP is already authorised), Render and Vercel settings, `pnpm vercel:config <render-url>`, keep-awake monitor, admin role for the founder's account, merge `track-a`, redeploy. (Cloudflare image keys are no longer needed: element art.)
 - [x] OG check on Discord, X and WhatsApp on the public domain. (2026-10-15)
-- [ ] Merge `track-a` into `main` and switch both services to `main`.
+- [x] Merge `track-a` into `main` and switch both services to `main`. (2026-10-24, M2)
 - [ ] Small invited cohort; watch cost, quota and funnel dashboards for a week; then open.
 - [ ] Cost sheet refresh (moved here from Phase 0 by the founder, 2026-10-11): after the first week of traffic, `pnpm cost-report --days 7 --write`, then update `docs/cost_sheet.md` with cost per creation, cost per mend and cost per Spark spent. The 2026-10-10 sheet predates the stronger stat guidance and mending.
 - [ ] Record the Gate 1a evaluation date (4 to 6 weeks out).
