@@ -11,9 +11,14 @@ const SCRATCH = "arcanis_restore_check";
 const live = parseDbUrl(process.env.DATABASE_URL);
 
 function newestBackup() {
-  const files = fs.readdirSync(BACKUP_DIR).filter((f) => f.endsWith(".sql")).sort();
+  // By modification time: names start with the database name, which changed with the host.
+  const files = fs
+    .readdirSync(BACKUP_DIR)
+    .filter((f) => f.endsWith(".sql"))
+    .map((f) => path.join(BACKUP_DIR, f))
+    .sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
   if (!files.length) throw new Error(`no backups in ${BACKUP_DIR}`);
-  return path.join(BACKUP_DIR, files.at(-1));
+  return files.at(-1);
 }
 
 async function connect(database) {
