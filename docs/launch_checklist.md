@@ -89,6 +89,7 @@ Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provi
 
 ## 6. Soft launch
 
+- [ ] On a real phone, on the deployed site, before inviting anyone (founder, 2026-11-01): sign up from the landing page with an example chip, confirm the Lab opens with that chip's element and category, forge the spell, move on, and complete the welcome dialog with the keyboard open. Check the "Your design is waiting" toast: in a fast automated run it sat over the dialog's button and its background looked see-through. Do not change the toast until this check is done.
 - [ ] Invite a small cohort (10 to 30 people). Watch `/admin/metrics` and `pnpm cost-report --days 1` daily for a week: quota errors, refunds, 2c rate, moderation queue.
 - [ ] Then open it up. Record the Gate 1a evaluation date (4 to 6 weeks after opening) in `PROGRESS.md`.
 
