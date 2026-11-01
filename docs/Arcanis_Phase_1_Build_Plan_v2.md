@@ -1,7 +1,14 @@
-# Arcanis: Phase 1 Build Plan v2.7
+# Arcanis: Phase 1 Build Plan v2.8
 
-**Agent-facing implementation document. Companion to Master Documentation v7.7 (the bible) and Phase Plan v2.3.**
+**Agent-facing implementation document. Companion to Master Documentation v7.8 (the bible) and Phase Plan v2.4.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.8 (2026-11-01)
+
+Founder decision from the launch review (Master Doc v7.8). No migration and no server rule changes.
+
+- **Identity (Section 5):** the welcome step moves from right after the first sign-in to after the first spell. `components/Onboarding.tsx` shows it once `spells.mySpells` is not empty and the Lab is not forging or showing a result (`holdWelcome` in `AuthContext`). It still cannot be dismissed. `profile.completeOnboarding` still requires a password unless the account has one, and the dialog hides the password fields in that case, since a player can now set one from the profile window first.
+- **Landing page:** the sign-up panel leads with the emailed code, the password form lives at `/signin`, and example chips carry their element and category through the draft into the Lab.
 
 ## What changed in v2.7 (2026-10-15)
 
@@ -190,7 +197,7 @@ Rules from Master Doc Section 18. Implementation requirements:
 
 - **Magic link:** email only, single-use token, 15 minute expiry, signed, stored hashed. Link click creates the account if new and issues a session (httpOnly cookie plus short-lived JWT).
 - **6-digit code (v2.1):** the same email carries a 6-digit code for players whose mail app opens the link in an in-app browser. The code is entered in the tab that requested it. Stored hashed, 10 minute expiry, single use, 5 wrong attempts invalidate it, and requests are rate-limited per email and per IP. Using either the link or the code consumes both. Token and code redemption must be atomic (a single conditional update), so a token cannot be redeemed twice.
-- **Passwords (v2.5, replaces the v2.1 line that follows):** accounts are created by emailed code or link only; every account then sets a password at the welcome step and returning players sign in with it (no email sent). Changing it needs the current password or a session opened by code or link in the last 15 minutes. Same error for every sign-in failure.
+- **Passwords (v2.5, replaces the v2.1 line that follows):** accounts are created by emailed code or link only; every account then sets a password at the welcome step, which comes after the first spell since v2.8, and returning players sign in with it (no email sent; until then, a sign-in without a live session uses the emailed code). Changing it needs the current password or a session opened by code or link in the last 15 minutes. Same error for every sign-in failure.
 - **No passwords (v2.1, superseded):** password sign-up, sign-in and the forced "set password" step are removed. Existing accounts that have a password simply sign in by link or code; their password hashes are deleted in the migration.
 - **Session (v2.1):** httpOnly, Secure, SameSite=Lax cookie. The client never stores a token in localStorage. Because the client is on Vercel and the API on Render, the API is reached through a Vercel rewrite (`/api/*`) so the cookie is first-party; otherwise Safari and in-app browsers drop it.
 - **No account enumeration (v2.1):** no endpoint reveals whether an email has an account. The request-link endpoint always returns the same response.

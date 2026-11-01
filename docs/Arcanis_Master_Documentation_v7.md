@@ -1,12 +1,23 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.7*
+*Complete Vision Blueprint | Version 7.8*
 
 Author: Umesh Chandra Tirumani
 Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.7 supersedes all prior versions, including v7.6, v7.5, v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.8 supersedes all prior versions, including v7.7, v7.6, v7.5, v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.8, WHAT CHANGED FROM v7.7 (2026-11-01)
+
+Founder decision from the launch review. It changes when the v7.5 password is asked, not whether.
+
+- **The password comes after the first spell (Sections 18.1 and 18.2; changes v7.5 "chosen right after the first sign-in").** A new player signs in with the emailed code or link and goes straight to creation, with no dialog in the way. The welcome dialog appears once they have a spell and move on from the card, whether by leaving the result screen, opening the Lab form again or returning later. It still cannot be skipped once it appears, and a password is still required for every account from then on. The name and update emails stay optional in that dialog. A player who already set a password in their profile is not asked again.
+- **The reason:** the password was the last step between the emailed code and the first spell, and the creation loop is the product.
+- **The cost:** an account with no password has only the emailed code, so each sign-in without a live session sends one email. That applies to a player who leaves before the welcome dialog and returns on another device, after signing out, or after the 30-day session ends. A returning player with a password still sends none. Per-email (6 a day) and per-device (10 a day) limits are unchanged.
+- **Unchanged:** accounts are created only by emailed code or link, no generation without a session, sign-in never reveals whether an email has an account, and the rules for changing an existing password. Setting the first password needs no proof beyond the session, as before, but that session can now be up to 30 days old rather than minutes.
 
 ---
 
@@ -1102,7 +1113,7 @@ The onboarding flow is rebuilt around one non-negotiable rule: **the funnel is n
 
 ## 18.1 The Identity Model
 
-- **v7.5: every account has a password, chosen right after the first sign-in.** Account creation itself is unchanged: email only, confirmed by the emailed link or 6-digit code, with no password asked before that. Returning players then sign in with email and password, which sends no email (the free email plan is the constraint). The emailed code is the forgot-password path: a session opened by a code or link within the last 15 minutes may set a new password without the old one; otherwise changing a password needs the current one, and signs out the account's other devices. Passwords are salted scrypt; only failed attempts count toward the lockout; every sign-in failure returns the same message, so sign-in never reveals whether an email has an account. *The rest of this bullet is the v7.1 text, kept for history; where it says there are no passwords, v7.5 overrides it.*
+- **v7.5, timing changed in v7.8: every account has a password, chosen after the player's first spell.** Account creation itself is unchanged: email only, confirmed by the emailed link or 6-digit code, with no password asked before that. Returning players then sign in with email and password, which sends no email (the free email plan is the constraint); until a player has chosen one, a sign-in without a live session uses the emailed code. The emailed code is the forgot-password path: a session opened by a code or link within the last 15 minutes may set a new password without the old one; otherwise changing a password needs the current one, and signs out the account's other devices. Passwords are salted scrypt; only failed attempts count toward the lockout; every sign-in failure returns the same message, so sign-in never reveals whether an email has an account. *The rest of this bullet is the v7.1 text, kept for history; where it says there are no passwords, v7.5 overrides it.*
 - **Magic-link email at signup**, one field, no verification wall, account created instantly on link click. **v7.1:** the same email also carries a 6-digit code that can be typed into the tab that requested it. This covers players whose mail app opens links in an in-app browser, where a link-only session would land in the wrong browser. There are no passwords anywhere in the product; codes are single-use, short-lived and attempt-limited. This preserves nearly all the frictionlessness of a true zero-signup flow while giving the product a real, rate-limitable, billable identity.
 - **Viewing is free and anonymous. Generating is not.** An anonymous visitor arriving via a shared spell card (Section 23) can view the full public preview, card art, flavor text, lore line, with zero friction and no account. The moment they attempt to *create* their own spell, they hit the magic-link step. This is the correct place to draw the line: browsing costs nothing, generation costs real money.
 - **Hard per-identity and per-device rate limits apply regardless of subscription tier**, plus a fraud-detection layer (device fingerprinting, disposable-email domain heuristics) to catch abuse before it consumes real inference spend, not after.
@@ -1115,9 +1126,9 @@ The onboarding flow is rebuilt around one non-negotiable rule: **the funnel is n
 | Step | What Happens | What Is Shown |
 |---|---|---|
 | 1. Magic-link signup | Email only. Confirm by link click or by typing the 6-digit code from the same email. | Email field, then code field. |
-| 1b. Welcome (v7.5) | One dialog: choose a password (required), mage name and update emails (optional). The player then lands on Home. | Password field, name field, updates checkbox. |
 | 2. First creation | First Spark grant already available. Minimal creation flow, no tour. A few example spell ideas can be clicked to fill the form (v7.6; fixed text, no AI call, no Spark). First 2 spells skip research (Section 6.3). | Lab flow, trimmed to the launch creation subset (see companion Phase 1 Build Plan). Spell stored locked if above requirements: "This spell awaits your growth." |
 | 3. Share prompt | Card revealed with a share action. | The card, share button, "Create another". |
+| 3b. Welcome (v7.5, moved here in v7.8) | Once the player has a spell and moves on from the card: one dialog that cannot be skipped. Choose a password (required unless already set in the profile), mage name and update emails (optional). | Password field, name field, updates checkbox. |
 | 4. Name your mage | Single text input, asked the first time the name is needed (first share or first battle). | Name field only. |
 | 5. Avatar selection | Asked the first time the player enters battle. | HP, MP, affinity bonus. Will is never shown here (v7.2, resolved in favor of Section 2.1; v7.0 listed it as a visible stat). |
 | 6. First guided battle | System battle (rule-based) on Neutral Grounds, using a small starter deck plus the player's own spells. | HP/MP bars, spell grid, timer. No XP bars, no Will, no proficiency. |
@@ -1528,7 +1539,7 @@ The project was originally named "Magic Spar," then renamed to "Arcanis." All re
 - Will is capacity (absolute, grows, gates tiers) plus current Will (per battle, depleted per cast); bands are percentages of capacity. Secrecy unchanged. Will cost appears in the UI only as Light / Moderate / Heavy.
 - Spell stats use a hybrid Power Budget: code sets the budget, the LLM allocates within it, Layer 2a enforces it.
 - Minigames are server-scored; the async piloted side samples the owner's stored results, blended to the population median by n/(n+10).
-- Magic link plus 6-digit code in the same email creates the account; a password is then required (v7.5).
+- Magic link plus 6-digit code in the same email creates the account; a password is required after the first spell (v7.5, timing v7.8).
 - Onboarding goes straight to creation; first 2 spells skip research; no Spell XP reveal.
 - Phase 1 ships as a modular monolith on MySQL, images in object storage. v7.2: soft launch on a free Render instance kept awake by ping, Cloudinary images, current TiDB cluster, free-tier provider keys; R2 and a new DB host in Phase 1b.
 
@@ -1586,7 +1597,7 @@ Architecture is complete and reflects the commercial pivot. All major structural
 | Ascension | Refining an own spell into a new spell one tier up, for Spark, with full research, for players who already meet that tier's requirements (Section 6.7; Phase 1b). |
 | Founder's Pass | One-time/annual premium offer replacing the retired $24.99 recurring tier. Bundled Spark + cosmetic prestige + early access. |
 | Public Spell Preview | No-login external landing page for a shared spell card. The entry point of the growth funnel. |
-| Magic-Link Signup | Email-only, instant-confirmation identity step that creates the account (a password is chosen right after, v7.5) (link click or the 6-digit code in the same email). Required before any generation; never required before viewing. |
+| Magic-Link Signup | Email-only, instant-confirmation identity step that creates the account (a password is chosen after the first spell, v7.8) (link click or the 6-digit code in the same email). Required before any generation; never required before viewing. |
 | Mana Quality | Character sub-stat. Affects regen spell effectiveness and summon strength. |
 | Awakened Spell | Proficiency Tier 5 + Channeler affinity minimum. Also called Enhanced Spell. |
 | Summon | Spell category. Manifests a persistent beast or spirit. Always Continuous consumption. Available from Circle 1. Autonomous or Controlled mode chosen at creation. |

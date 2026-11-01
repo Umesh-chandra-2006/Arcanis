@@ -12,7 +12,7 @@ The 50 below was set because images were the binding limit. Card faces are now e
 - **Groq binds on tokens, not requests.** The free tier is 1,000 requests and 200,000 tokens a day per organisation (Groq docs; limits are per organisation, so extra keys add nothing). On 2026-10-09 Groq returned `quota` after 219 successful calls (about 150,000 tokens). Groq alone: about **220 creations a day**.
 - **Gemini `gemini-flash-lite-latest`:** 104 successes on 2026-10-09 and still answering (its errors that day were per-minute). Daily cap at least 100; third-party sources say 500 to 1,000.
 - **Gemini `gemini-flash-latest` (newest Flash):** 12 successes, then `quota`. Third-party sources report about 20 free requests a day for the 3.x Flash models. Not usable as a primary on the free tier.
-- **Email:** Brevo free, 300 a day: about 300 new signups a day.
+- **Email:** Brevo free, 300 a day: about 300 new signups a day. Since Master Doc v7.8 the password comes after the first spell, so a player who has not set one spends 1 email per sign-in without a live session (new device, signed out, or after the 30-day session). Players with a password spend none. Watch `magic_link_requested` against `signup_confirmed`: emails per signup near 1 means this cost is small.
 
 **Setting (founder, 2026-10-15): `DAILY_CREATION_LIMIT=200` on Render**, about 90% of Groq alone, with Gemini lite as headroom. Creations over the limit wait in the forge queue. Going higher needs a capped payment method (task M4); at 680 tokens a creation, 10,000 creations cost about $3 on Groq at list price. Opening extra provider accounts to get around per-account limits breaks the providers' terms and is ruled out.
 

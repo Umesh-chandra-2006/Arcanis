@@ -1,7 +1,11 @@
-# Arcanis: Phase Plan v2.3
+# Arcanis: Phase Plan v2.4
 
-**Companion to: Arcanis Master Documentation v7.7 (the bible)**
+**Companion to: Arcanis Master Documentation v7.8 (the bible)**
 **Status:** Commercial product. Supersedes the build order in the old Phased Build Plan v1.0 and Section 24 of Master Doc v6.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.4 (2026-11-01)
+
+Tracks Master Doc v7.8 (the password is asked after the first spell). No phase, gate or threshold changes. Gate 1a's signup-to-creation numbers will read the new order from this date on.
 
 ## What changed in v2.3 (2026-10-11)
 
