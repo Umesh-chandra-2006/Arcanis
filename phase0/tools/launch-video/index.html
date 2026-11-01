@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Arcanis Launch Video</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@500;600;700&display=block" rel="stylesheet" />
+<style>
+  :root {
+    --gold: #d8b25a;
+    --gold-hi: #f3d98f;
+    --gold-lo: #8a6a2a;
+    --ink: #0b0910;
+    --text: #efe6d2;
+    --muted: #a49a86;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--ink); }
+  body { font-family: "Inter", sans-serif; color: var(--text); }
+  canvas { position: absolute; inset: 0; width: 1080px; height: 1920px; }
+  #stage { position: absolute; inset: 0; transform-origin: 540px 900px; }
+  .abs { position: absolute; will-change: transform, opacity; }
+  .center-x { left: 0; right: 0; text-align: center; }
+
+  /* Captions */
+  .cap { font-family: "Cinzel", serif; font-weight: 700; color: var(--text); letter-spacing: 0.05em; line-height: 1.12; text-shadow: 0 0 30px rgba(0,0,0,.9), 0 2px 0 rgba(0,0,0,.6); }
+  .cap .g { background: linear-gradient(180deg, var(--gold-hi), var(--gold) 55%, var(--gold-lo)); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 0 18px rgba(216,178,90,.45)); }
+  .italic { font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 600; }
+  .smallcaps { font-family: "Inter", sans-serif; font-weight: 600; letter-spacing: 0.32em; text-transform: uppercase; }
+
+  /* Lab panel */
+  #lab, .labx { left: 110px; width: 860px; top: 560px; padding: 44px 48px 48px; border-radius: 28px; background: linear-gradient(180deg, rgba(26,22,30,.96), rgba(13,11,16,.98)); border: 1.5px solid rgba(216,178,90,.35); box-shadow: 0 40px 120px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.03) inset, 0 0 80px rgba(216,178,90,.08); transform-origin: 540px 300px; }
+  #lab .head , .labx .head  { display: flex; justify-content: space-between; color: var(--gold); font-size: 20px; }
+  #lab .row , .labx .row  { display: flex; gap: 14px; margin-top: 30px; }
+  #lab .chip , .labx .chip  { font-size: 22px; padding: 10px 22px; border-radius: 999px; border: 1.5px solid rgba(216,178,90,.5); color: var(--gold-hi); background: rgba(216,178,90,.1); letter-spacing: .18em; }
+  #lab .label , .labx .label  { margin-top: 34px; font-size: 18px; color: var(--muted); }
+  #lab .box , .labx .box  { margin-top: 14px; min-height: 420px; padding: 30px 34px; border-radius: 18px; background: rgba(0,0,0,.45); border: 1.5px solid rgba(216,178,90,.25); font-size: 70px; line-height: 1.12; color: #fff6e2; }
+  #lab .caret , .labx .caret  { display: inline-block; width: 4px; height: 64px; background: var(--gold-hi); vertical-align: -8px; margin-left: 4px; box-shadow: 0 0 12px var(--gold); }
+  #lab .btn , .labx .btn  { margin-top: 30px; height: 104px; border-radius: 18px; display: flex; align-items: center; justify-content: center; font-family: "Cinzel", serif; font-weight: 700; font-size: 34px; letter-spacing: .22em; color: #1a1206; background: linear-gradient(180deg, #f1d58a, #c99a3e); box-shadow: 0 10px 40px rgba(216,178,90,.35); }
+
+  /* Seal */
+  #seal { left: 140px; top: 500px; width: 800px; height: 800px; }
+  #status { top: 1360px; font-size: 26px; color: var(--gold-hi); }
+
+  /* Card */
+  .card { position: absolute; width: 600px; height: 860px; border-radius: 34px; padding: 14px; background: linear-gradient(160deg, #f4dc96, #b8892f 35%, #f0d080 55%, #8a6420 80%, #e6c578); box-shadow: 0 50px 140px rgba(0,0,0,.85), 0 0 90px color-mix(in srgb, var(--accent) 30%, transparent); }
+  .card .in { position: relative; width: 100%; height: 100%; border-radius: 24px; overflow: hidden; background: radial-gradient(120% 80% at 50% 0%, #1b1824, #0b0a10 70%); border: 2px solid rgba(0,0,0,.6); }
+  .card .art { height: 470px; border-bottom: 2px solid rgba(216,178,90,.45); overflow: hidden; }
+  .card .art svg { width: 100%; height: 100%; display: block; }
+  .card .name { margin-top: 40px; text-align: center; font-family: "Cinzel", serif; font-weight: 700; font-size: 50px; letter-spacing: .06em; color: var(--gold-hi); text-shadow: 0 0 24px rgba(216,178,90,.35); }
+  .card .orn { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 22px auto 0; width: 70%; color: var(--gold); font-size: 18px; }
+  .card .orn i { flex: 1; height: 1.5px; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+  .card .lore { margin: 24px 44px 0; text-align: center; font-family: "Cormorant Garamond", serif; font-style: italic; font-weight: 600; font-size: 36px; line-height: 1.2; color: #e9dcc0; }
+  .card .corner { position: absolute; width: 34px; height: 34px; border-color: var(--gold); border-style: solid; opacity: .8; }
+  .card .c1 { left: 16px; bottom: 16px; border-width: 0 0 2px 2px; }
+  .card .c2 { right: 16px; bottom: 16px; border-width: 0 2px 2px 0; }
+  .card .shine { position: absolute; inset: -40%; background: linear-gradient(105deg, transparent 42%, rgba(255,240,200,.38) 50%, transparent 58%); pointer-events: none; }
+
+  /* Stat strip */
+  .strip { width: 760px; padding: 26px 34px; border-radius: 22px; background: rgba(14,12,18,.92); border: 1.5px solid rgba(216,178,90,.3); box-shadow: 0 20px 60px rgba(0,0,0,.7); }
+  .strip .tags { text-align: center; color: var(--gold); font-size: 20px; }
+  .strip .stats { display: flex; margin-top: 20px; }
+  .strip .stat { flex: 1; text-align: center; border-left: 1.5px solid rgba(216,178,90,.2); }
+  .strip .stat:first-child { border-left: 0; }
+  .strip .k { font-size: 16px; color: var(--muted); }
+  .strip .v { margin-top: 8px; font-family: "Cinzel", serif; font-weight: 700; font-size: 46px; color: var(--gold-hi); }
+  .strip .v.word { font-size: 38px; }
+  .strip .bar { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
+  .strip .bar b { width: 46px; height: 7px; border-radius: 4px; background: rgba(255,255,255,.12); }
+  .strip .bar b.on { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
+
+  #loreBig { top: 760px; padding: 0 120px; font-size: 92px; line-height: 1.1; color: var(--gold-hi); text-shadow: 0 0 40px rgba(216,178,90,.35); }
+  .mprompt { top: 300px; padding: 0 130px; font-size: 54px; line-height: 1.15; color: #f6ecd6; }
+  .mprompt .q { color: var(--gold); }
+
+  /* Codex */
+  #codex { left: 90px; top: 520px; width: 900px; height: 1000px; overflow: hidden; -webkit-mask-image: linear-gradient(180deg, transparent, #000 12%, #000 85%, transparent); }
+  #codexGrid { position: absolute; left: 0; top: 0; width: 900px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 26px; }
+  .mini { position: relative; height: 400px; border-radius: 18px; padding: 6px; background: linear-gradient(160deg, #e9cd84, #9a7428 50%, #e0bd6a); }
+  .mini .in { width: 100%; height: 100%; border-radius: 13px; overflow: hidden; background: #0d0b12; }
+  .mini .art { height: 250px; }
+  .mini .art svg { width: 100%; height: 100%; display: block; }
+  .mini .nm { margin-top: 18px; text-align: center; font-family: "Cinzel", serif; font-weight: 700; font-size: 25px; color: var(--gold-hi); padding: 0 8px; }
+  .mini .vote { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 14px; font-size: 22px; color: var(--muted); font-weight: 600; }
+  .mini .vote .arr { font-size: 22px; color: var(--muted); }
+  .mini.hot .vote .arr, .mini.hot .vote .n { color: var(--gold-hi); }
+
+  #silhouette { left: 340px; top: 560px; width: 400px; height: 580px; border-radius: 26px; background: linear-gradient(160deg, #15121b, #050407); border: 2px solid rgba(216,178,90,.6); box-shadow: 0 0 60px rgba(216,178,90,.25), 0 0 200px rgba(216,178,90,.12); }
+  #silhouette .q { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: "Cinzel", serif; font-size: 170px; color: rgba(216,178,90,.22); }
+
+  #logoWord { top: 700px; font-family: "Cinzel", serif; font-weight: 700; font-size: 150px; letter-spacing: .12em; padding-left: .12em; }
+  #logoWord span { display: inline-block; background: linear-gradient(180deg, #fff1c4 0%, #e8c46e 40%, #a77b2c 75%, #f0d48c 100%); -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 0 30px rgba(216,178,90,.45)); }
+  #logoRule { top: 905px; left: 340px; width: 400px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold), transparent); transform-origin: 50% 50%; }
+  #tagline { top: 945px; font-size: 64px; color: var(--text); }
+  #url { top: 1110px; left: 0; right: 0; display: flex; justify-content: center; }
+  #url div { padding: 22px 44px; border-radius: 999px; border: 2px solid rgba(216,178,90,.7); background: rgba(216,178,90,.08); font-family: "Inter", sans-serif; font-weight: 700; font-size: 46px; letter-spacing: .02em; color: #fff3d6; box-shadow: 0 0 40px rgba(216,178,90,.2); }
+  #footer { top: 1250px; font-size: 22px; color: var(--gold); }
+
+  /* Motion-graphic text: each word slides up out of its own mask */
+  .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0.06em 0.08em 0.14em; margin: -0.06em -0.02em -0.14em; }
+  .wi { display: inline-block; will-change: transform, opacity; }
+  .eyebrow { display: flex; align-items: center; justify-content: center; gap: 18px; font-family: "Inter", sans-serif; font-weight: 600; font-size: 22px; letter-spacing: .38em; color: var(--gold-hi); text-transform: uppercase; }
+  .eyebrow i { display: block; width: 90px; height: 2px; background: linear-gradient(90deg, transparent, var(--gold)); }
+  .eyebrow i:last-child { background: linear-gradient(90deg, var(--gold), transparent); }
+  .card .art svg, .mini .art svg { filter: brightness(1.4) saturate(1.3); }
+</style>
+</head>
+<body>
+  <canvas id="bg" width="1080" height="1920"></canvas>
+  <div id="stage"></div>
+  <canvas id="fx" width="1080" height="1920"></canvas>
+  <script src="data.js"></script>
+  <script>
+    // ?v=launch (default) is the launch video; any other v loads lib.js and videos/<v>.tl.js, videos/<v>.js.
+    (async () => {
+      const v = new URLSearchParams(location.search).get("v") || "launch";
+      const files = v === "launch" ? ["timeline.js", "scene.js"] : ["lib.js", `videos/${v}.tl.js`, `videos/${v}.js`];
+      for (const f of files) {
+        await new Promise((res, rej) => { const s = document.createElement("script"); s.src = f; s.onload = res; s.onerror = rej; document.body.appendChild(s); });
+      }
+    })();
+  </script>
+</body>
+</html>
