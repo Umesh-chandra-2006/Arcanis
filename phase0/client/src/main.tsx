@@ -20,8 +20,10 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: apiUrl,
       transformer: superjson,
-      // The session is an httpOnly cookie; the fingerprint feeds the signup-grant check.
-      async headers() {
+      // The session is an httpOnly cookie. The browser signature feeds the signup-grant check
+      // and nothing else, so it is computed and sent only when completing a sign-in.
+      async headers({ opList }) {
+        if (!opList.some((op) => op.path === "auth.verifyCode" || op.path === "auth.verifyLink")) return {};
         const fp = await getFingerprint();
         return fp ? { "x-arc-fp": fp } : {};
       },

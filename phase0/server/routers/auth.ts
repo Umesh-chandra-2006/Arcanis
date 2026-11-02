@@ -15,7 +15,7 @@ import { SignInCodeSchema, SignInLinkSchema, SignInPasswordSchema, SignInRequest
 import { recordSessionDay, trackEvent } from "../analytics";
 import type { Phase0User } from "../../drizzle/schema";
 import type { TrpcContext } from "../_core/context";
-import { appendSetCookie, parseCookies, REFERRAL_COOKIE, serializeCookie, SESSION_COOKIE } from "../_core/cookies";
+import { appendSetCookie, parseCookies, serializeCookie, SESSION_COOKIE } from "../_core/cookies";
 
 /** `canResetPassword`: this session was just opened by an emailed code or link, so no current password is needed. */
 export function publicUser(user: Phase0User, canResetPassword = false) {
@@ -29,6 +29,8 @@ export function publicUser(user: Phase0User, canResetPassword = false) {
     canResetPassword,
     updatesOptIn: user.updatesOptIn,
     onboarded: user.onboardedAt !== null,
+    /** False for an account from before the 18+ terms: it must accept them before anything else (v7.9). */
+    termsAccepted: Boolean(user.termsAcceptedAt),
     createdAt: user.createdAt.toISOString(),
   };
 }
@@ -41,16 +43,17 @@ function toTrpcError(error: unknown): never {
 }
 
 export const sessionTokenOf = (ctx: TrpcContext) => parseCookies(ctx.req.headers.cookie)[SESSION_COOKIE] ?? null;
-const referralCodeOf = (ctx: TrpcContext) => parseCookies(ctx.req.headers.cookie)[REFERRAL_COOKIE] ?? null;
 
 async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "link" | "code" | "password") {
   appendSetCookie(ctx.res, serializeCookie(SESSION_COOKIE, result.sessionToken, { maxAgeSeconds: SESSION_TTL_MS / 1000 }));
-  if (referralCodeOf(ctx)) appendSetCookie(ctx.res, serializeCookie(REFERRAL_COOKIE, "", { maxAgeSeconds: 0 }));
   await trackEvent({
     eventType: result.isNewUser ? "signup_confirmed" : "signin_completed",
     userId: result.user.id,
-    sessionId: ctx.sessionId,
-    metadata: { signup_method: method, referred: Boolean(referralCodeOf(ctx)) },
+    metadata: {
+      signup_method: method,
+      referred: Boolean(result.signup?.referralCode),
+      ...(result.isNewUser ? { channel: result.signup?.channel ?? "unknown", campaign: result.signup?.campaign ?? null } : {}),
+    },
   });
   return { user: publicUser(result.user, method !== "password"), isNewUser: result.isNewUser };
 }
@@ -58,18 +61,18 @@ async function finishSignIn(ctx: TrpcContext, result: SignInResult, method: "lin
 export const authRouter = router({
   /** Always the same response for a valid email: never reveals whether an account exists. */
   requestSignIn: publicProcedure.input(SignInRequestSchema).mutation(async ({ ctx, input }) => {
-    const result = await requestSignIn(input.email, { ip: ctx.ip, deviceId: ctx.device.deviceId }).catch(toTrpcError);
+    const result = await requestSignIn(input.email, { ip: ctx.ip, deviceId: ctx.device.deviceId }, input.signup).catch(toTrpcError);
     await trackEvent({ eventType: "magic_link_requested", userId: null, sessionId: ctx.sessionId, metadata: {} });
     return { sent: true as const, devUrl: result.devUrl, devCode: result.devCode };
   }),
 
   verifyLink: publicProcedure.input(SignInLinkSchema).mutation(async ({ ctx, input }) => {
-    const result = await verifySignInLink(input.token, ctx.device, referralCodeOf(ctx)).catch(toTrpcError);
+    const result = await verifySignInLink(input.token, ctx.device).catch(toTrpcError);
     return finishSignIn(ctx, result, "link");
   }),
 
   verifyCode: publicProcedure.input(SignInCodeSchema).mutation(async ({ ctx, input }) => {
-    const result = await verifySignInCode(input.email, input.code, ctx.device, ctx.ip, referralCodeOf(ctx)).catch(toTrpcError);
+    const result = await verifySignInCode(input.email, input.code, ctx.device, ctx.ip).catch(toTrpcError);
     return finishSignIn(ctx, result, "code");
   }),
 

@@ -25,11 +25,15 @@ function caller(user: TrpcContext["user"] = null) {
 
 describeDb("public tracking endpoint", () => {
   it("accepts an allowlisted anonymous event and drops unknown props", async () => {
-    const { api, sessionId } = caller();
-    await api.analytics.track({ eventType: "preview_cta_clicked", metadata: { spellId: "abc", email: "leak@example.com" } });
-    const [row] = await (await getDb())!.select().from(p0AnalyticsEvents).where(eq(p0AnalyticsEvents.sessionId, sessionId));
-    expect(row.metadata).toEqual({ spellId: "abc" });
+    const { api } = caller();
+    const spellId = nanoid(20);
+    await api.analytics.track({ eventType: "preview_cta_clicked", metadata: { spellId, email: "leak@example.com" } });
+    const rows = await (await getDb())!.select().from(p0AnalyticsEvents).where(eq(p0AnalyticsEvents.eventType, "preview_cta_clicked"));
+    const row = rows.find((r) => (r.metadata as { spellId?: string }).spellId === spellId)!;
+    expect(row.metadata).toEqual({ spellId });
     expect(row.userId).toBeNull();
+    // The device id is anti-abuse only: an event never carries it (privacy policy).
+    expect(row.sessionId).toBeNull();
   });
 
   it("rejects events outside the allowlist, bad props, and oversized payloads", async () => {
@@ -42,9 +46,9 @@ describeDb("public tracking endpoint", () => {
 
   it("takes the user from the session, never the payload", async () => {
     const user = await createTestUser();
-    const { api, sessionId } = caller(user);
+    const { api } = caller(user);
     await api.analytics.track({ eventType: "lab_opened", metadata: { userId: 1 } as Record<string, unknown> });
-    const [row] = await (await getDb())!.select().from(p0AnalyticsEvents).where(eq(p0AnalyticsEvents.sessionId, sessionId));
+    const [row] = await (await getDb())!.select().from(p0AnalyticsEvents).where(eq(p0AnalyticsEvents.userId, user.id));
     expect(row.userId).toBe(user.id);
     expect(row.metadata).toEqual({});
   });
@@ -78,28 +82,34 @@ describeDb("signup funnel", () => {
     await db.delete(p0AnalyticsEvents).where(and(gte(p0AnalyticsEvents.createdAt, at(-30)), lt(p0AnalyticsEvents.createdAt, at(60))));
     await db.delete(p0Users).where(and(gte(p0Users.createdAt, at(-30)), lt(p0Users.createdAt, at(60))));
     const [a, b, c] = await Promise.all([createTestUser({ createdAt: t0 }), createTestUser({ createdAt: t0 }), createTestUser({ createdAt: at(9.5) })]);
-    const event = (eventType: string, userId: number | null, day: number, sessionId: string | null = null, metadata: Record<string, unknown> = {}) =>
-      db.insert(p0AnalyticsEvents).values({ id: nanoid(36), eventType, userId, sessionId, metadata, createdAt: at(day) });
+    const event = (eventType: string, userId: number | null, day: number, metadata: Record<string, unknown> = {}) =>
+      db.insert(p0AnalyticsEvents).values({ id: nanoid(36), eventType, userId, metadata, createdAt: at(day) });
 
-    await event("landing_view", null, 0, "device-1");
-    await event("landing_view", null, 0.1, "device-1");
-    await event("landing_view", null, 0.2, "device-2");
-    await event("landing_draft_started", null, 0.2, "device-2");
+    await event("landing_view", null, 0, { channel: "reddit" });
+    await event("landing_view", null, 0.1, { channel: "reddit" });
+    await event("preview_viewed", null, 0.2, { channel: "referral" });
+    await event("landing_draft_started", null, 0.2);
+    await event("signup_confirmed", a.id, 0, { channel: "reddit", campaign: "launch" });
+    await event("signup_confirmed", b.id, 0, { channel: "referral" });
+    // User c has no signup event in the window, so they count as unknown.
     await event("creation_succeeded", a.id, 0.5);
     await event("creation_succeeded", a.id, 1.5);
     await event("creation_succeeded", b.id, 0.5);
-    await event("share_clicked", a.id, 0.6, "device-1", { spellId: "x", channel: "copy" });
-    await event("share_clicked", a.id, 0.7, "device-1", { spellId: "x", channel: "copy" });
-    await event("session_day_n", a.id, 1.5, null, { n: 1 });
-    await event("session_day_n", a.id, 7.5, null, { n: 7 });
-    await event("session_day_n", c.id, 10.5, null, { n: 1 });
+    await event("share_clicked", a.id, 0.6, { spellId: "x", channel: "copy" });
+    await event("share_clicked", a.id, 0.7, { spellId: "x", channel: "copy" });
+    await event("session_day_n", a.id, 1.5, { n: 1 });
+    await event("session_day_n", a.id, 7.5, { n: 7 });
+    await event("session_day_n", c.id, 10.5, { n: 1 });
 
     const report = await computeFunnel({ now: at(10), days: 20 });
     const step = Object.fromEntries(report.steps.map((s) => [s.key, s]));
-    expect(report.visits).toBe(3);
-    expect(step.visit.count).toBe(2);
-    expect(step.draft).toMatchObject({ count: 1, of: 2 });
+    expect(step.visit.count).toBe(3);
+    expect(step.draft).toMatchObject({ count: 1, of: 3 });
     expect(step.signup.count).toBe(3);
+    const channel = Object.fromEntries(report.channels.map((r) => [r.channel, r]));
+    expect(channel.reddit).toEqual({ channel: "reddit", visits: 2, signups: 1, firstSpells: 1, shared: 1 });
+    expect(channel.referral).toEqual({ channel: "referral", visits: 1, signups: 1, firstSpells: 1, shared: 0 });
+    expect(channel.unknown).toMatchObject({ signups: 1, firstSpells: 0 });
     expect(step.first_spell).toMatchObject({ count: 2, of: 3 });
     expect(step.second_spell).toMatchObject({ count: 1, of: 2 });
     expect(step.shared).toMatchObject({ count: 1, of: 2 });

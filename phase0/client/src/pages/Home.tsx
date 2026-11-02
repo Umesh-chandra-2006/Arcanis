@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { SignInForm } from "@/components/SignInForm";
 import { LegalLinks } from "@/components/LegalLinks";
+import { channelTags, firstLandingView } from "@/lib/attribution";
+import { AI_INPUT_NOTICE } from "@/lib/legal";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapSpellToCardProps } from "@/lib/adapters";
 import { SPARK } from "@shared/constants";
@@ -24,8 +26,10 @@ export default function Home() {
   const captureReferral = trpc.referrals.capture.useMutation();
 
   useEffect(() => {
-    track.mutate({ eventType: "landing_view", metadata: { referrer: document.referrer.slice(0, 200) || undefined, path: "/" } }, { onError: () => {} });
-    // An invite link lands here with ?ref=; remember it for the signup.
+    if (firstLandingView()) {
+      track.mutate({ eventType: "landing_view", metadata: { referrer: document.referrer.slice(0, 200) || undefined, path: "/", ...channelTags() } }, { onError: () => {} });
+    }
+    // An invite link lands here with ?ref=; the sign-up form sends the code, and this counts the open.
     const ref = params.get("ref");
     if (ref) captureReferral.mutate({ code: ref }, { onError: () => {} });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,6 +121,7 @@ function Landing() {
                 className="min-h-20"
                 aria-label="Spell description"
               />
+              <p className="text-[11px] text-muted-foreground">{AI_INPUT_NOTICE}</p>
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <a href="#featured" className="text-xs text-muted-foreground hover:text-primary">
                   See examples first

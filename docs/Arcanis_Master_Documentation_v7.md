@@ -15,6 +15,10 @@ Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 Founder decision from the launch review.
 
 - **One word for creating a spell: Forge (changes v7.7 Section 22 wording).** The Lab's button reads "Forge Spell" and its confirmation asks "Forge this spell? This spends 1 Spark". "Research" now means only the wait a stronger spell goes through before it is granted (Section 6.3), which is unchanged.
+- **Arcanis is 18+ (changes Section 18 sign-up; founder, after a legal review).** Sign-up carries a required box, "I am 18 or older and I accept the Terms and Privacy Policy". The server refuses to create an account without it and records when it was accepted. An account from before this must accept the same box before it can do anything but log out or read the legal pages, enforced on the server for every signed-in action. It is a self-declaration, not an age check.
+- **The device id and browser signature are anti-abuse only (changes Sections 18 and 23.3).** The device cookie, renamed `arc_device`, is set when someone asks for or uses an emailed sign-in code or link, not on first contact, lasts 12 months from the last time that happened, and is never stored with an analytics event. The browser signature is computed and sent only when completing a sign-in. Visits are counted as page loads, with no identifier. The `arc_ref` cookie is gone: the invite code stays in the address and travels in the sign-up request.
+- **Deleting an account (founder).** A request is scheduled 30 days ahead. The player is emailed 30, 15 and 7 days before and can cancel by writing in. On the date the account, spells, reviews, votes and related records are deleted, analytics events lose the user id, and the Spark and rune ledgers stay with no account behind them. An account that belongs to someone under 18 is deleted at once.
+- **Channel attribution (task M6).** The channel and campaign come from the landing address (`utm_source`, `utm_campaign` or `ch`), then an invite link, then the referring site, then "direct". They are held in memory, not on the device, and stored on the signup event.
 
 ---
 

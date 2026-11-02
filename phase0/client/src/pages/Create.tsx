@@ -18,6 +18,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { mapSpellToCardProps, type SpellCardProps } from "@/lib/adapters";
 import { ShareButtons } from "@/components/ShareButtons";
+import { AI_INPUT_NOTICE } from "@/lib/legal";
 import { ForgeQueuePanel } from "@/components/ForgeQueue";
 import { EXAMPLE_PROMPTS } from "@/lib/example-prompts";
 import { clearDraft, markDraftDelivered, readDraft } from "@/lib/draft";
@@ -364,6 +365,7 @@ export default function Create() {
                       onChange={(e) => setDescription(e.target.value)}
                       className="min-h-28"
                     />
+                    <p className="text-[11px] text-muted-foreground">{AI_INPUT_NOTICE}</p>
                   </div>
 
                   <div className="flex items-center justify-between pt-1">

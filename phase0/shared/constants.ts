@@ -1,4 +1,6 @@
+export const SUPPORT_EMAIL = "support@arcanis.world";
 export const UNAUTHED_ERR_MSG = "Please login (10001)";
+export const TERMS_UPDATE_ERR_MSG = "We have updated our Terms and Privacy Policy. Arcanis is now for people aged 18 and over. Accept them to continue.";
 
 // Spark economy, Phase 1a values (Master Doc v7.2 22.1, founder decision F7).
 export const SPARK = {
@@ -144,6 +146,7 @@ export const VALIDATION_MESSAGES = {
   EMAIL_DISPOSABLE: "Disposable email addresses are not allowed",
   SIGNIN_RATE_LIMITED: "Too many sign-in attempts. Please wait a few minutes and try again.",
   PASSWORD_INVALID: "That email and password don't match. New here or forgot it? Get an emailed code instead.",
+  TERMS_REQUIRED: "New to Arcanis? Go back, tick the box to confirm you are 18 or older, accept the terms and consent to the privacy policy, then ask for a new code.",
   CURRENT_PASSWORD_INVALID: "That is not your current password.",
   PASSWORD_REQUIRED: "Choose a password to finish.",
   CODE_INVALID: "That code is not valid. Check the newest email, or request a new code.",

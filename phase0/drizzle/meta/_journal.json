@@ -141,6 +141,20 @@
       "when": 1792008208141,
       "tag": "0019_uneven_dark_phoenix",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1793647416589,
+      "tag": "0020_eager_puff_adder",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1793653757352,
+      "tag": "0021_clean_angel",
+      "breakpoints": true
     }
   ]
 }

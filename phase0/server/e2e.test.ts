@@ -59,13 +59,14 @@ describeDb("end to end: sign up, create, share, preview", () => {
   it("runs the whole Phase 1a loop", async () => {
     const player = new Client();
     expect((await player.raw("/health")).status).toBe(200);
-    expect(player.jar.has("arc_did")).toBe(false); // the uptime pinger never mints device ids
+    expect(player.jar.has("arc_device")).toBe(false); // the uptime pinger never mints device ids
     expect(await player.query("auth.me")).toBeNull();
-    expect(player.jar.has("arc_did")).toBe(true);
+    expect(player.jar.has("arc_device")).toBe(false); // browsing never mints one either
 
     // Sign up by 6-digit code (no password, session in an httpOnly cookie).
     const email = `e2e_${Date.now()}@test.arcanis`;
-    const sent = await player.mutation("auth.requestSignIn", { email });
+    const sent = await player.mutation("auth.requestSignIn", { email, signup: { termsAccepted: true, channel: "reddit", campaign: "launch" } });
+    expect(player.jar.has("arc_device")).toBe(true);
     expect(sent.devCode).toMatch(/^\d{6}$/);
     const signedIn = await player.mutation("auth.verifyCode", { email, code: sent.devCode });
     expect(signedIn.isNewUser).toBe(true);
@@ -108,16 +109,15 @@ describeDb("end to end: sign up, create, share, preview", () => {
     const stranger = new Client();
     await stranger.query("auth.me");
     expect((await stranger.mutation("referrals.capture", { code })).captured).toBe(true);
-    expect(stranger.jar.get("arc_ref")).toBe(code);
+    expect(stranger.jar.has("arc_ref")).toBe(false); // the code is never stored on the device
     expect((await stranger.mutation("spells.recordShareOpen", { spellId: created.spell.id })).success).toBe(true);
     expect((await stranger.query("spells.getSpellPublic", { spellId: created.spell.id })).name).toBe("Seam of Light");
     expect((await stranger.mutation("analytics.track", { eventType: "preview_cta_clicked", metadata: { spellId: created.spell.id } })).success).toBe(true);
 
-    // The stranger signs up from that browser and is attributed to the sharer.
+    // The stranger signs up, the form sends the code from the link, and they are attributed to the sharer.
     const email2 = `e2e2_${Date.now()}@test.arcanis`;
-    const sent2 = await stranger.mutation("auth.requestSignIn", { email: email2 });
+    const sent2 = await stranger.mutation("auth.requestSignIn", { email: email2, signup: { termsAccepted: true, referralCode: code, channel: "referral" } });
     await stranger.mutation("auth.verifyCode", { email: email2, code: sent2.devCode });
-    expect(stranger.jar.has("arc_ref")).toBe(false); // consumed at signup
 
     // The one-step welcome: a password is required (v7.5); updates are optional.
     await expect(player.mutation("profile.completeOnboarding", { updatesOptIn: true })).rejects.toThrow();

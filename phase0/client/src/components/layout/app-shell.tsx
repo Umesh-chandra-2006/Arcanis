@@ -11,6 +11,7 @@ import { ForgeQueueWatcher } from "@/components/ForgeQueue";
 import { ResearchWatcher } from "@/components/Research";
 import { Button } from "@/components/ui/button";
 import { LegalLinks } from "@/components/LegalLinks";
+import { TermsGate } from "@/components/TermsGate";
 
 // Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle and the
 // other game areas arrive with their phases.
@@ -32,6 +33,7 @@ const ADMIN_NAV = [
 ];
 
 const COLLAPSED_KEY = "arc_sidebar_collapsed";
+const LEGAL_PATHS = ["/privacy", "/terms"];
 
 function readCollapsed(): boolean {
   try {
@@ -46,7 +48,8 @@ export function AppShell() {
   // Desktop: the sidebar folds to an icon rail. A per-browser convenience only.
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const location = useLocation();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
+  const mustAcceptTerms = !!user && !user.termsAccepted;
 
   useEffect(() => {
     try {
@@ -55,6 +58,9 @@ export function AppShell() {
       // Storage can be blocked; the toggle still works for this visit.
     }
   }, [collapsed]);
+
+  // An account from before the 18+ terms sees only this, and the legal pages themselves.
+  if (mustAcceptTerms && !LEGAL_PATHS.includes(location.pathname)) return <TermsGate />;
 
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
@@ -112,9 +118,13 @@ export function AppShell() {
         )}
       </AnimatePresence>
 
-      <Onboarding />
-      <ForgeQueueWatcher />
-      <ResearchWatcher />
+      {!mustAcceptTerms && (
+        <>
+          <Onboarding />
+          <ForgeQueueWatcher />
+          <ResearchWatcher />
+        </>
+      )}
 
       <main className={cn("min-w-0 flex-1 pt-14 transition-[margin] duration-300 lg:pt-0", collapsed ? "lg:ml-16" : "lg:ml-56")}>
         <AnimatePresence mode="wait">

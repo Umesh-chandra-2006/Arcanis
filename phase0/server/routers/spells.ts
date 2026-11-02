@@ -185,7 +185,14 @@ export const spellsRouter = router({
     }),
 
   recordShareOpen: publicProcedure
-    .input(z.object({ spellId: z.string().min(1).max(36), referrer: z.string().max(200).optional() }))
+    .input(
+      z.object({
+        spellId: z.string().min(1).max(36),
+        referrer: z.string().max(200).optional(),
+        channel: z.string().regex(/^[a-z0-9._-]{1,32}$/).optional(),
+        campaign: z.string().regex(/^[a-z0-9._-]{1,32}$/).optional(),
+      })
+    )
     .mutation(async ({ ctx, input }) => {
       const ip = ctx.ip ?? "unknown";
       if (isDuplicateShareOpen(ip, input.spellId)) {
@@ -200,7 +207,7 @@ export const spellsRouter = router({
         eventType: "preview_viewed",
         userId: ctx.user?.id ?? null,
         sessionId: ctx.sessionId,
-        metadata: { spellId: input.spellId, ownerId: spell.ownerId, referrer: input.referrer ?? null },
+        metadata: { spellId: input.spellId, ownerId: spell.ownerId, referrer: input.referrer ?? null, channel: input.channel ?? null, campaign: input.campaign ?? null },
       });
       return { success: true, deduplicated: false };
     }),

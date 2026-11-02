@@ -5,7 +5,7 @@
 
 ## What changed in v2.5 (2026-11-03)
 
-Tracks Master Doc v7.9 (Forge is the one word for creating a spell). Wording only: no phase, gate or threshold changes.
+Tracks Master Doc v7.9 (Forge as the one word for creating a spell, Arcanis 18+, device id and signature anti-abuse only, channel attribution). No phase, gate or threshold changes. Visits are now page loads with no device id, so a visit-to-signup rate from before this date is not comparable.
 
 ## What changed in v2.4 (2026-11-01)
 

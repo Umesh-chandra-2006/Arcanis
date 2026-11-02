@@ -39,6 +39,12 @@ export const p0Users = mysqlTable(
     updatesOptIn: boolean("updates_opt_in").notNull().default(false),
     /** Set when the one-step welcome was completed or skipped. */
     onboardedAt: timestamp("onboarded_at"),
+    /** When they confirmed being 18 or older and accepted the terms and privacy policy, at sign-up. Null for accounts from before this was asked. */
+    termsAcceptedAt: timestamp("terms_accepted_at"),
+    /** Set when the player asked for deletion; the account goes on this date (server/account-deletion.ts). */
+    deletionScheduledFor: timestamp("deletion_scheduled_for"),
+    /** The last deletion notice sent, as days before: 30, 15 or 7. */
+    deletionLastNoticeDays: int("deletion_last_notice_days"),
   },
   (table) => ({
     emailIdx: uniqueIndex("p0_users_email_idx").on(table.email),
@@ -266,6 +272,8 @@ export const p0LoginTokens = mysqlTable(
     expiresAt: timestamp("expires_at").notNull(),
     consumedAt: timestamp("consumed_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    /** What a sign-up form sent with this request (shared/validation.ts SignupContext); it travels with the emailed link too. */
+    signupContext: json("signup_context"),
   },
   (table) => ({
     linkIdx: uniqueIndex("p0_login_tokens_link_idx").on(table.linkHash),

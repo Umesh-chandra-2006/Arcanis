@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { nanoid } from "nanoid";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { checkRateLimit } from "./rate-limit";
 import {
   AuthError,
@@ -24,7 +24,7 @@ import { ENV } from "./_core/env";
 import { p0LoginTokens, p0SparkLedger, p0Users } from "../drizzle/schema";
 import { describeDb } from "./test/db";
 import { createTestUser } from "./test/factories";
-import { LOGIN_CODE_MAX_ATTEMPTS } from "../shared/constants";
+import { LOGIN_CODE_MAX_ATTEMPTS, VALIDATION_MESSAGES } from "../shared/constants";
 
 const device = () => ({ deviceId: nanoid(32), fingerprint: null, ip: `198.18.${Math.floor(Math.random() * 250)}.1` });
 const req = () => ({ ip: `198.19.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`, deviceId: nanoid(32) });
@@ -58,18 +58,46 @@ describe("auth-service validators", () => {
   });
 });
 
+const TICKED = { termsAccepted: true };
+
 describeDb("identity (Build Plan 16)", () => {
+  it("creates no account unless the 18+ and terms box was ticked, by code or by link", async () => {
+    const byCode = freshEmail();
+    const sent = await requestSignIn(byCode, req());
+    await expect(verifySignInCode(byCode, sent.devCode!, device(), null)).rejects.toMatchObject({ code: "invalid", message: VALIDATION_MESSAGES.TERMS_REQUIRED });
+    const byLink = freshEmail();
+    const sentLink = await requestSignIn(byLink, req(), { termsAccepted: false });
+    await expect(verifySignInLink(linkFrom(sentLink.devUrl!), device())).rejects.toMatchObject({ message: VALIDATION_MESSAGES.TERMS_REQUIRED });
+    const rows = await (await getDb())!.select().from(p0Users).where(inArray(p0Users.email, [byCode, byLink]));
+    expect(rows).toEqual([]);
+  });
+
+  it("records the acceptance on a new account, and carries it through the emailed link", async () => {
+    const email = freshEmail();
+    const sent = await requestSignIn(email, req(), TICKED);
+    const result = await verifySignInLink(linkFrom(sent.devUrl!), device());
+    expect(result.isNewUser).toBe(true);
+    expect(result.user.termsAcceptedAt).toBeInstanceOf(Date);
+  });
+
+  it("does not ask an existing player, so forgot-password never reveals anything new", async () => {
+    const existing = await createTestUser();
+    const sent = await requestSignIn(existing.email, req());
+    const result = await verifySignInCode(existing.email, sent.devCode!, device(), null);
+    expect(result.isNewUser).toBe(false);
+  });
+
   it("the request response is identical for existing and new emails", async () => {
     const existing = await createTestUser();
     const a = await requestSignIn(existing.email, req());
-    const b = await requestSignIn(freshEmail(), req());
+    const b = await requestSignIn(freshEmail(), req(), TICKED);
     expect(Object.keys(a).sort()).toEqual(Object.keys(b).sort());
     expect(typeof a.devCode).toBe(typeof b.devCode);
   });
 
   it("stores only hashes", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const [row] = await (await getDb())!.select().from(p0LoginTokens).where(eq(p0LoginTokens.email, email));
     expect(row.linkHash).not.toContain(linkFrom(sent.devUrl!));
     expect(row.codeHash).not.toContain(sent.devCode!);
@@ -78,7 +106,7 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("a new player signs in by code, gets a session and the signup grant", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const result = await verifySignInCode(email, sent.devCode!, device(), null);
     expect(result.isNewUser).toBe(true);
     expect((await userForSession(result.sessionToken))?.id).toBe(result.user.id);
@@ -88,7 +116,7 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("code brute force stops after 5 attempts, even in parallel", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const wrong = sent.devCode === "000000" ? "111111" : "000000";
     const guesses = await Promise.allSettled(
       Array.from({ length: 12 }, () => verifySignInCode(email, wrong, device(), null))
@@ -102,7 +130,7 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("the link redeems once under concurrent requests", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const token = linkFrom(sent.devUrl!);
     const results = await Promise.allSettled(Array.from({ length: 6 }, () => verifySignInLink(token, device())));
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
@@ -110,26 +138,26 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("the code redeems once under concurrent requests", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const results = await Promise.allSettled(Array.from({ length: 4 }, () => verifySignInCode(email, sent.devCode!, device(), null)));
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
   });
 
   it("using the link consumes the code, and the reverse", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     await verifySignInLink(linkFrom(sent.devUrl!), device());
     await expect(verifySignInCode(email, sent.devCode!, device(), null)).rejects.toBeInstanceOf(AuthError);
 
     const email2 = freshEmail();
-    const sent2 = await requestSignIn(email2, req());
+    const sent2 = await requestSignIn(email2, req(), TICKED);
     await verifySignInCode(email2, sent2.devCode!, device(), null);
     await expect(verifySignInLink(linkFrom(sent2.devUrl!), device())).rejects.toBeInstanceOf(AuthError);
   });
 
   it("an expired link is refused", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     await (await getDb())!.update(p0LoginTokens).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(p0LoginTokens.email, email));
     await expect(verifySignInLink(linkFrom(sent.devUrl!), device())).rejects.toBeInstanceOf(AuthError);
   });
@@ -140,8 +168,8 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("rate-limits repeated requests for one email", async () => {
     const email = freshEmail();
-    await requestSignIn(email, req());
-    await expect(requestSignIn(email, req())).rejects.toMatchObject({ code: "rate_limited" });
+    await requestSignIn(email, req(), TICKED);
+    await expect(requestSignIn(email, req(), TICKED)).rejects.toMatchObject({ code: "rate_limited" });
   });
 
   it("a failed send does not make the player wait: the next request is not rate-limited", async () => {
@@ -153,21 +181,21 @@ describeDb("identity (Build Plan 16)", () => {
     env.resendApiKey = "test-key";
     vi.stubGlobal("fetch", async () => new Response("unauthorized", { status: 401 }));
     try {
-      await expect(requestSignIn(email, from)).rejects.not.toBeInstanceOf(AuthError);
-      await expect(requestSignIn(email, from)).rejects.not.toBeInstanceOf(AuthError);
+      await expect(requestSignIn(email, from, TICKED)).rejects.not.toBeInstanceOf(AuthError);
+      await expect(requestSignIn(email, from, TICKED)).rejects.not.toBeInstanceOf(AuthError);
     } finally {
       vi.unstubAllGlobals();
       env.emailProviders = saved.emailProviders;
       env.resendApiKey = saved.resendApiKey;
     }
     // Once a send works the one-per-minute limit applies again.
-    await requestSignIn(email, from);
-    await expect(requestSignIn(email, from)).rejects.toMatchObject({ code: "rate_limited" });
+    await requestSignIn(email, from, TICKED);
+    await expect(requestSignIn(email, from, TICKED)).rejects.toMatchObject({ code: "rate_limited" });
   });
 
   it("password: signs in without an email, and failures never reveal accounts", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const { user } = await verifySignInCode(email, sent.devCode!, device(), null);
     // No password set yet: the same error as a wrong password or an unknown email.
     const noPassword = await signInWithPassword(email, "whatever-it-is", null).catch((e) => e);
@@ -188,7 +216,7 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("locks out repeated wrong passwords for an email", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const { user } = await verifySignInCode(email, sent.devCode!, device(), null);
     await setPassword(user.id, "a strong passphrase");
     // Successful sign-ins never count toward the lockout.
@@ -216,7 +244,7 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("forgot password: only a fresh emailed sign-in may set a new password without the old one", async () => {
     const email = freshEmail();
-    const first = await requestSignIn(email, req());
+    const first = await requestSignIn(email, req(), TICKED);
     const signup = await verifySignInCode(email, first.devCode!, device(), null);
     // A new account has no password yet, so none is asked.
     await changePassword(signup.user.id, signup.sessionToken, { password: "the first passphrase" });
@@ -243,7 +271,7 @@ describeDb("identity (Build Plan 16)", () => {
 
   it("logout revokes the session", async () => {
     const email = freshEmail();
-    const sent = await requestSignIn(email, req());
+    const sent = await requestSignIn(email, req(), TICKED);
     const { sessionToken } = await verifySignInCode(email, sent.devCode!, device(), null);
     await revokeSession(sessionToken);
     expect(await userForSession(sessionToken)).toBeNull();

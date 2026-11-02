@@ -13,6 +13,7 @@ import { grantSignupSpark, type DeviceSignals } from "./spark";
 import { emailProviders, sendEmail } from "./providers/email";
 import { hitRateLimit, peekRateLimit, releaseRateLimit, sweepRateLimits } from "./db-rate-limit";
 import { attachReferral } from "./referrals";
+import type { SignupContext } from "../shared/validation";
 
 export const SESSION_TTL_MS = 30 * 24 * 3600 * 1000;
 
@@ -90,7 +91,7 @@ export interface RequestContext {
  * has an account, so the endpoint cannot be used to discover accounts.
  * Returns a dev link only when no email provider is configured outside production.
  */
-export async function requestSignIn(email: string, req: RequestContext): Promise<{ devUrl: string | null; devCode: string | null }> {
+export async function requestSignIn(email: string, req: RequestContext, signup?: SignupContext): Promise<{ devUrl: string | null; devCode: string | null }> {
   const normalized = normalizeEmail(email);
   if (!validateEmailFormat(normalized)) throw new AuthError(VALIDATION_MESSAGES.EMAIL_INVALID, "bad_email");
   if (isDisposableEmail(normalized)) throw new AuthError(VALIDATION_MESSAGES.EMAIL_DISPOSABLE, "bad_email");
@@ -118,6 +119,7 @@ export async function requestSignIn(email: string, req: RequestContext): Promise
     linkHash: sha256(linkToken),
     codeHash: hashCode(id, code),
     expiresAt: new Date(Date.now() + LOGIN_TOKEN_TTL_MS),
+    signupContext: signup ?? null,
   });
 
   const link = `${baseUrl()}/auth/verify?token=${encodeURIComponent(linkToken)}`;
@@ -151,13 +153,15 @@ export interface SignInResult {
   user: Phase0User;
   isNewUser: boolean;
   sessionToken: string;
+  /** What the sign-up form sent, for the signup event. */
+  signup?: SignupContext;
 }
 
-export async function verifySignInLink(linkToken: string, device: DeviceSignals, referralCode?: string | null): Promise<SignInResult> {
+export async function verifySignInLink(linkToken: string, device: DeviceSignals): Promise<SignInResult> {
   const db = requireDb();
   const [token] = await db.select().from(p0LoginTokens).where(eq(p0LoginTokens.linkHash, sha256(linkToken))).limit(1);
   if (!token || !(await consume(token.id))) throw new AuthError(VALIDATION_MESSAGES.TOKEN_INVALID, "invalid");
-  return completeSignIn(token.email, device, referralCode, "link");
+  return completeSignIn(token.email, device, token.signupContext as SignupContext | null, "link");
 }
 
 /**
@@ -168,8 +172,7 @@ export async function verifySignInCode(
   email: string,
   code: string,
   device: DeviceSignals,
-  ip: string | null,
-  referralCode?: string | null
+  ip: string | null
 ): Promise<SignInResult> {
   const normalized = normalizeEmail(email);
   if (ip) {
@@ -197,7 +200,7 @@ export async function verifySignInCode(
   if (!safeEqualHex(hashCode(token.id, code), token.codeHash) || !(await consume(token.id))) {
     throw new AuthError(VALIDATION_MESSAGES.CODE_INVALID, "invalid");
   }
-  return completeSignIn(normalized, device, referralCode, "code");
+  return completeSignIn(normalized, device, token.signupContext as SignupContext | null, "code");
 }
 
 async function findAvailableUsername(email: string): Promise<string> {
@@ -213,22 +216,25 @@ async function findAvailableUsername(email: string): Promise<string> {
 async function completeSignIn(
   email: string,
   device: DeviceSignals,
-  referralCode: string | null | undefined,
+  signup: SignupContext | null,
   method: "code" | "link"
 ): Promise<SignInResult> {
   const db = requireDb();
   let isNewUser = false;
   let [user] = await db.select().from(p0Users).where(eq(p0Users.email, email)).limit(1);
   if (!user) {
+    // No account without the 18+ and terms box (server side, as well as the form). This is reached only
+    // with the right code or link, so it tells nothing about the email to anyone but its owner.
+    if (!signup?.termsAccepted) throw new AuthError(VALIDATION_MESSAGES.TERMS_REQUIRED, "invalid");
     try {
       const [created] = await db
         .insert(p0Users)
-        .values({ email, username: await findAvailableUsername(email), emailVerified: true, role: "user" })
+        .values({ email, username: await findAvailableUsername(email), emailVerified: true, role: "user", termsAcceptedAt: new Date() })
         .$returningId();
       [user] = await db.select().from(p0Users).where(eq(p0Users.id, created.id)).limit(1);
       isNewUser = true;
       const grant = await grantSignupSpark(user.id, device);
-      await attachReferral(user.id, referralCode, device, grant.reason === "device_used").catch((error) =>
+      await attachReferral(user.id, signup.referralCode, device, grant.reason === "device_used").catch((error) =>
         console.warn("[Referral] attach failed:", error)
       );
     } catch (error) {
@@ -238,7 +244,7 @@ async function completeSignIn(
     }
   }
   await db.update(p0Users).set({ lastSignedInAt: new Date() }).where(eq(p0Users.id, user.id));
-  return { user, isNewUser, sessionToken: await createSession(user.id, method) };
+  return { user, isNewUser, sessionToken: await createSession(user.id, method), signup: signup ?? undefined };
 }
 
 export type SessionMethod = "code" | "link" | "password";

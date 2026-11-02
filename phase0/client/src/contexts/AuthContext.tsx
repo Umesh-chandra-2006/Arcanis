@@ -12,6 +12,8 @@ export interface AuthUser {
   canResetPassword: boolean;
   updatesOptIn: boolean;
   onboarded: boolean;
+  /** False for an account from before the 18+ terms: nothing works until it accepts them. */
+  termsAccepted: boolean;
   createdAt: string;
 }
 

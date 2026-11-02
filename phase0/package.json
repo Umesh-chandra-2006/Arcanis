@@ -22,6 +22,7 @@
     "providers:check": "tsx scripts/providers-check.ts",
     "creation:live": "tsx scripts/live-creation-check.ts",
     "images:migrate": "tsx scripts/migrate-images.ts",
+    "account:delete": "tsx scripts/account-deletion.ts",
     "harness": "tsx tools/balance-harness/harness.ts",
     "cost-report": "tsx tools/cost-report/cost-report.ts",
     "vercel:config": "node scripts/vercel-config.mjs",

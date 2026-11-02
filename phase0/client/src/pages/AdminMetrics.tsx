@@ -108,7 +108,30 @@ export default function AdminMetrics() {
                 </tbody>
               </table>
               <p className="mt-3 text-xs text-muted-foreground">
-                Last {funnel.data.days} days, {funnel.data.visits} landing page views in all. Admin accounts are left out. Account steps count accounts created in this window.
+                Last {funnel.data.days} days. Admin accounts are left out. Account steps count accounts created in this window. A visit is a page load, so one person can count more than once.
+              </p>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Channels">
+          {!funnel.data ? <Spinner /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr><th className="py-2">Channel</th><th>Visits</th><th>Signups</th><th>First spell</th><th>Shared</th></tr>
+                </thead>
+                <tbody>
+                  {funnel.data.channels.map((c) => (
+                    <tr key={c.channel} className="border-t border-border/40">
+                      <td className="py-2 pr-3">{c.channel}</td><td>{c.visits}</td><td className="font-semibold">{c.signups}</td><td>{c.firstSpells}</td><td>{c.shared}</td>
+                    </tr>
+                  ))}
+                  {funnel.data.channels.length === 0 && <tr><td colSpan={5} className="py-2 text-muted-foreground">No visits in this window.</td></tr>}
+                </tbody>
+              </table>
+              <p className="mt-3 break-words text-xs text-muted-foreground">
+                Tag every link you post: https://arcanis.world/?utm_source=reddit&amp;utm_campaign=launch. Without a tag it falls back to the site that sent them, then "direct". "unknown" is from before tracking, or a signup with no channel.
               </p>
             </div>
           )}

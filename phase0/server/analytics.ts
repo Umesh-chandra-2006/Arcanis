@@ -7,6 +7,7 @@ import { p0AnalyticsEvents, p0Users } from "../drizzle/schema";
 export interface TrackEventInput {
   eventType: string;
   userId?: number | null;
+  /** Ignored: the device id is anti-abuse only and is never stored with an event (privacy policy). */
   sessionId?: string | null;
   metadata?: Record<string, unknown>;
 }
@@ -20,7 +21,7 @@ export async function trackEvent(input: TrackEventInput): Promise<void> {
       id: nanoid(36),
       eventType: input.eventType.slice(0, 64),
       userId: input.userId ?? null,
-      sessionId: input.sessionId?.slice(0, 64) ?? null,
+      sessionId: null,
       metadata: input.metadata ?? {},
     });
   } catch (error) {

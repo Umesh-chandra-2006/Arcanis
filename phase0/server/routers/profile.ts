@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, count, eq, ne } from "drizzle-orm";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, accountProcedure, protectedProcedure } from "../_core/trpc";
 import { requireDb } from "../db";
 import { p0Referrals, p0Spells, p0Users } from "../../drizzle/schema";
 import { moderate } from "../moderation";
@@ -62,6 +62,13 @@ async function savePassword(ctx: TrpcContext, userId: number, input: { password:
 }
 
 export const profileRouter = router({
+  /** An account from before the 18+ terms accepts them here. The one action open to it, with logging out. */
+  acceptTerms: accountProcedure.input(z.object({ accepted: z.literal(true) })).mutation(async ({ ctx }) => {
+    await requireDb().update(p0Users).set({ termsAcceptedAt: new Date() }).where(eq(p0Users.id, ctx.user.id));
+    await trackEvent({ eventType: "terms_accepted", userId: ctx.user.id, metadata: {} });
+    return fresh(ctx, ctx.user.id);
+  }),
+
   /** "Name your mage": asked the first time a public name is needed (Master Doc 18.2). */
   setName: protectedProcedure.input(z.object({ name: MageNameSchema })).mutation(async ({ ctx, input }) => {
     await saveName(ctx.user.id, input.name);

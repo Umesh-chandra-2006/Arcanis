@@ -40,8 +40,8 @@ async function deps(): Promise<Partial<PipelineDeps>> {
 
 async function signUpWith(code: string | null, dev = device()) {
   const address = email();
-  const sent = await requestSignIn(address, req());
-  return verifySignInCode(address, sent.devCode!, dev, null, code);
+  const sent = await requestSignIn(address, req(), { termsAccepted: true, referralCode: code ?? undefined });
+  return verifySignInCode(address, sent.devCode!, dev, null);
 }
 
 describeDb("referrals", () => {

@@ -13,13 +13,19 @@ export function LegalLinks({ className = "" }: { className?: string }) {
   );
 }
 
-/** Under each form that can create an account. */
-export function SignUpConsent() {
+/**
+ * Required to create an account; the server refuses a new account without it.
+ * The links open a new tab, so reading them does not lose the form.
+ */
+export function SignUpConsent({ checked, onChange, required = false }: { checked: boolean; onChange: (checked: boolean) => void; required?: boolean }) {
   return (
-    <p className="text-[11px] text-muted-foreground">
-      By continuing you accept our{" "}
-      <Link to="/terms" className="underline hover:text-primary">terms</Link> and{" "}
-      <Link to="/privacy" className="underline hover:text-primary">privacy policy</Link>.
-    </p>
+    <label className="flex items-start gap-2 text-xs">
+      <input type="checkbox" className="mt-0.5" required={required} checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span>
+        I am 18 or older, I accept the{" "}
+        <Link to="/terms" target="_blank" className="text-primary underline">Terms</Link>, and I consent to my data being used as the{" "}
+        <Link to="/privacy" target="_blank" className="text-primary underline">Privacy Policy</Link> describes.
+      </span>
+    </label>
   );
 }

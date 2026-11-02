@@ -5,9 +5,15 @@
 
 ## What changed in v2.9 (2026-11-03)
 
-Founder decision from the launch review (Master Doc v7.9). No migration and no server rule changes.
+Founder decisions from the launch and legal review (Master Doc v7.9). Migrations 0020 and 0021.
+
+- **Retention and deletion:** `server/retention.ts` runs daily: reviewed moderation records and `p0_device_grants` at 12 months, login tokens 24 hours past expiry, expired rate-limit rows. `server/account-deletion.ts` and `pnpm account:delete`: a request is scheduled 30 days ahead, the player is emailed at 30, 15 and 7 days, and the daily job deletes on the date.
 
 - **Lab:** the creation button reads "Forge Spell" and the confirmation "Forge this spell?" (replaces the v2.7 wording). Research remains the name of the wait, `research_ready_at`, and its screens.
+- **Sign-up (Section 5):** `auth.requestSignIn` takes an optional `signup` (`SignupContextSchema`: `termsAccepted`, `referralCode`, `channel`, `campaign`), stored on the login token as `signup_context`, so the emailed link carries it. `completeSignIn` refuses a new account unless `termsAccepted` is true and sets `p0_users.terms_accepted_at`. The request response is unchanged for any email, so this reveals nothing about accounts.
+- **Terms gate:** `protectedProcedure` (and so `adminProcedure`) refuses an account whose `terms_accepted_at` is null, with `TERMS_UPDATE_ERR_MSG`. Only `profile.acceptTerms` uses the new `accountProcedure`. `auth.me` reports `termsAccepted`, and `AppShell` shows `TermsGate` in place of the app, except on `/privacy` and `/terms`.
+- **Device signals:** `deviceCookieMiddleware` issues the device cookie, now `arc_device`, only on `auth.requestSignIn`, `auth.verifyCode` and `auth.verifyLink`, renewing its 12 months each time. Old `arc_did` and `arc_ref` cookies are expired on sight; a sign-in or live session carries the old id over. `trackEvent` never stores it, and the migration clears it from old events. The client sends `x-arc-fp` only on the two verify calls. The `arc_ref` cookie is removed; `referrals.capture` only counts the open.
+- **Attribution (M6):** `shared/attribution.ts`, `client/src/lib/attribution.ts`; `channel` and `campaign` on `landing_view`, `preview_viewed` and `signup_confirmed`; `computeFunnel` returns a channel table for `/admin/metrics`.
 
 ## What changed in v2.8 (2026-11-01)
 

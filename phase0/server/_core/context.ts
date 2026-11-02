@@ -8,7 +8,7 @@ export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
   res: CreateExpressContextOptions["res"];
   user: Phase0User | null;
-  /** Anonymous id for analytics: the device cookie. */
+  /** The device cookie, for rate limits only. trackEvent never stores it (privacy policy). */
   sessionId: string | null;
   ip: string | null;
   device: DeviceSignals;

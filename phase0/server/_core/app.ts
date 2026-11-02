@@ -20,6 +20,7 @@ import { elementArtSvg } from "../../shared/element-art";
 import { checkTextModels } from "../providers/check";
 import { startImageRetryLoop } from "../image-retry";
 import { startForgeQueueLoop } from "../forge-queue";
+import { startRetentionLoop } from "../retention";
 
 function renderOgTags(
   baseUrl: string,
@@ -185,6 +186,7 @@ export async function startApp(app: Express) {
 
   if (!ENV.isTest && db && ENV.cardArt === "generated") startImageRetryLoop();
   if (!ENV.isTest && db) startForgeQueueLoop();
+  if (!ENV.isTest && db) startRetentionLoop();
 
   if (!ENV.isProduction && !ENV.isTest && ENV.modelCheckOnStart) {
     // Opt-in (MODEL_CHECK_ON_START=1): a live call to every configured model, so a

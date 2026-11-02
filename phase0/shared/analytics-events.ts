@@ -7,10 +7,11 @@ export const SHARE_CHANNELS = ["copy", "twitter", "whatsapp", "discord", "native
 
 const spellId = z.string().min(1).max(36);
 const shortText = z.string().max(200);
+const tag = z.string().regex(/^[a-z0-9._-]{1,32}$/);
 
 /** Events an anonymous visitor may send. */
 export const ANONYMOUS_EVENTS = {
-  landing_view: z.object({ referrer: shortText.optional(), path: shortText.optional() }),
+  landing_view: z.object({ referrer: shortText.optional(), path: shortText.optional(), channel: tag.optional(), campaign: tag.optional() }),
   /** A visitor wrote a first spell on the landing page before signing in. The text itself is never sent. */
   landing_draft_started: z.object({}),
   preview_viewed: z.object({ spellId, referrer: shortText.optional() }),
@@ -31,8 +32,9 @@ export const MAX_EVENT_PROPS_BYTES = 1024;
 /** Every event name the server writes, for reference and the admin page. */
 export const SERVER_EVENTS = [
   "magic_link_requested",
-  "signup_confirmed", // props: signup_method (link | code), referred
+  "signup_confirmed", // props: signup_method (link | code), referred, channel, campaign
   "signin_completed",
+  "terms_accepted", // an account from before the 18+ terms accepted them
   "creation_started",
   "creation_succeeded",
   "creation_refunded",

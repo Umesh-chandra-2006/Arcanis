@@ -17,6 +17,7 @@ import { SPARK } from "@shared/constants";
 import { PotentialNote, SpellStats } from "@/components/SpellCard";
 import { ReportButton } from "@/components/ReportButton";
 import { useNameGate } from "@/components/NameDialog";
+import { channelTags } from "@/lib/attribution";
 
 function ReviewsSection({ spellId }: { spellId: string }) {
   const { isAuthenticated } = useAuth();
@@ -140,7 +141,7 @@ export default function ShareSpell() {
   const [params] = useSearchParams();
   const captureReferral = trpc.referrals.capture.useMutation();
 
-  // A visitor from a shared link: remember the sharer's code for a later signup.
+  // A visitor from a shared link: the sign-up form sends the sharer's code, and this counts the open.
   useEffect(() => {
     const ref = params.get("ref");
     if (ref && !isAuthenticated) captureReferral.mutate({ code: ref }, { onError: () => {} });
@@ -155,7 +156,7 @@ export default function ShareSpell() {
   useEffect(() => {
     if (spellQuery.data && !recordedRef.current) {
       recordedRef.current = true;
-      recordOpen.mutate({ spellId, referrer: document.referrer.slice(0, 200) || undefined }, { onError: () => {} });
+      recordOpen.mutate({ spellId, referrer: document.referrer.slice(0, 200) || undefined, ...channelTags() }, { onError: () => {} });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spellQuery.data]);

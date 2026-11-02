@@ -33,8 +33,22 @@ export const LLMSpellIdentitySchema = z.object({
 
 export type LLMSpellIdentity = z.infer<typeof LLMSpellIdentitySchema>;
 
+const attributionTag = z.string().regex(/^[a-z0-9._-]{1,32}$/);
+
+/** What the sign-up form knows; kept on the login token so an emailed link carries it too. */
+export const SignupContextSchema = z.object({
+  /** "I am 18 or older and I accept the Terms and Privacy Policy". A new account is refused without it. */
+  termsAccepted: z.boolean().default(false),
+  /** From the invite link's address. Never stored on the device. */
+  referralCode: z.string().max(16).transform((code) => code.toUpperCase()).optional(),
+  channel: attributionTag.optional(),
+  campaign: attributionTag.optional(),
+});
+export type SignupContext = z.infer<typeof SignupContextSchema>;
+
 export const SignInRequestSchema = z.object({
   email: z.string().trim().email().min(1).max(320),
+  signup: SignupContextSchema.optional(),
 });
 
 export const SignInPasswordSchema = z.object({

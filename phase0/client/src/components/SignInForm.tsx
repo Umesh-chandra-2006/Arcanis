@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { SignUpConsent } from "@/components/LegalLinks";
+import { attribution } from "@/lib/attribution";
+import { signUpsClosedHere } from "@/lib/legal";
+import { REGION_UNAVAILABLE_MESSAGE } from "@shared/restricted-regions";
 import { Spinner } from "@/components/ui/spinner";
 import { ArrowRight, KeyRound, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -27,19 +30,32 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
   const [code, setCode] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [dev, setDev] = useState<{ url: string; code: string } | null>(null);
+  const [accepted, setAccepted] = useState(false);
+  const [closedHere] = useState(signUpsClosedHere);
 
   const request = trpc.auth.requestSignIn.useMutation();
   const verify = trpc.auth.verifyCode.useMutation();
   const withPassword = trpc.auth.signInWithPassword.useMutation();
   const busy = request.isPending || withPassword.isPending;
 
-  const sendCode = async () => {
+  // A new account needs the box. "Forgot it?" and "Send a new code" do not ask for it, since a
+  // returning mage has already agreed; the server still refuses a new account without it.
+  const sendCode = async ({ forNewAccount = false } = {}) => {
     if (!email.trim()) {
       toast.error("Enter your email first");
       return;
     }
+    if (forNewAccount && closedHere) {
+      toast.error(REGION_UNAVAILABLE_MESSAGE);
+      return;
+    }
+    if (forNewAccount && !accepted) {
+      toast.error("Tick the box to confirm you are 18 or older, accept the terms and consent to the privacy policy");
+      return;
+    }
     try {
-      const result = await request.mutateAsync({ email });
+      const { channel, campaign, referralCode } = attribution();
+      const result = await request.mutateAsync({ email, signup: { termsAccepted: accepted, channel, campaign, referralCode } });
       setSentTo(email.trim().toLowerCase());
       setDev(result.devUrl && result.devCode ? { url: result.devUrl, code: result.devCode } : null);
       toast.success("Your code is on its way", { description: "Check your inbox for a 6-digit code and a sign-in link." });
@@ -72,12 +88,26 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
     }
   };
 
+  if (!sentTo && newcomer && closedHere) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm text-muted-foreground">{REGION_UNAVAILABLE_MESSAGE}</p>
+        <p className="text-center text-xs text-muted-foreground">
+          Already a mage?{" "}
+          <Link to="/signin" className="inline-block py-1.5 text-primary underline">
+            Sign in with your password
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
   if (!sentTo && newcomer) {
     return (
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          sendCode();
+          sendCode({ forNewAccount: true });
         }}
         className="space-y-3"
       >
@@ -85,12 +115,12 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
           <Label htmlFor="signin-email">Email address</Label>
           <Input id="signin-email" type="email" autoComplete="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
+        <SignUpConsent checked={accepted} onChange={setAccepted} required />
         <Button type="submit" className="w-full" disabled={busy}>
           {request.isPending ? <Spinner /> : <Mail />}
           Email me a code
         </Button>
         <p className="text-[11px] text-muted-foreground">We send a 6-digit code to start. You choose a password after your first spell.</p>
-        <SignUpConsent />
         <p className="text-center text-xs text-muted-foreground">
           Already a mage?{" "}
           <Link to="/signin" className="inline-block py-1.5 text-primary underline">
@@ -126,14 +156,20 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
           new to Arcanis?
           <span className="h-px flex-1 bg-border" />
         </div>
-        <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={() => sendCode()}>
-          {request.isPending ? <Spinner /> : <ArrowRight />}
-          Email me a code
-        </Button>
-        <p className="text-[11px] text-muted-foreground">
-          Enter your email and we send a 6-digit code. You choose your password after your first spell.
-        </p>
-        <SignUpConsent />
+        {closedHere ? (
+          <p className="text-[11px] text-muted-foreground">{REGION_UNAVAILABLE_MESSAGE}</p>
+        ) : (
+          <>
+            <SignUpConsent checked={accepted} onChange={setAccepted} />
+            <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={() => sendCode({ forNewAccount: true })}>
+              {request.isPending ? <Spinner /> : <ArrowRight />}
+              Email me a code
+            </Button>
+            <p className="text-[11px] text-muted-foreground">
+              Enter your email and we send a 6-digit code. You choose your password after your first spell.
+            </p>
+          </>
+        )}
       </form>
     );
   }
