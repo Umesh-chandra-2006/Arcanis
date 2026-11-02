@@ -11,7 +11,7 @@ Everything in code is done and tested on branch `track-a` (A0 to A15, A17). Thes
 
 ## 2. Fresh deploy, step by step (founder, 2026-10-11)
 
-The API runs on Render and the client on Vercel. There is no custom domain yet, so the Vercel project's own address (`https://<project>.vercel.app`) is the public domain everywhere below. Both services deploy the same GitHub repo, `Umesh-chandra-2006/Arcanis`, root directory `phase0`, branch `main` (or `track-a` until it is merged). Do the steps in this order, because each service needs the other's address.
+The API runs on Render and the client on Vercel. The public domain is now `https://arcanis.world` (2026-11-01), with `www` redirecting to it. The steps below were written before the domain, so they use the Vercel project's own address (`https://<project>.vercel.app`). Both services deploy the same GitHub repo, `Umesh-chandra-2006/Arcanis`, root directory `phase0`, branch `main` (or `track-a` until it is merged). Do the steps in this order, because each service needs the other's address.
 
 ### Step A. Vercel: create the project (gives you the public address)
 
