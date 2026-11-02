@@ -27,7 +27,7 @@ export default function Codex() {
       action={
         <Link to="/create">
           <Button>
-            <Wand2 /> Research a spell
+            <Wand2 /> Forge a spell
           </Button>
         </Link>
       }

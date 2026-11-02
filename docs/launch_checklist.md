@@ -89,6 +89,8 @@ Do **not** set `TEST_DATABASE_URL`, `MODEL_CHECK_ON_START`, `PORT` (Render provi
 
 ## 6. Soft launch
 
+- [ ] Before deploying the privacy and terms pages (founder, 2026-11-03): confirm the three values in `phase0/client/src/lib/legal.ts` (operator line, contact address, minimum age), make sure the contact address exists and reaches you, and have someone qualified read both pages. They are a careful draft, not legal advice. Ask specifically about: under-18 consent in India (DPDP Act), the `arc_did` device cookie and browser signature being used without a consent banner in the EU, and the update-emails wording.
+- [ ] After that deploy, check that an unknown address such as `https://arcanis.world/nope` returns a real 404, and that `/`, `/codex`, `/privacy`, a `/spell/<id>` link and a reload of `/create` still open. A share link must still preview in Discord.
 - [ ] On a real phone, on the deployed site, before inviting anyone (founder, 2026-11-01): sign up from the landing page with an example chip, confirm the Lab opens with that chip's element and category, forge the spell, move on, and complete the welcome dialog with the keyboard open. Check the "Your design is waiting" toast: in a fast automated run it sat over the dialog's button and its background looked see-through. Do not change the toast until this check is done.
 - [ ] Invite a small cohort (10 to 30 people). Watch `/admin/metrics` and `pnpm cost-report --days 1` daily for a week: quota errors, refunds, 2c rate, moderation queue.
 - [ ] Then open it up. Record the Gate 1a evaluation date (4 to 6 weeks after opening) in `PROGRESS.md`.

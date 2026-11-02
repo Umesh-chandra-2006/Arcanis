@@ -3,6 +3,8 @@ import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppShell } from "@/components/layout/app-shell";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { RouteTitle } from "@/components/RouteTitle";
 
 const Home = lazy(() => import("./pages/Home"));
 const Sanctum = lazy(() => import("./pages/Sanctum"));
@@ -17,6 +19,8 @@ const AdminMetrics = lazy(() => import("./pages/AdminMetrics"));
 const AdminModeration = lazy(() => import("./pages/AdminModeration"));
 const Feedback = lazy(() => import("./pages/Feedback"));
 const AdminFeedback = lazy(() => import("./pages/Feedback").then((m) => ({ default: m.AdminFeedback })));
+const Privacy = lazy(() => import("./pages/Legal").then((m) => ({ default: m.Privacy })));
+const Terms = lazy(() => import("./pages/Legal").then((m) => ({ default: m.Terms })));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 function LoadingFallback() {
@@ -27,32 +31,39 @@ function LoadingFallback() {
   );
 }
 
+// A new route must also be added to SPA_ROUTES in scripts/vercel-config.mjs, or
+// loading it directly gives a 404 on the deployed site (a test checks this).
 function App() {
   return (
     <TooltipProvider>
       <Toaster />
-      <Suspense fallback={<LoadingFallback />}>
-        <Routes>
-          <Route path="/auth/verify" element={<AuthVerify />} />
-          <Route path="/signin" element={<SignIn />} />
-          <Route element={<AppShell />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/sanctum" element={<Sanctum />} />
-            <Route path="/create" element={<Create />} />
-            <Route path="/library" element={<Library />} />
-            <Route path="/codex" element={<Codex />} />
-            <Route path="/spell/:spellId" element={<ShareSpell />} />
-            {/* Alias never rewritten to the OG renderer (see vercel.json). */}
-            <Route path="/s/:spellId" element={<ShareSpell />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
-            <Route path="/admin/metrics" element={<AdminMetrics />} />
-            <Route path="/admin/moderation" element={<AdminModeration />} />
-            <Route path="/feedback" element={<Feedback />} />
-            <Route path="/admin/feedback" element={<AdminFeedback />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </Suspense>
+      <RouteTitle />
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/auth/verify" element={<AuthVerify />} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route element={<AppShell />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/sanctum" element={<Sanctum />} />
+              <Route path="/create" element={<Create />} />
+              <Route path="/library" element={<Library />} />
+              <Route path="/codex" element={<Codex />} />
+              <Route path="/spell/:spellId" element={<ShareSpell />} />
+              {/* Alias never rewritten to the OG renderer (see vercel.json). */}
+              <Route path="/s/:spellId" element={<ShareSpell />} />
+              <Route path="/reviews" element={<ReviewsPage />} />
+              <Route path="/admin/metrics" element={<AdminMetrics />} />
+              <Route path="/admin/moderation" element={<AdminModeration />} />
+              <Route path="/feedback" element={<Feedback />} />
+              <Route path="/admin/feedback" element={<AdminFeedback />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
     </TooltipProvider>
   );
 }

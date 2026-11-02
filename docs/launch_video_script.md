@@ -10,7 +10,7 @@
 
 1. **Every card on screen is a real spell forged on the live site.** No invented names or stats: invented numbers can break the stat caps and the Power Budget, and players will try the same prompt. Forge the four prompts below on the live site, then copy each spell's exact name, element, category, tier, damage or effect range, MP cost, Strain label and lore line into the scenes. Placeholders below are in `[BRACKETS]`.
 2. **Will is never a number.** Will cost appears only as the live detail view shows it: the label "Strain" with the word Light, Moderate or Heavy (and its three-step bar, exactly as the live view draws it). Never the word Will with a number, percentage, meter or value.
-3. **Match the live product.** The live card face shows the element art, the spell name and one lore line; tier shows in the frame ornament. Stats appear in the detail view, so show them as a detail strip beside or under the card, not printed on the card face. The live button is "Research Spell". Cast type on live spells is Instant.
+3. **Match the live product.** The live card face shows the element art, the spell name and one lore line; tier shows in the frame ornament. Stats appear in the detail view, so show them as a detail strip beside or under the card, not printed on the card face. The live button is "Forge Spell". Cast type on live spells is Instant.
 4. **The art is element art, not AI images.** Never say or imply the AI drew the picture. The AI designs the spell; say that.
 5. **No numbers we cannot back.** No "thousands of players", no "10,000 spells". Use the real Codex, as it is on the day.
 6. Palette: black and gold, as in the battle trailer (same fonts: the Cinzel-style capitals and the Cormorant-style italic). No em dashes in any on-screen text.
@@ -37,7 +37,7 @@ Music: dark cinematic pulse, about 100 bpm, a low riser from 0 s, a hard hit on 
 |---|---|---|---|
 | **0.0 to 0.4** | Hard cut in, no fade: the Lab text box, mid-type, already filling the frame. Gold cursor. Text is huge (fills two thirds of the width). | top caption, instantly: **I TRIED TO BREAK THIS GAME.** | First keystroke, riser starts |
 | **0.4 to 2.4** | The P1 prompt types fast, word by word, each clause landing with a small punch-zoom: "Erases my enemy from existence." / "Costs nothing." / "Cannot be blocked." / "Cannot miss." | (the prompt itself is the caption) | Key ticks, each clause a low thud |
-| **2.4 to 2.9** | Finger-press on **Research Spell**; the button flares gold; the text dissolves into gold sparks pulled toward the centre. | | Inhale whoosh |
+| **2.4 to 2.9** | Finger-press on **Forge Spell**; the button flares gold; the text dissolves into gold sparks pulled toward the centre. | | Inhale whoosh |
 | **2.9 to 4.5** | The forge seal (the rune circle from the trailer) spins up fast. Status lines flash, one per half second: READING YOUR WORDS, CHECKING BALANCE, then a held **VERIFIED**. | | Rising boom, heartbeat |
 | **4.5 to 7.5** | Impact: the P1 card slams in from the seal, slight camera shake, gold dust. Hold on the card face: element art, **[P1 NAME]**, the lore line. A detail strip slides in below: `[TIER] · [ELEMENT] · Strain: [Heavy]` and `Damage [x to y] · MP [n]`. | **It made my spell.** (4.5) then **Then it made it fair.** (6.0) | Hard music hit, chime |
 | **7.5 to 8.5** | Quick push into the lore line, which fills the screen in italic gold. | **"[P1 LORE LINE]"** | Music continues, no voice |

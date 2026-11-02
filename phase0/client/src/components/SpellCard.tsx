@@ -12,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { FEATURES } from "@shared/constants";
 import { RefineDialog } from "@/components/RefineDialog";
 import { CodexToggle } from "@/components/Codex";
+import { ShareButtons } from "@/components/ShareButtons";
 
 interface SpellCardWrapperProps {
   spell: SpellCardProps;
@@ -130,6 +131,7 @@ export function SpellCardWrapper({ spell, size = "md", onOpen }: SpellCardWrappe
               </Button>
             )}
             {ownsSpell && <CodexToggle spellId={spell.id} inCodex={spell.inCodex} />}
+            {ownsSpell && <ShareButtons spellId={spell.id} spellName={spell.name} className="grid grid-cols-2 gap-2 [&>button]:w-full" />}
             <Button
               variant="outline"
               className="w-full"

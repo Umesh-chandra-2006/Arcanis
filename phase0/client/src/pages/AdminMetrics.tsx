@@ -24,6 +24,7 @@ export default function AdminMetrics() {
   const isAdmin = user?.role === "admin";
   const [days, setDays] = useState(28);
   const gate = trpc.analytics.gateMetrics.useQuery({ days }, { enabled: isAdmin });
+  const funnel = trpc.analytics.funnel.useQuery({ days }, { enabled: isAdmin });
   const daily = trpc.analytics.dailyMetrics.useQuery(undefined, { enabled: isAdmin });
   const overview = trpc.analytics.overview.useQuery(undefined, { enabled: isAdmin });
   const breaker = trpc.admin.breakerStatus.useQuery(undefined, { enabled: isAdmin, refetchInterval: 60_000 });
@@ -84,6 +85,31 @@ export default function AdminMetrics() {
                   {pct(gate.data.extra.fake_door_intent_at_zero_spark as number | null)} ({gate.data.extra.players_reached_zero_spark} players reached zero)
                 </p>
               )}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Funnel">
+          {!funnel.data ? <Spinner /> : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs text-muted-foreground">
+                  <tr><th className="py-2">Step</th><th>Count</th><th>Rate</th><th>Detail</th></tr>
+                </thead>
+                <tbody>
+                  {funnel.data.steps.map((s) => (
+                    <tr key={s.key} className="border-t border-border/40">
+                      <td className="py-2 pr-3">{s.label}</td>
+                      <td className="pr-3 font-semibold">{s.count}</td>
+                      <td className="pr-3">{s.of === null ? "" : pct(s.of > 0 ? s.count / s.of : null)}</td>
+                      <td className="text-xs text-muted-foreground">{[s.of === null ? null : `${s.count} / ${s.of}`, s.note].filter(Boolean).join(" · ")}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Last {funnel.data.days} days, {funnel.data.visits} landing page views in all. Admin accounts are left out. Account steps count accounts created in this window.
+              </p>
             </div>
           )}
         </Panel>

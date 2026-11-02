@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
+import { SignUpConsent } from "@/components/LegalLinks";
 import { Spinner } from "@/components/ui/spinner";
 import { ArrowRight, KeyRound, Mail } from "lucide-react";
 import { toast } from "sonner";
@@ -41,7 +42,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
       const result = await request.mutateAsync({ email });
       setSentTo(email.trim().toLowerCase());
       setDev(result.devUrl && result.devCode ? { url: result.devUrl, code: result.devCode } : null);
-      toast.success("Your sigil is on its way", { description: "Check your inbox for a 6-digit code and a sign-in link." });
+      toast.success("Your code is on its way", { description: "Check your inbox for a 6-digit code and a sign-in link." });
     } catch (error: any) {
       toast.error(error?.message ?? "Something went wrong");
     }
@@ -89,6 +90,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
           Email me a code
         </Button>
         <p className="text-[11px] text-muted-foreground">We send a 6-digit code to start. You choose a password after your first spell.</p>
+        <SignUpConsent />
         <p className="text-center text-xs text-muted-foreground">
           Already a mage?{" "}
           <Link to="/signin" className="inline-block py-1.5 text-primary underline">
@@ -126,11 +128,12 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
         </div>
         <Button type="button" variant="outline" className="w-full" disabled={busy} onClick={() => sendCode()}>
           {request.isPending ? <Spinner /> : <ArrowRight />}
-          Summon my sigil
+          Email me a code
         </Button>
         <p className="text-[11px] text-muted-foreground">
-          Enter your email and we send a sigil (a 6-digit code). You choose your password after your first spell.
+          Enter your email and we send a 6-digit code. You choose your password after your first spell.
         </p>
+        <SignUpConsent />
       </form>
     );
   }
@@ -143,7 +146,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
           Sent to <span className="text-foreground">{sentTo}</span>
         </span>
       </div>
-      <Label htmlFor="signin-code">Your sigil (6-digit code)</Label>
+      <Label htmlFor="signin-code">Your 6-digit code</Label>
       <div className="flex gap-2">
         <Input
           id="signin-code"
@@ -172,7 +175,7 @@ export function SignInForm({ initialEmail = "", redirectTo = "/sanctum", newcome
       )}
       <div className="flex justify-between text-[11px] text-muted-foreground">
         <button type="button" className="underline hover:text-primary" onClick={() => sendCode()} disabled={request.isPending}>
-          Summon a new sigil
+          Send a new code
         </button>
         <button
           type="button"

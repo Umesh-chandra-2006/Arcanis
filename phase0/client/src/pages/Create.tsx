@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { trpc } from "@/lib/trpc";
@@ -17,8 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
 import { mapSpellToCardProps, type SpellCardProps } from "@/lib/adapters";
-import { shareUrlFor } from "@/lib/share";
-import { useNameGate } from "@/components/NameDialog";
+import { ShareButtons } from "@/components/ShareButtons";
 import { ForgeQueuePanel } from "@/components/ForgeQueue";
 import { EXAMPLE_PROMPTS } from "@/lib/example-prompts";
 import { clearDraft, markDraftDelivered, readDraft } from "@/lib/draft";
@@ -29,9 +28,6 @@ import { FirstSpellFeedbackDialog } from "@/components/Feedback";
 import type { Phase0Spell } from "@/lib/adapters";
 import {
   Wand2,
-  Copy,
-  Twitter,
-  MessageCircle,
   Sparkles,
   Loader2,
   BookOpen,
@@ -73,7 +69,6 @@ export default function Create() {
   const [phase, setPhase] = useState<"form" | "forging" | "done">("form");
   const [stepIndex, setStepIndex] = useState(0);
   const [created, setCreated] = useState<Phase0Spell | null>(null);
-  const [copied, setCopied] = useState(false);
   // Spending Spark is always confirmed first (founder, 2026-10-15).
   const [confirming, setConfirming] = useState(false);
   const [firstSpell, setFirstSpell] = useState(false);
@@ -85,10 +80,8 @@ export default function Create() {
   const createSpell = trpc.spells.create.useMutation();
   const mySpells = trpc.spells.mySpells.useQuery(undefined, { enabled: isAuthenticated });
   const feedbackGiven = trpc.feedback.given.useQuery(undefined, { enabled: isAuthenticated, staleTime: Infinity });
-  const { gate, dialog: nameDialog } = useNameGate();
   const [zeroOpen, setZeroOpen] = useState(false);
   const [zeroShown, setZeroShown] = useState(false);
-  const myCode = trpc.referrals.myCode.useQuery(undefined, { enabled: isAuthenticated, staleTime: Infinity });
   const trackEvent = trpc.analytics.track.useMutation();
   const utils = trpc.useUtils();
   const mounted = useRef(true);
@@ -116,7 +109,7 @@ export default function Create() {
     setName(draft.name);
     setDescription(draft.description);
     toast.message("Your design is waiting", {
-      description: exampleKind() ? "Change anything you like, then press Research Spell." : "Choose its element and category, then press Research Spell.",
+      description: exampleKind() ? "Change anything you like, then press Forge Spell." : "Choose its element and category, then press Forge Spell.",
       duration: 9000,
     });
   }, [isAuthenticated]);
@@ -134,7 +127,8 @@ export default function Create() {
     return () => clearInterval(interval);
   }, [phase]);
 
-  const balance = sparkBalance.data?.balance ?? 5;
+  // Unknown until the query answers: nothing is claimed or blocked on a guess, and the server checks anyway.
+  const balance = sparkBalance.data?.balance;
 
   // The first spell comes before the password (v7.8): nothing covers the forge or the card.
   useEffect(() => {
@@ -156,7 +150,7 @@ export default function Create() {
       toast.error("Give your spell a name and a description");
       return;
     }
-    if (balance < 1) {
+    if (balance === 0) {
       setZeroOpen(true);
       toast.error("You're out of Spark");
       return;
@@ -227,40 +221,6 @@ export default function Create() {
     }
   };
 
-  const shareUrl = useMemo(
-    () =>
-      created
-        ? shareUrlFor(created.id, myCode.data?.code)
-        : "",
-    [created, myCode.data?.code]
-  );
-
-  const copyLink = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    trackEvent
-      .mutateAsync({ eventType: "share_clicked", metadata: { spellId: created?.id, channel: "copy" } })
-      .catch(() => {});
-  };
-
-  const tweet = () => {
-    trackEvent
-      .mutateAsync({ eventType: "share_clicked", metadata: { spellId: created?.id, channel: "twitter" } })
-      .catch(() => {});
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I forged "${created?.name}" on Arcanis. Describe yours.`)}&url=${encodeURIComponent(shareUrl)}`,
-      "_blank"
-    );
-  };
-
-  const discordCopy = async () => {
-    const markdown = `**${created?.name}**, forged on Arcanis\n${shareUrl}`;
-    await navigator.clipboard.writeText(markdown);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   if (!isAuthenticated || !user) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -283,9 +243,9 @@ export default function Create() {
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent className="max-w-sm border-border bg-card text-foreground">
           <DialogHeader>
-            <DialogTitle className="font-serif text-xl">Research {name.trim() || "this spell"}?</DialogTitle>
+            <DialogTitle className="font-serif text-xl">Forge {name.trim() || "this spell"}?</DialogTitle>
             <DialogDescription>
-              This spends {SPARK.creationCost} Spark. You have {balance}. If the forge fails on its side, the Spark comes back to you.
+              This spends {SPARK.creationCost} Spark.{balance !== undefined && ` You have ${balance}.`} If the forge fails on its side, the Spark comes back to you.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
@@ -414,10 +374,10 @@ export default function Create() {
                     <Button
                       type="submit"
                       size="lg"
-                      disabled={createSpell.isPending || balance < 1}
+                      disabled={createSpell.isPending || balance === 0}
                     >
                       <Wand2 />
-                      Research Spell
+                      Forge Spell
                     </Button>
                   </div>
                 </form>
@@ -467,7 +427,7 @@ export default function Create() {
                 {created.name} is not yours yet. A spell of this weight must be studied before it can be granted. When the research is complete it
                 will appear in your Spellbook, and you will be told.
               </p>
-              <p className="mt-2 text-xs text-muted-foreground">The research took 1 Spark. {balance} remaining.</p>
+              <p className="mt-2 text-xs text-muted-foreground">The research took 1 Spark.{balance !== undefined && ` ${balance} remaining.`}</p>
               <div className="mt-6 text-left">
                 <CodexAsk spellId={created.id} researching onAnswered={() => firstSpell && setFeedbackOpen(true)} />
               </div>
@@ -501,7 +461,7 @@ export default function Create() {
                   Your spell is forged
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Forged from 1 Spark. {balance} remaining.
+                  Forged from 1 Spark.{balance !== undefined && ` ${balance} remaining.`}
                 </p>
                 {FEATURES.refinement && (
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -524,18 +484,7 @@ export default function Create() {
                 <CodexAsk spellId={created.id} researching={false} onAnswered={() => firstSpell && setFeedbackOpen(true)} />
               </div>
 
-              {nameDialog}
-              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-                <Button variant="outline" onClick={() => gate(copyLink)}>
-                  <Copy /> {copied ? "Copied!" : "Copy Link"}
-                </Button>
-                <Button variant="outline" onClick={() => gate(tweet)}>
-                  <Twitter /> Tweet
-                </Button>
-                <Button variant="outline" onClick={() => gate(discordCopy)}>
-                  <MessageCircle /> {copied ? "Copied!" : "Discord"}
-                </Button>
-              </div>
+              <ShareButtons spellId={created.id} spellName={created.name} className="mt-8 flex flex-wrap items-center justify-center gap-3" />
 
               <div className="mt-8 flex justify-center gap-3">
                 <Button

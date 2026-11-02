@@ -165,7 +165,7 @@
     <div class="row"><span class="chip smallcaps">&#9679; Void</span><span class="chip smallcaps">Attack</span></div>
     <div class="label smallcaps">Describe your spell</div>
     <div class="box italic"><span id="typed"></span><span class="caret" id="caret"></span></div>
-    <div class="btn" id="btn">RESEARCH SPELL</div>`;
+    <div class="btn" id="btn">FORGE SPELL</div>`;
   const typed = lab.querySelector("#typed"), caret = lab.querySelector("#caret"), btn = lab.querySelector("#btn");
 
   const seal = el("div", "abs", sealSvg());

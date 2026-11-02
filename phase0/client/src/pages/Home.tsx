@@ -12,6 +12,7 @@ import { SpellCardWrapper } from "@/components/SpellCard";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { SignInForm } from "@/components/SignInForm";
+import { LegalLinks } from "@/components/LegalLinks";
 import { useAuth } from "@/contexts/AuthContext";
 import { mapSpellToCardProps } from "@/lib/adapters";
 import { SPARK } from "@shared/constants";
@@ -154,7 +155,7 @@ function Landing() {
               </Link>
               <Link to="/create">
                 <Button variant="outline">
-                  <Wand2 /> Research a spell
+                  <Wand2 /> Forge a spell
                 </Button>
               </Link>
             </div>
@@ -211,6 +212,7 @@ function Landing() {
       <footer className="border-t border-border/60 py-8 text-center text-xs text-muted-foreground">
         <p className="font-serif text-sm uppercase tracking-[0.3em] text-primary">Arcanis</p>
         <p className="mt-2">Create. Share. Prove the magic is real.</p>
+        <LegalLinks className="mt-3" />
       </footer>
     </div>
   );

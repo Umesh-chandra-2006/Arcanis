@@ -1,7 +1,11 @@
-# Arcanis: Phase Plan v2.4
+# Arcanis: Phase Plan v2.5
 
-**Companion to: Arcanis Master Documentation v7.8 (the bible)**
+**Companion to: Arcanis Master Documentation v7.9 (the bible)**
 **Status:** Commercial product. Supersedes the build order in the old Phased Build Plan v1.0 and Section 24 of Master Doc v6.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.5 (2026-11-03)
+
+Tracks Master Doc v7.9 (Forge is the one word for creating a spell). Wording only: no phase, gate or threshold changes.
 
 ## What changed in v2.4 (2026-11-01)
 

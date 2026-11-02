@@ -49,7 +49,67 @@
       "destination": "https://arcanis-jpm1.onrender.com/spell/:id"
     },
     {
-      "source": "/(.*)",
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/signin",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/auth/verify",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sanctum",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/create",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/library",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/codex",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/spell/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/s/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/reviews",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/feedback",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/metrics",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/moderation",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/admin/feedback",
       "destination": "/index.html"
     }
   ]

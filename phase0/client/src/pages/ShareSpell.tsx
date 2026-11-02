@@ -148,6 +148,11 @@ export default function ShareSpell() {
   }, []);
 
   useEffect(() => {
+    if (spellQuery.isLoading) return;
+    document.title = spellQuery.data ? `${spellQuery.data.name} | Arcanis` : "Spell not found | Arcanis";
+  }, [spellQuery.isLoading, spellQuery.data]);
+
+  useEffect(() => {
     if (spellQuery.data && !recordedRef.current) {
       recordedRef.current = true;
       recordOpen.mutate({ spellId, referrer: document.referrer.slice(0, 200) || undefined }, { onError: () => {} });

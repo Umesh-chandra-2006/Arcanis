@@ -266,14 +266,14 @@ function SecurityTab() {
   const request = trpc.auth.requestSignIn.useMutation();
   const verify = trpc.auth.verifyCode.useMutation();
   if (!user) return null;
-  // No current password is asked right after an emailed sigil (forgot password), or when none is set yet.
+  // No current password is asked right after an emailed code (forgot password), or when none is set yet.
   const needsCurrent = user.hasPassword && !user.canResetPassword;
 
-  const sendSigil = async () => {
+  const sendCode = async () => {
     try {
       await request.mutateAsync({ email: user.email });
       setForgot(true);
-      toast.success("Your sigil is on its way", { description: `Check ${user.email} for a 6-digit code.` });
+      toast.success("Your code is on its way", { description: `Check ${user.email} for a 6-digit code.` });
     } catch (error: any) {
       toast.error(error?.message ?? "Could not send that");
     }
@@ -283,7 +283,7 @@ function SecurityTab() {
     <div className="space-y-5">
       <Heading title="Security" subtitle="How you sign in." />
       <p className="text-sm text-muted-foreground">
-        You sign in with your email and password. If you forget it, an emailed sigil lets you choose a new one.
+        You sign in with your email and password. If you forget it, an emailed code lets you choose a new one.
       </p>
 
       {needsCurrent && forgot ? (
@@ -301,7 +301,7 @@ function SecurityTab() {
             }
           }}
         >
-          <Label htmlFor="pf-code">Your sigil (6-digit code)</Label>
+          <Label htmlFor="pf-code">Your 6-digit code</Label>
           <div className="flex gap-2">
             <Input id="pf-code" inputMode="numeric" autoComplete="one-time-code" placeholder="123 456" maxLength={7} autoFocus value={code} onChange={(e) => setCode(e.target.value.replace(/[^\d ]/g, ""))} />
             <Button type="submit" disabled={verify.isPending || code.replace(/\s/g, "").length !== 6}>
@@ -333,8 +333,8 @@ function SecurityTab() {
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between">
                 <Label htmlFor="pf-current">Current password</Label>
-                <button type="button" className="text-[11px] text-muted-foreground underline hover:text-primary" disabled={request.isPending} onClick={sendSigil}>
-                  Forgot it? Email me a sigil
+                <button type="button" className="text-[11px] text-muted-foreground underline hover:text-primary" disabled={request.isPending} onClick={sendCode}>
+                  Forgot it? Email me a code
                 </button>
               </div>
               <PasswordInput id="pf-current" autoComplete="current-password" maxLength={72} value={current} onChange={(e) => setCurrent(e.target.value)} />

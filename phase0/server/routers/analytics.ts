@@ -8,6 +8,7 @@ import { p0Spells } from "../../drizzle/schema";
 import { totalSparkStats } from "../spark";
 import { checkRateLimit } from "../rate-limit";
 import { computeGateMetrics } from "../gate-metrics";
+import { computeFunnel } from "../funnel";
 import { ANONYMOUS_EVENTS, AUTHENTICATED_EVENTS, MAX_EVENT_PROPS_BYTES } from "../../shared/analytics-events";
 
 const TrackInput = z.object({
@@ -40,6 +41,10 @@ export const analyticsRouter = router({
   /** Gate 1a dashboard (Phase Plan v2.2 Section 5). */
   gateMetrics: adminProcedure.input(z.object({ days: z.number().int().min(1).max(180).default(28) }).optional()).query(({ input }) =>
     computeGateMetrics({ days: input?.days ?? 28 })
+  ),
+
+  funnel: adminProcedure.input(z.object({ days: z.number().int().min(1).max(180).default(28) }).optional()).query(({ input }) =>
+    computeFunnel({ days: input?.days ?? 28 })
   ),
 
   dailyMetrics: adminProcedure.query(() => getDailyMetrics(7)),

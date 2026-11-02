@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, Link } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { Castle, House, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, LogIn, ChevronsUpDown, ScrollText, Feather, Inbox } from "lucide-react";
+import { Castle, House, FlaskConical, BookOpen, MessageSquareMore, BarChart3, ShieldAlert, LogIn, ChevronsUpDown, ScrollText, Feather, Inbox, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,6 +10,7 @@ import { Onboarding } from "@/components/Onboarding";
 import { ForgeQueueWatcher } from "@/components/ForgeQueue";
 import { ResearchWatcher } from "@/components/Research";
 import { Button } from "@/components/ui/button";
+import { LegalLinks } from "@/components/LegalLinks";
 
 // Phase 1a navigation only (arcanis-ui shell, Build Plan 10). Battle and the
 // other game areas arrive with their phases.
@@ -45,6 +46,7 @@ export function AppShell() {
   // Desktop: the sidebar folds to an icon rail. A per-browser convenience only.
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const location = useLocation();
+  const { isAuthenticated } = useAuth();
 
   useEffect(() => {
     try {
@@ -67,8 +69,24 @@ export function AppShell() {
 
       {/* Below lg the logo, on the left, is the menu button. */}
       <header className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-2 border-b border-border bg-card px-4 lg:hidden">
-        <LogoButton onClick={() => setMobileOpen((v) => !v)} label={mobileOpen ? "Close navigation" : "Open navigation"} expanded={mobileOpen} />
+        <button
+          type="button"
+          onClick={() => setMobileOpen((v) => !v)}
+          aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+          aria-expanded={mobileOpen}
+          className="-ml-1.5 flex min-h-10 items-center gap-1.5 rounded-md px-1.5 text-primary transition-colors hover:bg-primary/10"
+        >
+          {mobileOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}
+          <span className={MARK_CLASS}>A</span>
+        </button>
         <WordmarkText />
+        {!isAuthenticated && (
+          <Link to="/signin" className="ml-auto">
+            <Button variant="outline" size="sm">
+              <LogIn /> Sign in
+            </Button>
+          </Link>
+        )}
       </header>
 
       <AnimatePresence>
@@ -244,6 +262,7 @@ function SidebarContent({ onNavigate, collapsed = false, onToggle }: { onNavigat
             </Button>
           </Link>
         )}
+        {!collapsed && <LegalLinks className="mt-2" />}
       </div>
     </>
   );

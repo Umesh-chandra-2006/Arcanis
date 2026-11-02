@@ -1,7 +1,13 @@
-# Arcanis: Phase 1 Build Plan v2.8
+# Arcanis: Phase 1 Build Plan v2.9
 
-**Agent-facing implementation document. Companion to Master Documentation v7.8 (the bible) and Phase Plan v2.4.**
+**Agent-facing implementation document. Companion to Master Documentation v7.9 (the bible) and Phase Plan v2.5.**
 **Supersedes:** Phased Build Plan v1.0. File name keeps "v2" so links stay stable.
+
+## What changed in v2.9 (2026-11-03)
+
+Founder decision from the launch review (Master Doc v7.9). No migration and no server rule changes.
+
+- **Lab:** the creation button reads "Forge Spell" and the confirmation "Forge this spell?" (replaces the v2.7 wording). Research remains the name of the wait, `research_ready_at`, and its screens.
 
 ## What changed in v2.8 (2026-11-01)
 

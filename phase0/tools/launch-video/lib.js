@@ -133,7 +133,7 @@ window.LIB = (function () {
       <div class="row">${chips.map((c) => `<span class="chip smallcaps">${c}</span>`).join("")}</div>
       <div class="label smallcaps">Describe your spell</div>
       <div class="box italic" style="font-size:${fontSize}px;min-height:${fontSize * 4.6}px"><span class="ty"></span><span class="caret"></span></div>
-      <div class="btn">RESEARCH SPELL</div>`;
+      <div class="btn">FORGE SPELL</div>`;
     const ty = d.querySelector(".ty"), caret = d.querySelector(".caret"), btn = d.querySelector(".btn");
     return {
       el: d,

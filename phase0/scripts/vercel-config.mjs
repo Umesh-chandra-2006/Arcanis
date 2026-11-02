@@ -11,6 +11,26 @@ export const PLACEHOLDER = "https://RENDER_API_ORIGIN";
 const BOT_UA =
   "(?i).*(bot|crawler|spider|facebookexternalhit|facebookcatalog|twitterbot|discordbot|slackbot|whatsapp|telegrambot|linkedinbot|embedly|pinterest|redditbot|skypeuripreview|vkshare|quora link preview|applebot|google-inspectiontool|iframely).*";
 
+// Every route in client/src/App.tsx (server/vercel-routes.test.ts checks this).
+export const SPA_ROUTES = [
+  "/",
+  "/signin",
+  "/auth/verify",
+  "/sanctum",
+  "/create",
+  "/library",
+  "/codex",
+  "/spell/:id",
+  "/s/:id",
+  "/reviews",
+  "/feedback",
+  "/privacy",
+  "/terms",
+  "/admin/metrics",
+  "/admin/moderation",
+  "/admin/feedback",
+];
+
 export function buildConfig(origin) {
   return {
     buildCommand: "pnpm build:client",
@@ -39,7 +59,8 @@ export function buildConfig(origin) {
       // so share pages never depend on Render's asset hashes matching Vercel's.
       // Keep in sync with PREVIEW_BOT_UA in server/_core/app.ts.
       { source: "/spell/:id", has: [{ type: "header", key: "user-agent", value: BOT_UA }], destination: `${origin}/spell/:id` },
-      { source: "/(.*)", destination: "/index.html" },
+      // Only real pages get the SPA, so any other address is a true 404 (public/404.html).
+      ...SPA_ROUTES.map((source) => ({ source, destination: "/index.html" })),
     ],
   };
 }

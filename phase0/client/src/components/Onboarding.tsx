@@ -23,7 +23,8 @@ export function Onboarding() {
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
   const [again, setAgain] = useState("");
-  const [updates, setUpdates] = useState(true);
+  // Off until the player ticks it: a pre-ticked box is not valid consent in the EU.
+  const [updates, setUpdates] = useState(false);
   const complete = trpc.profile.completeOnboarding.useMutation();
   const setNew = trpc.profile.setPassword.useMutation();
   const spells = trpc.spells.mySpells.useQuery(undefined, { enabled: !!user && !user.onboarded });
@@ -74,7 +75,7 @@ export function Onboarding() {
     },
     reset: {
       title: "Set a new password?",
-      description: "You came in with an emailed sigil. If you forgot your password, choose a new one now.",
+      description: "You came in with an emailed code. If you forgot your password, choose a new one now.",
       action: "Save new password",
     },
   }[mode];
@@ -117,7 +118,7 @@ export function Onboarding() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            {mode !== "reset" && <p className="text-[11px] text-muted-foreground">If you ever forget it, an emailed sigil lets you choose a new one.</p>}
+            {mode !== "reset" && <p className="text-[11px] text-muted-foreground">If you ever forget it, an emailed code lets you choose a new one.</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="onb-password-again">Retype password</Label>

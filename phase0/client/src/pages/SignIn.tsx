@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/game/panel";
 import { SignInForm } from "@/components/SignInForm";
+import { LegalLinks } from "@/components/LegalLinks";
 import { ArrowRight, Flame } from "lucide-react";
 import { SPARK } from "@shared/constants";
 
@@ -40,6 +41,7 @@ export default function SignIn() {
             <Flame className="size-3.5 text-primary" />
             {SPARK.signupGrant} free Spark for every new mage. Each spell costs {SPARK.creationCost}.
           </div>
+          <LegalLinks className="mt-3" />
         </div>
       </main>
     </div>

@@ -5,6 +5,7 @@ import { appRouter } from "./routers";
 import { getDb } from "./db";
 import { p0AnalyticsEvents, p0Referrals, p0Spells, p0Users } from "../drizzle/schema";
 import { computeGateMetrics } from "./gate-metrics";
+import { computeFunnel } from "./funnel";
 import { describeDb } from "./test/db";
 import { createTestUser } from "./test/factories";
 import type { TrpcContext } from "./_core/context";
@@ -60,6 +61,55 @@ describeDb("public tracking endpoint", () => {
   it("gate metrics are admin-only", async () => {
     const user = await createTestUser();
     await expect(caller(user).api.analytics.gateMetrics()).rejects.toThrow();
+  });
+});
+
+describeDb("signup funnel", () => {
+  it("is admin-only", async () => {
+    const user = await createTestUser();
+    await expect(caller(user).api.analytics.funnel()).rejects.toThrow();
+  });
+
+  it("counts each step once per person, and judges a return only when the day has passed", async () => {
+    const db = (await getDb())!;
+    // An isolated period far in the future so other test data never counts.
+    const t0 = new Date(Date.UTC(2036, 0, 1, 12));
+    const at = (days: number) => new Date(t0.getTime() + days * 86_400_000);
+    await db.delete(p0AnalyticsEvents).where(and(gte(p0AnalyticsEvents.createdAt, at(-30)), lt(p0AnalyticsEvents.createdAt, at(60))));
+    await db.delete(p0Users).where(and(gte(p0Users.createdAt, at(-30)), lt(p0Users.createdAt, at(60))));
+    const [a, b, c] = await Promise.all([createTestUser({ createdAt: t0 }), createTestUser({ createdAt: t0 }), createTestUser({ createdAt: at(9.5) })]);
+    const event = (eventType: string, userId: number | null, day: number, sessionId: string | null = null, metadata: Record<string, unknown> = {}) =>
+      db.insert(p0AnalyticsEvents).values({ id: nanoid(36), eventType, userId, sessionId, metadata, createdAt: at(day) });
+
+    await event("landing_view", null, 0, "device-1");
+    await event("landing_view", null, 0.1, "device-1");
+    await event("landing_view", null, 0.2, "device-2");
+    await event("landing_draft_started", null, 0.2, "device-2");
+    await event("creation_succeeded", a.id, 0.5);
+    await event("creation_succeeded", a.id, 1.5);
+    await event("creation_succeeded", b.id, 0.5);
+    await event("share_clicked", a.id, 0.6, "device-1", { spellId: "x", channel: "copy" });
+    await event("share_clicked", a.id, 0.7, "device-1", { spellId: "x", channel: "copy" });
+    await event("session_day_n", a.id, 1.5, null, { n: 1 });
+    await event("session_day_n", a.id, 7.5, null, { n: 7 });
+    await event("session_day_n", c.id, 10.5, null, { n: 1 });
+
+    const report = await computeFunnel({ now: at(10), days: 20 });
+    const step = Object.fromEntries(report.steps.map((s) => [s.key, s]));
+    expect(report.visits).toBe(3);
+    expect(step.visit.count).toBe(2);
+    expect(step.draft).toMatchObject({ count: 1, of: 2 });
+    expect(step.signup.count).toBe(3);
+    expect(step.first_spell).toMatchObject({ count: 2, of: 3 });
+    expect(step.second_spell).toMatchObject({ count: 1, of: 2 });
+    expect(step.shared).toMatchObject({ count: 1, of: 2 });
+    // User c signed up on day 9.5, so neither return can be judged for them yet.
+    expect(step.day1).toMatchObject({ count: 1, of: 2 });
+    expect(step.day7).toMatchObject({ count: 1, of: 2 });
+
+    // The gate metrics query has no upper date bound, so future rows must not stay behind.
+    await db.delete(p0AnalyticsEvents).where(and(gte(p0AnalyticsEvents.createdAt, at(-30)), lt(p0AnalyticsEvents.createdAt, at(60))));
+    await db.delete(p0Users).where(and(gte(p0Users.createdAt, at(-30)), lt(p0Users.createdAt, at(60))));
   });
 });
 

@@ -28,7 +28,7 @@ Decisions already made, do not reopen them:
 
 My gate: marketing and the Phase 1a launch come first. Until Track M in `docs/tasks.md` is done, do no other work (no battles, no `track-b`, no features outside Track M) except fixing bugs on the live site and the launch review items above. If something else seems urgent, ask me. M0 stays benched.
 
-Wording to know: I call this soft launch "Phase 0" and the battle release "Phase 1". The docs call them Phase 1a and Phase 1b. The battle work sits on branch `track-b` (local only); leave it alone. When it is rebased, its docs become v7.9 and v2.9 and its migration becomes 0020. My own 37 s battle trailer (`Downloads\Arcanis_Promo_1080p.mp4`) is kept for the Phase 1b launch.
+Wording to know: I call this soft launch "Phase 0" and the battle release "Phase 1". The docs call them Phase 1a and Phase 1b. The battle work sits on branch `track-b` (local only); leave it alone. When it is rebased, its docs become v7.10 and v2.10 and its migration becomes 0020. My own 37 s battle trailer (`Downloads\Arcanis_Promo_1080p.mp4`) is kept for the Phase 1b launch.
 
 Hard rules:
 - No live provider calls (LLM, image, moderation, email) without my permission in this session. See CLAUDE.md Engineering rules. Tests with fake providers are fine. Me using the deployed site myself is fine. The auto-mode classifier blocks Claude from running live calls and production reads or changes even with my permission; when that happens, give me the exact `!` command to run myself.

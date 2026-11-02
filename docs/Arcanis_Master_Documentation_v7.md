@@ -1,12 +1,20 @@
 __ARCANIS__
 
 Game Design Document, Master Reference
-*Complete Vision Blueprint | Version 7.8*
+*Complete Vision Blueprint | Version 7.9*
 
 Author: Umesh Chandra Tirumani
 Status: Architecture Complete | Phase 1 in progress | **Commercial Product**
 
-*Formerly "Magic Spar." Renamed to Arcanis. Version 7.8 supersedes all prior versions, including v7.7, v7.6, v7.5, v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+*Formerly "Magic Spar." Renamed to Arcanis. Version 7.9 supersedes all prior versions, including v7.8, v7.7, v7.6, v7.5, v7.4, v7.3, v7.2, v7.1, v7.0 and v6.0. This is the authoritative reference document ("the bible") for the project. The file name keeps "v7" so links stay stable.*
+
+---
+
+## VERSION 7.9, WHAT CHANGED FROM v7.8 (2026-11-03)
+
+Founder decision from the launch review.
+
+- **One word for creating a spell: Forge (changes v7.7 Section 22 wording).** The Lab's button reads "Forge Spell" and its confirmation asks "Forge this spell? This spends 1 Spark". "Research" now means only the wait a stronger spell goes through before it is granted (Section 6.3), which is unchanged.
 
 ---
 

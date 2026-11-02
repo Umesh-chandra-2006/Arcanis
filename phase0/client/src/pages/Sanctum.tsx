@@ -47,7 +47,7 @@ function MageHome({ name }: { name: string | null }) {
 
   const path = [
     { done: !!user?.nameChosen, label: "Choose your mage name", hint: "Open your profile at the bottom of the sidebar.", to: null },
-    { done: (s?.created ?? 0) > 0, label: "Research your first spell", hint: "Describe it in the Lab.", to: "/create" },
+    { done: (s?.created ?? 0) > 0, label: "Forge your first spell", hint: "Describe it in the Lab.", to: "/create" },
     { done: (s?.inCodex ?? 0) > 0, label: "Inscribe a spell in the Codex", hint: "Open a spell in your Spellbook.", to: "/library" },
     { done: (s?.shareOpens ?? 0) > 0, label: "Have another mage open your spell's page", hint: "Share its link anywhere.", to: "/library" },
     { done: !!feedback.data?.given, label: "Tell the makers what you think", hint: "A minute on the feedback page.", to: "/feedback" },
@@ -59,7 +59,7 @@ function MageHome({ name }: { name: string | null }) {
       <Panel gold>
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-serif text-xl font-semibold">What will you research next?</p>
+            <p className="font-serif text-xl font-semibold">What will you forge next?</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {spark.data
                 ? spark.data.balance > 0
@@ -70,7 +70,7 @@ function MageHome({ name }: { name: string | null }) {
           </div>
           <Link to="/create">
             <Button size="lg">
-              <Wand2 /> Research a spell
+              <Wand2 /> Forge a spell
             </Button>
           </Link>
         </div>
